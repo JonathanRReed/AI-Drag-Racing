@@ -16,7 +16,7 @@ A T3 Stack project to test AI API latency from different providers.
 ---
 
 Made by Jonathan Reed. Created for hello.world consulting.
-
+Check it out at https://api-test.helloworldfirm.com/
 license: MIT License
 
 Copyright (c) 2025 Jonathan Ray Reed
