@@ -1,1 +1,6 @@
-{"/_app":"pages/_app.js","/api/azure-openai":"pages/api/azure-openai.js","/api/anthropic-models":"pages/api/anthropic-models.js","/api/anthropic-completions":"pages/api/anthropic-completions.js","/api/google-gemini":"pages/api/google-gemini.js","/api/openrouter-completion":"pages/api/openrouter-completion.js","/":"pages/index.html","/_error":"pages/_error.js","/_document":"pages/_document.js","/404":"pages/404.html"}
+{
+  "/_app": "pages/_app.js",
+  "/_error": "pages/_error.js",
+  "/_document": "pages/_document.js",
+  "/": "pages/index.js"
+}

@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import Head from 'next/head';
+import dynamic from 'next/dynamic';
 import ProviderConfig, { ProviderBlock } from '../components/ProviderConfig';
 import PromptInput from '../components/PromptInput';
-import ComparisonCharts from '../components/ComparisonCharts';
 import { callModelApi, ModelApiResult } from '../utils/modelApi';
 import Footer from '../components/Footer';
 import { PROVIDERS } from '../utils/providers';
@@ -16,6 +16,9 @@ interface ResponseState extends ModelApiResult {
   model: string;
   isLoading: boolean;
 }
+
+// Dynamically import ComparisonCharts to reduce initial bundle size
+const DynamicComparisonCharts = dynamic(() => import('../components/ComparisonCharts'), { ssr: false });
 
 export default function Home() {
   const [providerBlocks, setProviderBlocks] = useState<ProviderBlock[]>([{
@@ -203,15 +206,17 @@ export default function Home() {
               )}
             </div>
             {/* Chart/Leaderboard Section */}
-            <section className="mt-8">
-              <ComparisonCharts
-                responses={responses.map(r => ({
-                  provider: r.provider,
-                  model: r.model,
-                  latency: typeof r.latency === 'number' ? r.latency : null,
-                }))}
-              />
-            </section>
+            {responses.length > 0 && (
+              <section className="mt-8">
+                <DynamicComparisonCharts
+                  responses={responses.map(r => ({
+                    provider: r.provider,
+                    model: r.model,
+                    latency: typeof r.latency === 'number' ? r.latency : null,
+                  }))}
+                />
+              </section>
+            )}
           </div>
           <Footer />
         </div>
