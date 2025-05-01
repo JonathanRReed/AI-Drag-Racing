@@ -1,1 +1,0 @@
-self.__REACT_LOADABLE_MANIFEST="{\"pages/index.tsx -> ../components/ComparisonCharts\":{\"id\":\"pages/index.tsx -> ../components/ComparisonCharts\",\"files\":[\"static/chunks/components_ComparisonCharts_tsx.js\"]}}"

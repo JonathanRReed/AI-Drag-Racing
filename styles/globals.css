@@ -93,21 +93,50 @@ html, body {
 @tailwind utilities;
 
 body {
-  background-color: #000000;
+  background: #181828;
+  min-height: 100vh;
+  width: 100vw;
+  overflow-x: hidden;
   color: #FAFAFA;
+  position: relative;
 }
 
-.main-glass-panel {
+body > * {
+  position: relative;
+  z-index: 20;
+}
+
+/* Give all panels a consistent glassmorphism background */
+.panel, .glass-panel, .main-glass-panel, .main-glass-panel-inner {
+  background: rgba(24, 24, 40, 0.03);
+  backdrop-filter: blur(8px) saturate(140%);
+  -webkit-backdrop-filter: blur(8px) saturate(140%);
+  border-radius: 18px;
+  border: 1.5px solid rgba(255,255,255,0.13);
+  box-shadow: 0 4px 32px 0 rgba(0,0,0,0.18), 0 1.5px 8px 0 rgba(0,255,255,0.04);
+  transition: background 0.3s, box-shadow 0.3s;
+  /* Remove all glass texture overlays for a clean look */
+  background-image: none;
+}
+
+.panel *, .glass-panel *, .main-glass-panel *, .main-glass-panel-inner * {
+  color: #FAFAFA;
+  text-shadow: 0 1px 4px rgba(0,0,0,0.21);
+}
+
+/* --- Remove conflicting less-transparent main-glass-panel style --- */
+/* .main-glass-panel {
   border-radius: 1.25rem;
   border: 1.5px solid rgba(255,255,255,0.18);
-  background: rgba(20, 20, 30, 0.78); /* less transparent, deeper dark */
+  background: rgba(20, 20, 30, 0.78); // less transparent, deeper dark
   box-shadow: 0 8px 32px 0 rgba(0,0,0,0.35);
   backdrop-filter: blur(18px) saturate(140%);
   -webkit-backdrop-filter: blur(18px) saturate(140%);
   padding: 1.5rem;
   margin-bottom: 2rem;
-  transition: box-shadow 0.2s, border-color 0.2s;
-}
+  position: relative;
+  z-index: 10;
+} */
 
 .main-glass-panel-inner {
   border-radius: 0.75rem;
@@ -137,9 +166,31 @@ body {
   box-shadow: 0 4px 16px 0 rgba(232, 121, 249, 0.18);
 }
 
+.glass-input {
+  background: rgba(24, 24, 40, 0.13);
+  backdrop-filter: blur(4px) saturate(150%);
+  -webkit-backdrop-filter: blur(4px) saturate(150%);
+  border: 1.2px solid rgba(255,255,255,0.11);
+  color: #fafafa;
+  box-shadow: 0 2px 12px 0 rgba(0,0,0,0.09);
+  transition: background 0.25s, box-shadow 0.25s;
+}
+
+.glass-input:focus, .glass-input:hover {
+  background: rgba(24, 24, 40, 0.21);
+  box-shadow: 0 4px 24px 0 rgba(0,255,255,0.08);
+}
+
 @media (max-width: 700px) {
   .main-glass-panel { padding: 1rem; }
   .main-glass-panel-inner { padding: 0.5rem; }
+}
+
+@media (max-width: 600px) {
+  .panel, .glass-panel, .main-glass-panel, .main-glass-panel-inner {
+    border-radius: 10px;
+    padding: 8px;
+  }
 }
 
 /* Import IBM Plex Sans only for the footer */
@@ -362,6 +413,7 @@ body {
   box-shadow: 0 2px 12px 0 rgba(114,91,220,0.18);
   background: #181828;
 }
+
 .footer-card-links {
   display: flex;
   flex-direction: row;
@@ -501,13 +553,15 @@ body {
   margin: 1rem 0 0.3rem 0;
 }
 .footer-card-logo-inline {
+  width: 2.1rem;
   height: 2.1rem;
-  width: auto;
+  object-fit: cover;
   margin-right: 0.5rem;
   border-radius: 0.35rem;
   background: #181828;
   box-shadow: 0 2px 8px 0 rgba(114,91,220,0.14);
 }
+
 .footer-card-links-row {
   display: flex;
   flex-direction: row;
@@ -564,7 +618,27 @@ body {
     gap: 0.7rem;
   }
   .footer-card-logo-inline {
+    width: 1.5rem;
     height: 1.5rem;
     margin-right: 0.3rem;
+  }
+}
+
+.footer-card-photo,
+.footer-card-logo-inline {
+  width: 3.5rem;
+  height: 3.5rem;
+  object-fit: cover;
+}
+
+@media (max-width: 700px) {
+  .footer-card-logo-inline {
+    width: 1.5rem;
+    height: 1.5rem;
+    margin-right: 0.3rem;
+  }
+  .footer-card-photo {
+    width: 2.3rem;
+    height: 2.3rem;
   }
 }

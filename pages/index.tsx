@@ -147,10 +147,10 @@ export default function Home() {
       </Head>
       <div className="min-h-screen w-full bg-transparent relative z-10 px-2 sm:px-4 md:px-8">
         <div className="w-full max-w-4xl mx-auto flex flex-col gap-8 py-10">
-          <div className="main-glass-panel">
-            <h1 className="text-3xl font-bold mb-2 text-magenta drop-shadow-[0_0_10px_#ff00e6] text-center">API latency test</h1>
+          <div className="main-glass-panel mb-8" style={{ zIndex: 2, position: 'relative' }}>
+            <h2 className="text-2xl font-bold mb-4 text-center text-magenta drop-shadow-[0_0_12px_#ff00e6]">API latency test</h2>
           </div>
-          <div className="main-glass-panel">
+          <div className="main-glass-panel mb-8" style={{ zIndex: 2, position: 'relative' }}>
             <h2 className="text-xl font-semibold mb-2 text-cyan-400 drop-shadow-[0_0_6px_#00fff7]">Providers & Models</h2>
             <ProviderConfig
               blocks={providerBlocks}
@@ -159,7 +159,7 @@ export default function Home() {
               onUpdate={handleUpdateBlock}
             />
           </div>
-          <div className="main-glass-panel">
+          <div className="main-glass-panel mb-8" style={{ zIndex: 2, position: 'relative' }}>
             <h2 className="text-xl font-semibold mb-2 text-cyan-400 drop-shadow-[0_0_6px_#00fff7]">Prompt Input</h2>
             <PromptInput
               prompt={prompt}
@@ -168,7 +168,7 @@ export default function Home() {
               isLoading={isLoading}
             />
           </div>
-          <div className="main-glass-panel">
+          <div className="main-glass-panel" style={{ zIndex: 2, position: 'relative' }}>
             <h2 className="text-xl font-semibold mb-2 text-cyan-400 drop-shadow-[0_0_6px_#00fff7]">Responses</h2>
             <div className="grid md:grid-cols-2 gap-4">
               {responses.map(r => (
@@ -177,6 +177,7 @@ export default function Home() {
                   className={`main-glass-panel-inner ${r.isLoading ? 'opacity-70' : 'opacity-100'}`}
                   tabIndex={0}
                   aria-live="polite"
+                  style={{ zIndex: 3, position: 'relative' }}
                 >
                   <div className="font-bold text-cyan mb-1 drop-shadow-[0_0_6px_#00fff7]">{r.provider} <span className="font-normal text-yellow">({r.model})</span></div>
                   {r.isLoading ? (
