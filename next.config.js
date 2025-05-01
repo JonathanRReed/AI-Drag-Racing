@@ -2,7 +2,7 @@
 const nextConfig = {
   reactStrictMode: true,
   swcMinify: true,
-  // output: 'export', // Removed to enable API routes and AVIF support
+  output: 'export',
 };
 
 module.exports = nextConfig;
