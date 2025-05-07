@@ -1,89 +1,11 @@
-/* Nebula Sans font-face declarations */
-@font-face {
-  font-family: 'Nebula Sans';
-  src: url('/fonts/nebula sans/NebulaSans-Light.woff2') format('woff2');
-  font-weight: 300;
-  font-style: normal;
-  font-display: swap;
-}
-@font-face {
-  font-family: 'Nebula Sans';
-  src: url('/fonts/nebula sans/NebulaSans-LightItalic.woff2') format('woff2');
-  font-weight: 300;
-  font-style: italic;
-  font-display: swap;
-}
+/* Only Nebula Sans Book font-face */
 @font-face {
   font-family: 'Nebula Sans';
   src: url('/fonts/nebula sans/NebulaSans-Book.woff2') format('woff2');
-  font-weight: 400;
+  font-weight: normal;
   font-style: normal;
   font-display: swap;
 }
-@font-face {
-  font-family: 'Nebula Sans';
-  src: url('/fonts/nebula sans/NebulaSans-BookItalic.woff2') format('woff2');
-  font-weight: 400;
-  font-style: italic;
-  font-display: swap;
-}
-@font-face {
-  font-family: 'Nebula Sans';
-  src: url('/fonts/nebula sans/NebulaSans-Medium.woff2') format('woff2');
-  font-weight: 500;
-  font-style: normal;
-  font-display: swap;
-}
-@font-face {
-  font-family: 'Nebula Sans';
-  src: url('/fonts/nebula sans/NebulaSans-MediumItalic.woff2') format('woff2');
-  font-weight: 500;
-  font-style: italic;
-  font-display: swap;
-}
-@font-face {
-  font-family: 'Nebula Sans';
-  src: url('/fonts/nebula sans/NebulaSans-Semibold.woff2') format('woff2');
-  font-weight: 600;
-  font-style: normal;
-  font-display: swap;
-}
-@font-face {
-  font-family: 'Nebula Sans';
-  src: url('/fonts/nebula sans/NebulaSans-SemiboldItalic.woff2') format('woff2');
-  font-weight: 600;
-  font-style: italic;
-  font-display: swap;
-}
-@font-face {
-  font-family: 'Nebula Sans';
-  src: url('/fonts/nebula sans/NebulaSans-Bold.woff2') format('woff2');
-  font-weight: 700;
-  font-style: normal;
-  font-display: swap;
-}
-@font-face {
-  font-family: 'Nebula Sans';
-  src: url('/fonts/nebula sans/NebulaSans-BoldItalic.woff2') format('woff2');
-  font-weight: 700;
-  font-style: italic;
-  font-display: swap;
-}
-@font-face {
-  font-family: 'Nebula Sans';
-  src: url('/fonts/nebula sans/NebulaSans-Black.woff2') format('woff2');
-  font-weight: 900;
-  font-style: normal;
-  font-display: swap;
-}
-@font-face {
-  font-family: 'Nebula Sans';
-  src: url('/fonts/nebula sans/NebulaSans-BlackItalic.woff2') format('woff2');
-  font-weight: 900;
-  font-style: italic;
-  font-display: swap;
-}
-
 html, body {
   font-family: 'Nebula Sans', sans-serif;
 }
@@ -125,18 +47,6 @@ body > * {
 }
 
 /* --- Remove conflicting less-transparent main-glass-panel style --- */
-/* .main-glass-panel {
-  border-radius: 1.25rem;
-  border: 1.5px solid rgba(255,255,255,0.18);
-  background: rgba(20, 20, 30, 0.78); // less transparent, deeper dark
-  box-shadow: 0 8px 32px 0 rgba(0,0,0,0.35);
-  backdrop-filter: blur(18px) saturate(140%);
-  -webkit-backdrop-filter: blur(18px) saturate(140%);
-  padding: 1.5rem;
-  margin-bottom: 2rem;
-  position: relative;
-  z-index: 10;
-} */
 
 .main-glass-panel-inner {
   border-radius: 0.75rem;
@@ -194,7 +104,7 @@ body > * {
 }
 
 /* Import IBM Plex Sans only for the footer */
-@import url('https://fonts.googleapis.com/css?family=IBM+Plex+Sans:500|IBM+Plex+Sans:300');
+
 
 .custom-footer {
   margin-top: 80vh;
@@ -210,7 +120,7 @@ body > * {
   background: rgba(20, 20, 30, 0.78);
   box-shadow: 0 8px 32px 0 rgba(0,0,0,0.35);
   border-radius: 1.25rem 1.25rem 0 0;
-  font-family: 'IBM Plex Sans', sans-serif;
+  font-family: 'Nebula Sans', sans-serif;
   font-weight: 300;
   font-size: 1.2rem;
   color: #d5d5d5;
@@ -354,7 +264,7 @@ body > * {
   display: flex;
   flex-direction: column;
   align-items: center;
-  font-family: 'IBM Plex Sans', sans-serif;
+  font-family: 'Nebula Sans', sans-serif;
   position: relative;
 }
 .footer-card-content {
