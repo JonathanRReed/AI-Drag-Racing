@@ -1,55 +1,90 @@
 // pages/api/providers/[providerId]/completions.ts
 
-import type { NextApiRequest, NextApiResponse } from 'next';
+export const config = { runtime: 'edge' };
+
 import { getProviderService } from '../../../../utils/providerService';
-// Side-effect imports to register provider services
+// Side-effect imports to register provider services (exclude Bedrock for Edge)
 import '../../../../utils/providers/openai';
 import '../../../../utils/providers/groq';
 import '../../../../utils/providers/anthropic';
 import '../../../../utils/providers/google';
 import '../../../../utils/providers/cohere';
 import '../../../../utils/providers/mistral';
-import '../../../../utils/providers/bedrock';
 
-export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-  const { providerId } = req.query;
-  const { prompt, model, apiKey } = req.body;
-
-  if (typeof providerId !== 'string') {
-    res.status(400).json({ error: 'Invalid provider ID' });
-    return;
+export default async function handler(req: Request): Promise<Response> {
+  if (req.method !== 'POST') {
+    return new Response(JSON.stringify({ error: 'Method not allowed' }), {
+      status: 405,
+      headers: { 'Content-Type': 'application/json' },
+    });
   }
 
+  const url = new URL(req.url);
+  const match = url.pathname.match(/\/api\/providers\/([^/]+)\/completions/);
+  const providerId = match?.[1];
+
+  if (!providerId) {
+    return new Response(JSON.stringify({ error: 'Invalid provider ID' }), {
+      status: 400,
+      headers: { 'Content-Type': 'application/json' },
+    });
+  }
+
+  let body: any = null;
+  try {
+    body = await req.json();
+  } catch {
+    return new Response(JSON.stringify({ error: 'Invalid JSON body' }), {
+      status: 400,
+      headers: { 'Content-Type': 'application/json' },
+    });
+  }
+
+  const { prompt, model, apiKey } = body || {};
+
   if (!prompt || !model || !apiKey) {
-    res.status(400).json({ error: 'Missing prompt, model, or apiKey' });
-    return;
+    return new Response(JSON.stringify({ error: 'Missing prompt, model, or apiKey' }), {
+      status: 400,
+      headers: { 'Content-Type': 'application/json' },
+    });
   }
 
   const providerService = getProviderService(providerId);
 
   if (!providerService) {
-    res.status(404).json({ error: `Provider '${providerId}' not found` });
-    return;
+    return new Response(JSON.stringify({ error: `Provider '${providerId}' not found` }), {
+      status: 404,
+      headers: { 'Content-Type': 'application/json' },
+    });
   }
 
-  try {
-    // Set headers for Server-Sent Events (SSE)
-    res.setHeader('Content-Type', 'text/event-stream');
-    res.setHeader('Cache-Control', 'no-cache');
-    res.setHeader('Connection', 'keep-alive');
-    res.flushHeaders(); // Flush the headers to establish the connection
+  const { readable, writable } = new TransformStream();
+  const writer = writable.getWriter();
+  const encoder = new TextEncoder();
 
-    const generator = providerService.generate(prompt, model, apiKey);
+  const writeEvent = async (data: any) => {
+    const chunk = `data: ${JSON.stringify(data)}\n\n`;
+    await writer.write(encoder.encode(chunk));
+  };
 
-    for await (const result of generator) {
-      res.write(`data: ${JSON.stringify(result)}\n\n`);
+  (async () => {
+    try {
+      const generator = providerService.generate(prompt, model, apiKey);
+      for await (const result of generator) {
+        await writeEvent(result);
+      }
+    } catch (error) {
+      // Swallow errors; the client will handle stream end
+    } finally {
+      await writer.close();
     }
+  })();
 
-    res.end();
-  } catch (error: any) {
-    console.error(`Error streaming from provider ${providerId}:`, error);
-    // Note: We can't send a status code here because the headers have already been sent.
-    // The client-side will need to handle the abrupt end of the stream.
-    res.end();
-  }
+  return new Response(readable, {
+    headers: {
+      'Content-Type': 'text/event-stream; charset=utf-8',
+      'Cache-Control': 'no-cache, no-transform',
+      'Connection': 'keep-alive',
+    },
+  });
 }

@@ -1,52 +1,35 @@
 // pages/api/bedrock-models.ts
-import type { NextApiRequest, NextApiResponse } from 'next';
-import { BedrockClient, ListFoundationModelsCommand } from '@aws-sdk/client-bedrock';
+export const config = { runtime: 'edge' };
 
-function parseAwsCreds(key: string): {
-  accessKeyId: string;
-  secretAccessKey: string;
-  region: string;
-  sessionToken?: string;
-} {
-  try {
-    const obj = JSON.parse(key);
-    if (obj.accessKeyId && obj.secretAccessKey && obj.region) return obj;
-  } catch {}
-  const parts = key.split('|');
-  if (parts.length >= 3) {
-    const [accessKeyId, secretAccessKey, region, sessionToken] = parts;
-    return { accessKeyId, secretAccessKey, region, sessionToken };
-  }
-  const parts2 = key.split(':');
-  if (parts2.length >= 3) {
-    const [accessKeyId, secretAccessKey, region, sessionToken] = parts2;
-    return { accessKeyId, secretAccessKey, region, sessionToken };
-  }
-  throw new Error('Invalid AWS credentials format. Use JSON or "ACCESS|SECRET|REGION|[SESSION]"');
-}
+// Edge-friendly static list of common Bedrock text models.
+const STATIC_BEDROCK_MODELS: string[] = [
+  'amazon.titan-text-lite-v1',
+  'amazon.titan-text-express-v1',
+  'anthropic.claude-3-haiku-20240307-v1:0',
+  'anthropic.claude-3-sonnet-20240229-v1:0',
+  'anthropic.claude-3-opus-20240229-v1:0',
+  'mistral.mistral-large-2402-v1:0',
+  'ai21.j2-mid-v1',
+  'ai21.j2-ultra-v1',
+];
 
-export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+export default async function handler(req: Request): Promise<Response> {
   if (req.method !== 'POST') {
-    res.status(405).json({ error: 'Method not allowed' });
-    return;
-  }
-  const { apiKey } = req.body || {};
-  if (!apiKey) {
-    res.status(400).json({ error: 'Missing apiKey' });
-    return;
-  }
-  try {
-    const { accessKeyId, secretAccessKey, region, sessionToken } = parseAwsCreds(apiKey);
-    const client = new BedrockClient({
-      region,
-      credentials: { accessKeyId, secretAccessKey, sessionToken },
+    return new Response(JSON.stringify({ error: 'Method not allowed' }), {
+      status: 405,
+      headers: { 'Content-Type': 'application/json' },
     });
-    const cmd = new ListFoundationModelsCommand({ byOutputModality: 'TEXT' });
-    const resp = await client.send(cmd);
-    const models = (resp.modelSummaries || []).map((m: any) => m.modelId).filter(Boolean);
-    res.status(200).json({ models });
+  }
+  // We previously validated/parsed AWS creds here; for Edge we return a static list.
+  try {
+    return new Response(JSON.stringify({ models: STATIC_BEDROCK_MODELS }), {
+      status: 200,
+      headers: { 'Content-Type': 'application/json' },
+    });
   } catch (e: any) {
-    console.error('Bedrock model list error:', e);
-    res.status(500).json({ error: e?.message || 'Failed to list Bedrock models' });
+    return new Response(JSON.stringify({ error: e?.message || 'Failed to list Bedrock models' }), {
+      status: 500,
+      headers: { 'Content-Type': 'application/json' },
+    });
   }
 }

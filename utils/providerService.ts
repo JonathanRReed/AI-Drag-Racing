@@ -1,7 +1,5 @@
 // utils/providerService.ts
 
-import { Readable } from 'stream';
-
 // Defines the standard metrics we want to collect for each response.
 export interface CompletionMetrics {
   startTime: number;
