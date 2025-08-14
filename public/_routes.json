@@ -1,0 +1,1 @@
+{"version":1,"description":"Only run Functions for API and Next data/image; serve root as static.","include":["/api/*","/_next/data/*","/_next/image*"],"exclude":["/_next/static/*"]}
