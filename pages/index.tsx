@@ -158,9 +158,4 @@ export default function Home() {
   );
 }
  
-export async function getServerSideProps() {
-  return { props: {} };
-}
 
-// Required by Cloudflare next-on-pages for non-static routes on Pages Router
-export const config = { runtime: 'experimental-edge' };
