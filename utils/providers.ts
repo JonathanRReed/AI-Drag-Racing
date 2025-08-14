@@ -7,6 +7,7 @@ export interface ProviderConfig {
   id: string;
   displayName: string;
   requiresApiKey: boolean;
+  logoUrl?: string; // Optional: URL for the provider's logo
   fetcher?: (apiKey: string, endpoint?: string) => Promise<string[]>;
 }
 
@@ -15,12 +16,14 @@ export const PROVIDERS: ProviderConfig[] = [
     id: 'openai',
     displayName: 'OpenAI',
     requiresApiKey: true,
+    logoUrl: 'https://upload.wikimedia.org/wikipedia/commons/4/4d/OpenAI_Logo.svg',
     fetcher: fetchOpenAIModels,
   },
   {
     id: 'groq',
     displayName: 'Groq',
     requiresApiKey: true,
+    logoUrl: 'https://upload.wikimedia.org/wikipedia/commons/c/cc/Groq_logo.svg',
     fetcher: fetchGroqModels,
   },
   {
@@ -45,12 +48,14 @@ export const PROVIDERS: ProviderConfig[] = [
     id: 'anthropic',
     displayName: 'Anthropic',
     requiresApiKey: true,
+    logoUrl: 'https://upload.wikimedia.org/wikipedia/commons/7/78/Anthropic_logo.svg',
     fetcher: fetchAnthropicModels,
   },
   {
     id: 'google',
     displayName: 'Google Gemini',
     requiresApiKey: true,
+    logoUrl: 'https://upload.wikimedia.org/wikipedia/commons/8/8f/Google-gemini-icon.svg',
     fetcher: fetchGoogleModels, // always returns []
   },
   {
