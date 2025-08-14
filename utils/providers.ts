@@ -1,7 +1,7 @@
 // Centralized provider config for model fetching and display
 // Add new providers here for easy extensibility
 
-import { fetchOpenAIModels, fetchGroqModels, fetchAnthropicModels, fetchGoogleModels, fetchAzureModels, fetchOpenRouterModels, fetchFireworksModels, fetchTogetherModels, fetchCohereModels, fetchMistralModels, fetchBedrockModels } from './fetchModels';
+import { fetchOpenAIModels, fetchGroqModels, fetchAnthropicModels, fetchGoogleModels, fetchAzureModels, fetchOpenRouterModels, fetchFireworksModels, fetchTogetherModels, fetchCohereModels, fetchMistralModels, fetchBedrockModels, fetchPerplexityModels, fetchXaiModels, fetchDeepSeekModels, fetchAI21Models } from './fetchModels';
 
 export interface ProviderConfig {
   id: string;
@@ -87,21 +87,25 @@ export const PROVIDERS: ProviderConfig[] = [
     id: 'perplexity',
     displayName: 'Perplexity',
     requiresApiKey: true,
+    fetcher: fetchPerplexityModels,
   },
   {
     id: 'xai',
     displayName: 'xAI (Grok)',
     requiresApiKey: true,
+    fetcher: fetchXaiModels,
   },
   {
     id: 'deepseek',
     displayName: 'DeepSeek',
     requiresApiKey: true,
+    fetcher: fetchDeepSeekModels,
   },
   {
     id: 'ai21',
     displayName: 'AI21',
     requiresApiKey: true,
+    fetcher: fetchAI21Models,
   },
 ];
 

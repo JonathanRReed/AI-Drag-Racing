@@ -217,4 +217,22 @@ export async function performTogetherInference({
     return data.choices[0].text;
   }
 }
+
+// --- Additional provider model fetcher stubs ---
+// TODO: Replace these with real list-models calls once APIs are integrated.
+export async function fetchPerplexityModels(_apiKey: string): Promise<string[]> {
+  return [];
+}
+
+export async function fetchXaiModels(_apiKey: string): Promise<string[]> {
+  return [];
+}
+
+export async function fetchDeepSeekModels(_apiKey: string): Promise<string[]> {
+  return [];
+}
+
+export async function fetchAI21Models(_apiKey: string): Promise<string[]> {
+  return [];
+}
 // --- END PATCH ---
