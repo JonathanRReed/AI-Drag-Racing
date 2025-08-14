@@ -1,0 +1,10 @@
+# Cloudflare Pages configuration (Wrangler on Pages)
+# This enables Node.js compatibility polyfills required by next-on-pages worker output.
+# Docs: https://developers.cloudflare.com/pages/configuration/wrangler/
+
+name = "ai-provider-api-latency-tester"
+compatibility_date = "2025-08-13"
+compatibility_flags = ["nodejs_compat"]
+
+# Note: You do not need to set `main` for Pages. The adapter generates
+# .vercel/output/static/_worker.js automatically during the build.
