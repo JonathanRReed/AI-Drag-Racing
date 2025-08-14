@@ -26,3 +26,5 @@ pnpm-debug.log*
 # Optional caches
 .cache/
 
+# Vercel
+.vercel
