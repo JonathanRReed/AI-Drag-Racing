@@ -135,7 +135,7 @@ export default function Home() {
       </Head>
       <MainLayout
         sidebar={
-          <GlassCard className="p-4 h-full">
+          <GlassCard className="p-4 w-full max-w-full max-h-[60vh] overflow-auto md:h-full md:max-h-none">
             <ProviderList
               apiKeys={state.apiKeys}
               dispatch={dispatch}

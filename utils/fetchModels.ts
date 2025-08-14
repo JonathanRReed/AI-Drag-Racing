@@ -39,19 +39,38 @@ export async function fetchGroqModels(apiKey: string): Promise<string[]> {
 }
 
 export async function fetchAnthropicModels(apiKey: string): Promise<string[]> {
-  const res = await fetch('/api/anthropic-models', {
-    headers: { 'Authorization': `Bearer ${apiKey}` }
-  });
-  if (!res.ok) throw new Error('Anthropic model fetch failed');
-  const data = await res.json();
-  return data.data.map((m: any) => m.id);
+  // Try official List Models endpoint; fallback to static list
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/models', {
+      headers: {
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+      },
+    });
+    if (!res.ok) throw new Error(`Anthropic models error: ${res.status}`);
+    const data = await res.json();
+    if (Array.isArray((data as any)?.data)) {
+      return (data as any).data.map((m: any) => m.id).filter(Boolean);
+    }
+  } catch (e) {
+    console.warn('[Anthropic] fetchAnthropicModels fallback to static:', e);
+  }
+  return [
+    'claude-3-opus-20240229',
+    'claude-3-sonnet-20240229',
+    'claude-3-haiku-20240307',
+  ];
 }
 
 export async function fetchGoogleModels(apiKey: string): Promise<string[]> {
-  // As of 2025, Gemini API does not provide a public endpoint for model listing.
-  // If you have a Gemini API key, you must know the model name (e.g., 'gemini-pro', 'gemini-1.5-pro').
-  // See https://ai.google.dev/gemini-api/docs/models for details.
-  return [];
+  // Docs: https://ai.google.dev/api/models#v1beta.models.list
+  // API key can be provided via query parameter `key`.
+  const url = `https://generativelanguage.googleapis.com/v1beta/models?key=${encodeURIComponent(apiKey)}`;
+  const res = await fetch(url, { headers: { 'Content-Type': 'application/json' } });
+  if (!res.ok) throw new Error('Gemini model fetch failed');
+  const data = await res.json();
+  if (!Array.isArray(data.models)) return [];
+  return data.models.map((m: any) => m.name).filter(Boolean);
 }
 
 export async function fetchAzureModels(apiKey: string, endpoint?: string): Promise<string[]> {
@@ -69,6 +88,42 @@ export async function fetchOpenRouterModels(apiKey: string): Promise<string[]> {
   if (!res.ok) throw new Error('OpenRouter model fetch failed');
   const data = await res.json();
   return data.data.map((m: any) => m.id);
+}
+
+// Cohere model listing
+export async function fetchCohereModels(apiKey: string): Promise<string[]> {
+  const res = await fetch('https://api.cohere.com/v1/models', {
+    headers: { 'Authorization': `Bearer ${apiKey}` }
+  });
+  if (!res.ok) throw new Error('Cohere model fetch failed');
+  const data = await res.json();
+  const arr = Array.isArray(data?.models) ? data.models : Array.isArray(data?.data) ? data.data : [];
+  return arr.map((m: any) => m.name || m.id).filter(Boolean);
+}
+
+// Mistral model listing
+export async function fetchMistralModels(apiKey: string): Promise<string[]> {
+  const res = await fetch('https://api.mistral.ai/v1/models', {
+    headers: { 'Authorization': `Bearer ${apiKey}` }
+  });
+  if (!res.ok) throw new Error('Mistral model fetch failed');
+  const data = await res.json();
+  return Array.isArray(data?.data) ? data.data.map((m: any) => m.id).filter(Boolean) : [];
+}
+
+// Bedrock model listing via server API (requires AWS creds server-side)
+export async function fetchBedrockModels(apiKey: string): Promise<string[]> {
+  const res = await fetch('/api/bedrock-models', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ apiKey }),
+  });
+  if (!res.ok) throw new Error('Bedrock model fetch failed');
+  const data = await res.json();
+  if (Array.isArray(data?.models)) return data.models as string[];
+  // fallback shape compatibility
+  if (Array.isArray(data?.data)) return data.data.map((m: any) => m.modelId || m.id).filter(Boolean);
+  return [];
 }
 
 // --- BEGIN PATCH: Add Fireworks Model Fetcher ---
@@ -108,8 +163,13 @@ export async function fetchTogetherModels(apiKey: string): Promise<string[]> {
     }
     const data = await res.json();
     console.log('[TogetherAI] Raw model response:', data);
-    if (!Array.isArray(data)) throw new Error('Malformed Together AI model response');
-    return data.map((m: TogetherModel) => m.id);
+    if (Array.isArray(data)) {
+      return data.map((m: TogetherModel) => m.id);
+    }
+    if (Array.isArray((data as any)?.data)) {
+      return (data as any).data.map((m: TogetherModel) => m.id);
+    }
+    throw new Error('Malformed Together AI model response');
   } catch (err) {
     console.error('[TogetherAI] fetchTogetherModels error:', err);
     throw err;

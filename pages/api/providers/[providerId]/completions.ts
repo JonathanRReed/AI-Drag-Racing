@@ -2,6 +2,14 @@
 
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { getProviderService } from '../../../../utils/providerService';
+// Side-effect imports to register provider services
+import '../../../../utils/providers/openai';
+import '../../../../utils/providers/groq';
+import '../../../../utils/providers/anthropic';
+import '../../../../utils/providers/google';
+import '../../../../utils/providers/cohere';
+import '../../../../utils/providers/mistral';
+import '../../../../utils/providers/bedrock';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   const { providerId } = req.query;

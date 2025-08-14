@@ -39,8 +39,26 @@ const anthropicService: ProviderService = {
   providerId: 'anthropic',
 
   async getModels(apiKey: string): Promise<string[]> {
-    // Anthropic doesn't have a public model listing API.
-    // Models are hardcoded based on their documentation.
+    // List Models endpoint (docs): GET https://api.anthropic.com/v1/models
+    // Requires x-api-key and anthropic-version headers.
+    try {
+      const res = await fetch('https://api.anthropic.com/v1/models', {
+        headers: {
+          'x-api-key': apiKey,
+          'anthropic-version': '2023-06-01',
+        },
+      });
+      if (!res.ok) throw new Error(`Anthropic models error: ${res.status}`);
+      const data = await res.json();
+      if (Array.isArray((data as any)?.data)) {
+        return (data as any).data
+          .map((m: any) => m.id)
+          .filter((id: string) => typeof id === 'string');
+      }
+    } catch (e) {
+      console.warn('[Anthropic] Falling back to static model list:', e);
+    }
+    // Fallback static list
     return [
       'claude-3-opus-20240229',
       'claude-3-sonnet-20240229',

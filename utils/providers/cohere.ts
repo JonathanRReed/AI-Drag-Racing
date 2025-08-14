@@ -1,0 +1,98 @@
+// utils/providers/cohere.ts
+
+import {
+  ProviderService,
+  CompletionResult,
+  registerProviderService,
+} from '../providerService';
+
+// Cohere v2 streams SSE events with types like content-delta, message-end
+async function* streamCohereResponse(
+  response: Response
+): AsyncGenerator<any, void, unknown> {
+  const reader = response.body?.getReader();
+  if (!reader) throw new Error('No response body');
+  const decoder = new TextDecoder('utf-8');
+  let buffer = '';
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    buffer += decoder.decode(value, { stream: true });
+    const parts = buffer.split('\n\n');
+    buffer = parts.pop() || '';
+    for (const part of parts) {
+      if (!part.startsWith('data:')) continue;
+      const data = part.slice(5).trim();
+      if (!data || data === '[DONE]') continue;
+      try {
+        const parsed = JSON.parse(data);
+        yield parsed;
+      } catch {}
+    }
+  }
+}
+
+const cohereService: ProviderService = {
+  providerId: 'cohere',
+
+  async getModels(apiKey: string): Promise<string[]> {
+    const res = await fetch('https://api.cohere.com/v1/models', {
+      headers: { Authorization: `Bearer ${apiKey}` },
+    });
+    if (!res.ok) throw new Error('Failed to fetch Cohere models');
+    const data = await res.json();
+    const arr = Array.isArray(data?.models)
+      ? data.models
+      : Array.isArray(data?.data)
+      ? data.data
+      : [];
+    return arr.map((m: any) => m.name || m.id).filter(Boolean);
+  },
+
+  async *generate(
+    prompt: string,
+    model: string,
+    apiKey: string
+  ): AsyncGenerator<CompletionResult> {
+    const startTime = Date.now();
+    let firstTokenTime: number | undefined;
+    let tokenCount = 0;
+
+    const response = await fetch('https://api.cohere.com/v2/chat', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${apiKey}`,
+        Accept: 'text/event-stream',
+      },
+      body: JSON.stringify({
+        model,
+        messages: [{ role: 'user', content: prompt }],
+        stream: true,
+      }),
+    });
+
+    if (!response.ok) {
+      const errorBody = await response.text();
+      throw new Error(`Cohere API error: ${response.status} ${errorBody}`);
+    }
+
+    for await (const evt of streamCohereResponse(response)) {
+      // v2 emits { type: 'content-delta', delta: { message: { content: { text }}}}
+      const type = evt?.type;
+      if (type === 'content-delta') {
+        const content = evt?.delta?.message?.content?.text;
+        if (typeof content === 'string' && content.length > 0) {
+          if (!firstTokenTime) firstTokenTime = Date.now();
+          tokenCount++;
+          yield { type: 'chunk', content };
+        }
+      }
+    }
+
+    const finishTime = Date.now();
+    yield { type: 'metrics', data: { startTime, firstTokenTime, finishTime, tokenCount } };
+  },
+};
+
+registerProviderService(cohereService);

@@ -17,14 +17,7 @@ interface ProviderListItemProps {
 const ProviderListItem: React.FC<ProviderListItemProps> = ({ provider, hasApiKey, onAddKey }) => {
   return (
     <li className="flex items-center justify-between p-2 rounded-lg hover:bg-white/10 transition-colors duration-200">
-      <div className="flex items-center space-x-3">
-        {provider.logoUrl && (
-          <img
-            src={provider.logoUrl}
-            alt={`${provider.displayName} logo`}
-            className="h-6 w-6 object-contain brightness-0 invert"
-          />
-        )}
+      <div className="flex items-center gap-2">
         <span className="font-medium text-gray-200">{provider.displayName}</span>
         {hasApiKey && <CheckIcon />}
       </div>
