@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+// components/ComparisonCharts.tsx
+import React from 'react';
 import { Bar } from 'react-chartjs-2';
 import {
   Chart as ChartJS,
@@ -9,137 +10,83 @@ import {
   Tooltip,
   Legend,
 } from 'chart.js';
+import { ResultState } from './main/ResultsDisplay';
+import GlassCard from './layout/GlassCard';
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
 
-export type Metric = 'latency';
-
-export interface ChartResponse {
-  provider: string;
-  model: string;
-  latency: number | null;
+interface ComparisonChartsProps {
+  results: ResultState[];
 }
 
-interface Props {
-  responses: ChartResponse[];
-}
-
-const METRIC_LABELS: Record<Metric, string> = {
-  latency: 'Latency (ms)',
-};
-
-const TABS: Metric[] = ['latency'];
-
-const getMetricValue = (r: ChartResponse, metric: Metric): number | null => {
-  if (metric === 'latency') return r.latency;
-  return null;
-};
-
-const formatMetric = (val: number | null, metric: Metric) => {
-  if (val == null) return '-';
-  if (metric === 'latency') return `${val} ms`;
-  return val;
-};
-
-const ComparisonCharts: React.FC<Props> = ({ responses }) => {
-  const [selected, setSelected] = useState<Metric>('latency');
-
-  // Filter responses with valid metric values
-  const filtered = responses.filter(r => getMetricValue(r, selected) !== null);
-  const chartData = {
-    labels: filtered.map(r => `${r.provider} (${r.model})`),
-    datasets: [
-      {
-        label: METRIC_LABELS[selected],
-        data: filtered.map(r => getMetricValue(r, selected)),
-        backgroundColor: '#00f0ffcc',
-        borderRadius: 6,
-        maxBarThickness: 36,
-      },
-    ],
-  };
-
-  const chartOptions = {
-    responsive: true,
-    plugins: {
-      legend: { display: false },
-      title: { display: false },
-      tooltip: { callbacks: {
-        label: (ctx: any) => `${formatMetric(ctx.parsed.y, selected)}`,
-      } },
-    },
-    scales: {
-      y: {
-        beginAtZero: true,
-        ticks: {
-          color: '#00f0ff',
-        },
-        grid: { color: '#444' },
-      },
-      x: {
-        ticks: { color: '#fff' },
-        grid: { color: '#333' },
+const chartOptions = {
+  responsive: true,
+  maintainAspectRatio: false,
+  plugins: {
+    legend: { display: false },
+    title: { display: true, color: '#fff', font: { size: 16 } },
+    tooltip: {
+      callbacks: {
+        label: (ctx: any) => `${ctx.raw.toFixed(2)}`,
       },
     },
+  },
+  scales: {
+    y: {
+      beginAtZero: true,
+      ticks: { color: 'rgba(255, 255, 255, 0.7)' },
+      grid: { color: 'rgba(255, 255, 255, 0.1)' },
+    },
+    x: {
+      ticks: { color: 'rgba(255, 255, 255, 0.7)' },
+      grid: { display: false },
+    },
+  },
+};
+
+const ComparisonCharts: React.FC<ComparisonChartsProps> = ({ results }) => {
+  const validResults = results.filter(r => r.metrics && !r.isLoading && !r.error);
+
+  const labels = validResults.map(r => `${r.providerName} (${r.modelName})`);
+
+  const latencyData = {
+    labels,
+    datasets: [{
+      label: 'Total Time (ms)',
+      data: validResults.map(r => r.metrics!.finishTime - r.metrics!.startTime),
+      backgroundColor: 'rgba(56, 189, 248, 0.7)', // Cyan
+      borderColor: 'rgba(56, 189, 248, 1)',
+      borderWidth: 1,
+    }],
   };
 
-  // Leaderboard: sorted descending for cost, ascending for latency
-  const sorted = [...filtered].sort((a, b) => {
-    const va = getMetricValue(a, selected);
-    const vb = getMetricValue(b, selected);
-    if (va == null) return 1;
-    if (vb == null) return -1;
-    if (selected === 'latency') return va - vb;
-    return vb - va;
-  });
+  const tpsData = {
+    labels,
+    datasets: [{
+      label: 'Tokens per Second',
+      data: validResults.map(r => {
+        const { metrics } = r;
+        if (!metrics || !metrics.finishTime || !metrics.firstTokenTime) return 0;
+        const duration = (metrics.finishTime - metrics.firstTokenTime) / 1000;
+        return duration > 0 ? metrics.tokenCount / duration : 0;
+      }),
+      backgroundColor: 'rgba(168, 85, 247, 0.7)', // Purple
+      borderColor: 'rgba(168, 85, 247, 1)',
+      borderWidth: 1,
+    }],
+  };
 
   return (
-    <div className="bg-oled/90 rounded-xl border border-cyan p-6 mt-8 shadow-lg transition-all duration-200 hover:shadow-[0_0_16px_4px_rgba(0,255,247,0.25)] hover:ring-2 hover:ring-cyan-400/80">
-      <div className="flex gap-2 mb-6 justify-center">
-        {TABS.map(tab => (
-          <button
-            key={tab}
-            className={`px-4 py-1 rounded-full font-semibold transition text-sm focus:outline-none focus:ring-2 ring-cyan ring-offset-2 ring-offset-oled
-              ${selected === tab ? 'bg-cyan text-oled shadow' : 'bg-oled text-cyan border border-cyan hover:bg-cyan/20'}`}
-            onClick={() => setSelected(tab)}
-            aria-pressed={selected === tab}
-          >
-            {METRIC_LABELS[tab]}
-          </button>
-        ))}
-      </div>
-      <div className="w-full max-w-2xl mx-auto flex justify-center items-center min-h-[340px]">
-        <Bar data={chartData} options={chartOptions} height={260} />
-      </div>
-      <div className="mt-8">
-        <h3 className="text-lg font-bold text-cyan mb-2 text-center">Leaderboard ({METRIC_LABELS[selected]})</h3>
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm text-left border-separate border-spacing-y-2">
-            <thead>
-              <tr className="text-cyan">
-                <th className="pr-4">Rank</th>
-                <th className="pr-4">Provider</th>
-                <th className="pr-4">Model</th>
-                <th>{METRIC_LABELS[selected]}</th>
-              </tr>
-            </thead>
-            <tbody>
-              {sorted.map((r, i) => (
-                <tr key={r.provider + r.model} className="bg-card hover:bg-cyan/10 rounded">
-                  <td className="pr-4 font-bold">{i + 1}</td>
-                  <td className="pr-4">{r.provider}</td>
-                  <td className="pr-4">{r.model}</td>
-                  <td>{formatMetric(getMetricValue(r, selected), selected)}</td>
-                </tr>
-              ))}
-              {sorted.length === 0 && (
-                <tr><td colSpan={4} className="italic text-text/50">No data to display.</td></tr>
-              )}
-            </tbody>
-          </table>
+    <GlassCard className="p-4">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 h-80">
+        <div>
+          <Bar options={{...chartOptions, plugins: {...chartOptions.plugins, title: {...chartOptions.plugins.title, text: 'Total Response Time (ms)'}}}} data={latencyData} />
+        </div>
+        <div>
+          <Bar options={{...chartOptions, plugins: {...chartOptions.plugins, title: {...chartOptions.plugins.title, text: 'Tokens per Second (TPS)'}}}} data={tpsData} />
         </div>
       </div>
-    </div>
+    </GlassCard>
   );
 };
 

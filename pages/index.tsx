@@ -1,247 +1,159 @@
-import React, { useState } from 'react';
+import React, { useReducer, useCallback } from 'react';
 import Head from 'next/head';
-import dynamic from 'next/dynamic';
-import ProviderConfig, { ProviderBlock } from '../components/ProviderConfig';
-import PromptInput from '../components/PromptInput';
-import { callModelApi, ModelApiResult } from '../utils/modelApi';
-import Footer from '../components/Footer';
-import { PROVIDERS } from '../utils/providers';
+import MainLayout from '../components/layout/MainLayout';
+import ProviderList from '../components/sidebar/ProviderList';
+import PromptInput from '../components/main/PromptInput';
+import ResultsDisplay, { ResultState } from '../components/main/ResultsDisplay';
+import ComparisonCharts from '../components/ComparisonCharts';
+import { streamCompletion } from '../utils/apiClient';
+import { CompletionMetrics } from '../utils/providerService';
+import GlassCard from '../components/layout/GlassCard'; // Correct import location
 
-// Use the new provider config for initial provider and models
-const DEFAULT_PROVIDER = PROVIDERS[0];
+// --- State Management using useReducer ---
 
-interface ResponseState extends ModelApiResult {
-  id: number;
-  provider: string;
-  model: string;
+interface AppState {
+  prompt: string;
   isLoading: boolean;
+  apiKeys: Record<string, string>;
+  selectedModels: Record<string, { providerId: string; modelId: string }>;
+  results: ResultState[];
 }
 
-// Dynamically import ComparisonCharts to reduce initial bundle size
-const DynamicComparisonCharts = dynamic(() => import('../components/ComparisonCharts'), { ssr: false });
+type AppAction =
+  | { type: 'SET_PROMPT'; payload: string }
+  | { type: 'SET_API_KEY'; payload: { providerId: string; apiKey: string } }
+  | { type: 'TOGGLE_MODEL_SELECTION'; payload: { providerId: string; modelId: string } }
+  | { type: 'START_COMPARISON'; payload: { providersToTest: { providerId: string; modelId: string }[] } }
+  | { type: 'RECEIVE_CHUNK'; payload: { resultId: string; chunk: string } }
+  | { type: 'FINISH_STREAM'; payload: { resultId: string; metrics: CompletionMetrics } }
+  | { type: 'SET_ERROR'; payload: { resultId: string; error: string } }
+  | { type: 'FINISH_COMPARISON' };
+
+const initialState: AppState = {
+  prompt: 'Write a short story about a robot who discovers music.',
+  isLoading: false,
+  apiKeys: {},
+  selectedModels: {},
+  results: [],
+};
+
+function appReducer(state: AppState, action: AppAction): AppState {
+  switch (action.type) {
+    case 'SET_PROMPT':
+      return { ...state, prompt: action.payload };
+    case 'SET_API_KEY':
+      return { ...state, apiKeys: { ...state.apiKeys, [action.payload.providerId]: action.payload.apiKey } };
+    case 'START_COMPARISON':
+      return {
+        ...state,
+        isLoading: true,
+        results: action.payload.providersToTest.map(p => ({
+          id: `${p.providerId}-${p.modelId}`,
+          providerName: p.providerId,
+          modelName: p.modelId,
+          responseText: '',
+          metrics: null,
+          isLoading: true,
+          error: null,
+        })),
+      };
+    case 'RECEIVE_CHUNK':
+      return {
+        ...state,
+        results: state.results.map(r =>
+          r.id === action.payload.resultId
+            ? { ...r, responseText: r.responseText + action.payload.chunk }
+            : r
+        ),
+      };
+    case 'FINISH_STREAM':
+      return {
+        ...state,
+        results: state.results.map(r =>
+          r.id === action.payload.resultId
+            ? { ...r, isLoading: false, metrics: action.payload.metrics }
+            : r
+        ),
+      };
+    case 'SET_ERROR':
+       return {
+        ...state,
+        results: state.results.map(r =>
+          r.id === action.payload.resultId
+            ? { ...r, isLoading: false, error: action.payload.error }
+            : r
+        ),
+      };
+    case 'FINISH_COMPARISON':
+      return { ...state, isLoading: false };
+    default:
+      return state;
+  }
+}
+
+// --- Main Component ---
 
 export default function Home() {
-  const [providerBlocks, setProviderBlocks] = useState<ProviderBlock[]>([{
-    id: 1,
-    provider: DEFAULT_PROVIDER.id,
-    apiKey: '',
-    model: '',
-    endpoint: ''
-  }]);
-  const [nextId, setNextId] = useState(2);
-  const [prompt, setPrompt] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-  const [responses, setResponses] = useState<ResponseState[]>([]);
-  const [retryId, setRetryId] = useState<number|null>(null);
+  const [state, dispatch] = useReducer(appReducer, initialState);
 
-  const handleAddBlock = () => {
-    setProviderBlocks(blocks => [
-      ...blocks,
-      {
-        id: nextId,
-        provider: DEFAULT_PROVIDER.id,
-        apiKey: '',
-        model: '',
-        endpoint: ''
-      }
-    ]);
-    setNextId(id => id + 1);
-  };
-
-  const handleUpdateBlock = (id: number, field: keyof ProviderBlock, value: string) => {
-    setProviderBlocks(blocks => blocks.map(b => {
-      if (b.id !== id) return b;
-      if (field === 'provider') {
-        return {
-          ...b,
-          provider: value,
-          model: ''
-        };
-      }
-      return { ...b, [field]: value };
-    }));
-  };
-
-  const handleRemoveBlock = (id: number) => {
-    setProviderBlocks(blocks => blocks.filter(b => b.id !== id));
-    setResponses(rs => rs.filter(r => r.id !== id));
-  };
-
-  const handlePromptChange = (val: string) => setPrompt(val);
-
-  const handlePromptSubmit = async () => {
-    setIsLoading(true);
-    setResponses(providerBlocks.map(b => ({
-      id: b.id,
-      provider: b.provider,
-      model: b.model,
-      isLoading: true,
-      output: null,
-      latency: null,
-      error: undefined
-    })));
-    await Promise.all(providerBlocks.map(async (b) => {
-      if (!b.apiKey && PROVIDERS.find(p => p.id === b.provider)?.requiresApiKey) {
-        setResponses(rs => rs.map(r => r.id === b.id ? {
-          ...r,
-          isLoading: false,
-          error: 'No API key provided.'
-        } : r));
-        return;
-      }
-      setResponses(rs => rs.map(r => r.id === b.id ? { ...r, isLoading: true, error: undefined } : r));
-      debugAzurePayload(b);
-      const result = await callModelApi({
-        provider: b.provider,
-        apiKey: b.apiKey,
-        model: b.provider === 'azure' ? b.model : b.model,
-        prompt,
-        endpoint: b.endpoint
-      });
-      setResponses(rs => rs.map(r => r.id === b.id ? {
-        ...r,
-        ...result,
-        isLoading: false
-      } : r));
-    }));
-    setIsLoading(false);
-  };
-
-  const handleRetry = async (id: number) => {
-    setRetryId(id);
-    const b = providerBlocks.find(b => b.id === id);
-    if (!b) return;
-    setResponses(rs => rs.map(r => r.id === id ? { ...r, isLoading: true, error: undefined } : r));
-    debugAzurePayload(b);
-    const result = await callModelApi({
-      provider: b.provider,
-      apiKey: b.apiKey,
-      model: b.provider === 'azure' ? b.model : b.model,
-      prompt,
-      endpoint: b.endpoint
-    });
-    setResponses(rs => rs.map(r => r.id === id ? {
-      ...r,
-      ...result,
-      isLoading: false
-    } : r));
-    setRetryId(null);
-  };
-
-  const debugAzurePayload = (b: ProviderBlock) => {
-    if (b.provider === 'azure') {
-      console.log('Azure API call payload:', {
-        provider: b.provider,
-        apiKey: !!b.apiKey,
-        model: b.model,
-        endpoint: b.endpoint,
-        prompt
-      });
-    }
-  };
+  const handleRunComparison = useCallback(async () => {
+    const providersToTest = [
+      { providerId: 'openai', modelId: 'gpt-3.5-turbo' },
+      { providerId: 'groq', modelId: 'llama3-8b-8192' },
+    ];
+    dispatch({ type: 'START_COMPARISON', payload: { providersToTest } });
+    await Promise.all(
+      providersToTest.map(async (p) => {
+        const resultId = `${p.providerId}-${p.modelId}`;
+        const apiKey = state.apiKeys[p.providerId];
+        if (!apiKey) {
+          dispatch({ type: 'SET_ERROR', payload: { resultId, error: 'API Key not set' } });
+          return;
+        }
+        try {
+          const stream = streamCompletion(p.providerId, state.prompt, p.modelId, apiKey);
+          for await (const result of stream) {
+            if (result.type === 'chunk') {
+              dispatch({ type: 'RECEIVE_CHUNK', payload: { resultId, chunk: result.content } });
+            } else if (result.type === 'metrics') {
+              dispatch({ type: 'FINISH_STREAM', payload: { resultId, metrics: result.data } });
+            }
+          }
+        } catch (e: any) {
+          dispatch({ type: 'SET_ERROR', payload: { resultId, error: e.message } });
+        }
+      })
+    );
+    dispatch({ type: 'FINISH_COMPARISON' });
+  }, [state.prompt, state.apiKeys]);
 
   return (
     <>
       <Head>
-        <link rel="icon" type="image/png" href="/logo.png" />
+        <title>AI Latency & Perf Comparator</title>
+        <link rel="icon" type="image/svg+xml" href="/logo.svg" />
       </Head>
-      <div className="min-h-screen w-full bg-transparent relative z-10 px-2 sm:px-4 md:px-8">
-        <div className="w-full max-w-4xl mx-auto flex flex-col gap-8 py-10">
-          <div className="main-glass-panel mb-8" style={{ zIndex: 2, position: 'relative' }}>
-            <h2 className="text-2xl font-bold mb-4 text-center text-magenta drop-shadow-[0_0_12px_#ff00e6]">API latency test</h2>
-          </div>
-          <div className="main-glass-panel mb-8" style={{ zIndex: 2, position: 'relative' }}>
-            <h2 className="text-xl font-semibold mb-2 text-cyan-400 drop-shadow-[0_0_6px_#00fff7]">Providers & Models</h2>
-            <ProviderConfig
-              blocks={providerBlocks}
-              onAdd={handleAddBlock}
-              onRemove={handleRemoveBlock}
-              onUpdate={handleUpdateBlock}
+      <MainLayout
+        sidebar={
+          <GlassCard className="p-4 h-full">
+            <ProviderList
+              apiKeys={state.apiKeys}
+              dispatch={dispatch}
             />
-          </div>
-          <div className="main-glass-panel mb-8" style={{ zIndex: 2, position: 'relative' }}>
-            <h2 className="text-xl font-semibold mb-2 text-cyan-400 drop-shadow-[0_0_6px_#00fff7]">Prompt Input</h2>
-            <PromptInput
-              prompt={prompt}
-              onPromptChange={handlePromptChange}
-              onSubmit={handlePromptSubmit}
-              isLoading={isLoading}
-            />
-          </div>
-          <div className="main-glass-panel" style={{ zIndex: 2, position: 'relative' }}>
-            <h2 className="text-xl font-semibold mb-2 text-cyan-400 drop-shadow-[0_0_6px_#00fff7]">Responses</h2>
-            <div className="grid md:grid-cols-2 gap-4">
-              {responses.map(r => (
-                <div
-                  key={r.id}
-                  className={`main-glass-panel-inner ${r.isLoading ? 'opacity-70' : 'opacity-100'}`}
-                  tabIndex={0}
-                  aria-live="polite"
-                  style={{ zIndex: 3, position: 'relative' }}
-                >
-                  <div className="font-bold text-cyan mb-1 drop-shadow-[0_0_6px_#00fff7]">{r.provider} <span className="font-normal text-yellow">({r.model})</span></div>
-                  {r.isLoading ? (
-                    <div className="flex items-center gap-2 text-text/50 italic"><Spinner /> Loading...</div>
-                  ) : r.error ? (
-                    <div className="flex flex-col gap-2">
-                      <div className="text-red-400">Error: {r.error}</div>
-                      <button
-                        className="bg-magenta text-oled px-3 py-1 rounded hover:bg-cyan transition w-max text-xs border border-cyan-400/70 shadow-[0_0_8px_2px_#ff00e6] focus:outline-none focus:ring-2 focus:ring-cyan-400 focus:ring-offset-2"
-                        onClick={() => handleRetry(r.id)}
-                        disabled={retryId === r.id}
-                        aria-label="Retry API call"
-                      >
-                        {retryId === r.id ? <Spinner /> : 'Retry'}
-                      </button>
-                    </div>
-                  ) : (
-                    <>
-                      <pre className="whitespace-pre-wrap text-sm text-text/90 animate-fade-in">{r.output}</pre>
-                      <div className="text-xs text-cyan mt-2">Latency: {r.latency} ms</div>
-                    </>
-                  )}
-                </div>
-              ))}
-              {responses.length === 0 && (
-                <div className="text-text/50 italic">No responses yet. Run a comparison to see results.</div>
-              )}
-            </div>
-            {/* Chart/Leaderboard Section */}
-            {responses.length > 0 && (
-              <section className="mt-8">
-                <DynamicComparisonCharts
-                  responses={responses.map(r => ({
-                    provider: r.provider,
-                    model: r.model,
-                    latency: typeof r.latency === 'number' ? r.latency : null,
-                  }))}
-                />
-              </section>
-            )}
-          </div>
-          <Footer />
+          </GlassCard>
+        }
+      >
+        <div className="space-y-4">
+          <PromptInput
+            prompt={state.prompt}
+            onPromptChange={(p) => dispatch({ type: 'SET_PROMPT', payload: p })}
+            onSubmit={handleRunComparison}
+            isLoading={state.isLoading}
+          />
+          {state.results.length > 0 && <ComparisonCharts results={state.results} />}
+          <ResultsDisplay results={state.results} />
         </div>
-        <style jsx global>{`
-          @keyframes fade-in {
-            from { opacity: 0; transform: translateY(8px); }
-            to { opacity: 1; transform: none; }
-          }
-          .animate-fade-in {
-            animation: fade-in 0.5s cubic-bezier(.4,0,.2,1);
-          }
-        `}</style>
-      </div>
+      </MainLayout>
     </>
-  );
-}
-
-function Spinner() {
-  return (
-    <span className="inline-block align-middle" aria-label="Loading">
-      <svg className="animate-spin h-5 w-5 text-cyan" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
-      </svg>
-    </span>
   );
 }
