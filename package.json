@@ -5,7 +5,10 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "start": "next start"
+    "start": "next start",
+    "build:cf": "npx @cloudflare/next-on-pages@1",
+    "postbuild:cf": "node scripts/patch-routes.js",
+    "deploy:cf": "wrangler pages deploy .vercel/output/static --branch production"
   },
   "dependencies": {
     "@aws-sdk/client-bedrock": "^3.865.0",
@@ -23,6 +26,7 @@
   },
   "devDependencies": {
     "@types/react": "^18.3.20",
-    "@types/react-dom": "^18.3.6"
+    "@types/react-dom": "^18.3.6",
+    "sharp": "^0.34.3"
   }
 }

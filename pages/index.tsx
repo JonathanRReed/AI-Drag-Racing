@@ -131,7 +131,7 @@ export default function Home() {
     <>
       <Head>
         <title>AI Latency & Perf Comparator</title>
-        <link rel="icon" type="image/svg+xml" href="/logo.svg" />
+        <link rel="icon" type="image/svg+xml" href="/Favicon/favicon.svg" />
       </Head>
       <MainLayout
         sidebar={

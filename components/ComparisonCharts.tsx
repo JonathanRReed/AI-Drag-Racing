@@ -8,12 +8,12 @@ import {
   BarElement,
   Title,
   Tooltip,
-  Legend,
 } from 'chart.js';
 import { ResultState } from './main/ResultsDisplay';
 import GlassCard from './layout/GlassCard';
 
-ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
+// Register only what we use (Legend is disabled)
+ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip);
 
 interface ComparisonChartsProps {
   results: ResultState[];

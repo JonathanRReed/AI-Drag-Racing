@@ -4,11 +4,18 @@ export default function Document() {
   return (
     <Html lang="en">
       <Head>
-        {/* Favicon links for best compatibility and quality */}
+        {/* Preload primary font to reduce CLS */}
+        <link
+          rel="preload"
+          href="/fonts/nebula sans/NebulaSans-Book.woff2"
+          as="font"
+          type="font/woff2"
+          crossOrigin=""
+        />
+        {/* Favicons: minimal set */}
         <link rel="icon" href="/Favicon/favicon.ico" sizes="any" />
         <link rel="icon" type="image/svg+xml" href="/Favicon/favicon.svg" />
-        <link rel="icon" type="image/avif" href="/Favicon/favicon-96x96.avif" />
-        <link rel="apple-touch-icon" href="/Favicon/apple-touch-icon.avif" />
+        <link rel="apple-touch-icon" href="/Favicon/apple-touch-icon.png" />
         <link rel="manifest" href="/Favicon/site.webmanifest" />
       </Head>
       <body>
