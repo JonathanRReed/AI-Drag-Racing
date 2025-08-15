@@ -96,7 +96,7 @@ const RaceLane: React.FC<RaceLaneProps> = ({
   return (
     <div className="relative">
       {/* Neon lane border */}
-      <GlassCard className={expanded ? "p-4" : "p-3"}>
+      <GlassCard className={(expanded ? "p-4" : "p-3") + " relative"}>
         <div className="flex items-start gap-3">
           {/* Checkered accent strip */}
           <div
@@ -191,22 +191,39 @@ const RaceLane: React.FC<RaceLaneProps> = ({
             </div>
 
             {/* Metrics */}
-            <div className="mt-3 grid grid-cols-3 gap-2 text-[11px] text-[var(--text-muted)]">
+            <div className="mt-3 grid grid-cols-4 gap-2 text-[11px] text-[var(--text-muted)]">
               <div><span className="font-semibold">TTFT:</span> {formatMs(ttft)}</div>
               <div><span className="font-semibold">Total:</span> {formatMs(total)}</div>
               <div><span className="font-semibold">TPS:</span> {calcTps(metrics)}</div>
+              <div><span className="font-semibold">Tokens:</span> {metrics ? metrics.tokenCount : 'N/A'}</div>
             </div>
           </div>
         </div>
+        {/* Clipped, state-aware lane glow (kept inside GlassCard to avoid bleed) */}
+        {(() => {
+          const accent = status === 'error' ? 'var(--danger)' : laneColor;
+          const border = !expanded
+            ? `${accent}44`
+            : (status === 'green' && !metrics)
+              ? `${accent}66`
+              : (status === 'finish')
+                ? `${accent}44`
+                : `${accent}33`;
+          const insetGlow = !expanded
+            ? `inset 0 0 4px ${accent}22`
+            : (status === 'green' && !metrics)
+              ? `inset 0 0 8px ${accent}33`
+              : (status === 'finish')
+                ? `inset 0 0 6px ${accent}22`
+                : `inset 0 0 5px ${accent}22`;
+          return (
+            <div
+              className="pointer-events-none absolute inset-0 rounded-[18px]"
+              style={{ border: `1px solid ${border}`, boxShadow: insetGlow }}
+            />
+          );
+        })()}
       </GlassCard>
-
-      {/* Lane glow */}
-      <div
-        className="pointer-events-none absolute inset-0 rounded-xl"
-        style={{
-          boxShadow: `0 0 0 1px ${(status === 'error' ? 'var(--danger)' : laneColor)}22, 0 0 18px ${(status === 'error' ? 'var(--danger)' : laneColor)}33`
-        }}
-      />
     </div>
   );
 };

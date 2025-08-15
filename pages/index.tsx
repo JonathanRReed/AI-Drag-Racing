@@ -134,6 +134,10 @@ export default function Home() {
   const [activeTab, setActiveTab] = useState<'results' | 'charts'>('results');
   const [hideFailed, setHideFailed] = useState(false);
   const [force, setForce] = useState<{ version: number; collapsed: boolean }>({ version: 0, collapsed: false });
+  const startDisabled =
+    !state.selectedPairs.some(
+      (p) => state.enabledProviders[p.providerId] !== false && !!state.apiKeys[p.providerId] && !!p.modelId
+    ) || state.raceState === 'countingDown';
 
   const handleRunComparison = useCallback(async () => {
     // If the user selected specific provider+model pairs, use those.
@@ -231,11 +235,11 @@ export default function Home() {
         }
       >
         <div className="space-y-4">
-          {/* Sticky tabs + actions toolbar */}
-          <div className="sticky top-0 z-10 -mx-1">
-            <div className="px-1 py-2 bg-[rgba(255,255,255,0.06)] ring-1 ring-white/10 backdrop-blur-xl flex items-center justify-between">
+          {/* Tabs + actions toolbar (sticky on md+, static on mobile) */}
+          <div className="md:sticky md:top-0 z-10 -mx-1">
+            <div className="px-1 py-2 bg-[rgba(255,255,255,0.06)] ring-1 ring-white/10 backdrop-blur-xl rounded-[18px] overflow-hidden flex items-center justify-between">
               {/* Tabs */}
-              <div className="inline-flex rounded-xl overflow-hidden ring-1 ring-white/10">
+              <div className="inline-flex rounded-[18px] overflow-hidden ring-1 ring-white/10">
                 <button
                   onClick={() => setActiveTab('results')}
                   className={`px-3 py-1.5 text-xs transition ${
@@ -260,6 +264,21 @@ export default function Home() {
               </div>
               {/* Actions */}
               <div className="flex items-center gap-2">
+                {/* Primary controls available even when sidebar is closed on mobile */}
+                <button
+                  onClick={handleRunComparison}
+                  className="btn btn-primary text-xs hidden sm:inline-flex"
+                  disabled={startDisabled || !state.prompt}
+                >
+                  Start
+                </button>
+                <button
+                  onClick={() => dispatch({ type: 'RESET_RACE' })}
+                  className="btn-ghost text-xs hidden sm:inline-flex"
+                  disabled={state.isLoading || state.raceState === 'countingDown'}
+                >
+                  Reset
+                </button>
                 <button
                   onClick={() => setHideFailed((v) => !v)}
                   className="btn-ghost text-xs"

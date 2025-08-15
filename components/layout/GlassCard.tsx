@@ -10,8 +10,8 @@ const GlassCard: React.FC<GlassCardProps> = ({ children, className = '' }) => {
   return (
     <div
       className={`
-        bg-[rgba(255,255,255,0.06)] hover:bg-[rgba(255,255,255,0.08)] ring-1 ring-white/10 backdrop-blur-xl
-        rounded-[18px] shadow-[inset_0_1px_0_0_rgba(255,255,255,0.22)] transition-colors duration-150 ${className}
+        bg-[var(--panel)] hover:bg-[var(--panel-elev)] ring-1 ring-[var(--ring)] backdrop-blur-xl
+        rounded-[18px] overflow-hidden shadow-[inset_0_1px_0_0_rgba(255,255,255,0.22)] transition-colors duration-150 ${className}
       `}
     >
       {children}

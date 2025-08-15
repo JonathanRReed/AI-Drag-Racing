@@ -18,20 +18,26 @@ async function* streamGoogleResponse(
     const { done, value } = await reader.read();
     if (done) break;
     buffer += decoder.decode(value, { stream: true });
-    const parts = buffer.split('\n\n');
+    // Split on double newlines with optional CRs
+    const parts = buffer.split(/\r?\n\r?\n/);
     buffer = parts.pop() || '';
     for (const part of parts) {
-      // Each SSE event can include multiple lines (e.g., event: x, data: y)
-      const lines = part.split('\n').map(l => l.trim()).filter(Boolean);
-      for (const l of lines) {
-        if (!l.startsWith('data:')) continue;
-        const data = l.slice(5).trim();
-        if (!data || data === '[DONE]') continue;
-        try {
-          yield JSON.parse(data);
-        } catch {
-          // ignore malformed chunk
+      // Collect all data: lines for this event
+      const dataLines: string[] = [];
+      for (const rawLine of part.split(/\r?\n/)) {
+        const line = rawLine.trim();
+        if (!line) continue;
+        if (line.startsWith('data:')) {
+          dataLines.push(line.slice(5).trim());
         }
+      }
+      if (dataLines.length === 0) continue;
+      const dataJoined = dataLines.join('\n');
+      if (!dataJoined || dataJoined === '[DONE]') continue;
+      try {
+        yield JSON.parse(dataJoined);
+      } catch {
+        // ignore malformed chunk
       }
     }
   }
@@ -57,20 +63,21 @@ const googleService: ProviderService = {
     const startTime = Date.now();
     let firstTokenTime: number | undefined;
     let tokenCount = 0;
+    let usageCandidates = 0;
+    let usageTotal = 0;
 
-    // Use alt=sse and send API key via header per docs
+    // Use alt=sse and send API key via query parameter (most reliable per docs)
     // Gemini expects the path segment to include the 'models/' prefix
     const modelPath = model.startsWith('models/') ? model : `models/${model}`;
-    const url = `https://generativelanguage.googleapis.com/v1beta/${modelPath}:streamGenerateContent?alt=sse`;
+    const url = `https://generativelanguage.googleapis.com/v1beta/${modelPath}:streamGenerateContent?alt=sse&key=${encodeURIComponent(apiKey)}`;
 
     const response = await fetch(url, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'x-goog-api-key': apiKey,
       },
       body: JSON.stringify({
-        contents: [{ parts: [{ text: prompt }] }],
+        contents: [{ role: 'user', parts: [{ text: prompt }] }],
       }),
     });
 
@@ -80,20 +87,33 @@ const googleService: ProviderService = {
     }
 
     for await (const chunk of streamGoogleResponse(response)) {
-      const content = chunk.candidates?.[0]?.content?.parts?.[0]?.text;
-      if (content) {
-        if (!firstTokenTime) {
-          firstTokenTime = Date.now();
-        }
-        tokenCount++;
-        yield { type: 'chunk', content };
+      // Capture usage if present on any event
+      const usage = chunk.usageMetadata;
+      if (usage) {
+        usageCandidates = usage.candidatesTokenCount ?? usageCandidates;
+        usageTotal = usage.totalTokenCount ?? usageTotal;
+      }
+
+      // Extract any textual parts from the first candidate
+      const parts = chunk.candidates?.[0]?.content?.parts;
+      const text = Array.isArray(parts)
+        ? parts.map((p: any) => p?.text).filter(Boolean).join('')
+        : '';
+
+      if (text) {
+        if (!firstTokenTime) firstTokenTime = Date.now();
+        // Approximate token count by characters/parts when usage not yet available
+        tokenCount += Math.max(1, Math.ceil(text.length / 4));
+        yield { type: 'chunk', content: text };
       }
     }
 
     const finishTime = Date.now();
+    // Prefer server-reported token counts if available
+    const finalTokenCount = usageCandidates || usageTotal || tokenCount;
     yield {
       type: 'metrics',
-      data: { startTime, firstTokenTime, finishTime, tokenCount },
+      data: { startTime, firstTokenTime, finishTime, tokenCount: finalTokenCount },
     };
   },
 };

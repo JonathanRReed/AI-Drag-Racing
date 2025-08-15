@@ -9,11 +9,12 @@ const MainLayout: React.FC<MainLayoutProps> = ({ sidebar, children }) => {
   const [mobileOpen, setMobileOpen] = React.useState(false);
 
   const asideClasses = `
-    fixed inset-y-0 left-0 z-50 w-80 lg:w-96 p-4 overflow-hidden pb-4 flex flex-col
-    ring-1 ring-white/10 bg-[rgba(255,255,255,0.06)] backdrop-blur-lg
+    ${mobileOpen ? 'block' : 'hidden'} md:block
+    fixed inset-y-0 left-0 z-50 w-80 lg:w-96 p-4 overflow-hidden pb-4 flex flex-col relative
+    ring-1 ring-white/10 bg-[rgba(255,255,255,0.06)] backdrop-blur-lg rounded-[18px]
     transform transition-transform duration-200 ease-out
     ${mobileOpen ? 'translate-x-0' : '-translate-x-full'}
-    md:static md:inset-auto md:left-auto md:z-auto md:translate-x-0 md:bg-[rgba(255,255,255,0.06)] md:backdrop-blur-lg md:w-80 md:h-screen md:border-b-0
+    md:static md:inset-auto md:left-auto md:z-auto md:translate-x-0 md:bg-[rgba(255,255,255,0.06)] md:backdrop-blur-lg md:w-80 md:h-screen md:border-b-0 md:rounded-none md:rounded-r-[18px]
   `;
 
   // Close on Escape
@@ -27,14 +28,10 @@ const MainLayout: React.FC<MainLayoutProps> = ({ sidebar, children }) => {
 
   return (
     <div className="relative flex min-h-dvh w-full text-gray-200 flex-col md:flex-row isolate">
-      {/* Subtle header glow */}
-      <div
-        className="pointer-events-none absolute inset-x-0 -top-40 h-80 bg-[radial-gradient(1200px_at_50%_-200px,rgba(34,211,238,0.12),transparent)]"
-        aria-hidden="true"
-      />
+      {/* Removed global header glow to prevent top-wide gradient leak */}
       {/* Mobile top bar */}
-      <div className="md:hidden sticky top-0 z-40 bg-[rgba(255,255,255,0.06)] backdrop-blur-xl ring-1 ring-white/10">
-        <div className="flex items-center justify-between p-3">
+      <div className="md:hidden sticky top-0 z-40 bg-[rgba(255,255,255,0.06)] backdrop-blur-xl ring-1 ring-white/10" style={{ paddingTop: 'calc(env(safe-area-inset-top) + 0.5rem)' }}>
+        <div className="flex items-center justify-between p-3 pt-2">
           <button
             onClick={() => setMobileOpen(true)}
             className="btn"
@@ -60,7 +57,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({ sidebar, children }) => {
         role={mobileOpen ? 'dialog' : undefined}
         aria-modal={mobileOpen ? true : undefined}
         aria-label={mobileOpen ? 'Providers menu' : undefined}
-        style={{ paddingTop: 'env(safe-area-inset-top)', paddingBottom: 'env(safe-area-inset-bottom)' }}
+        style={{ paddingTop: 'calc(env(safe-area-inset-top) + 1rem)', paddingBottom: 'calc(env(safe-area-inset-bottom) + 1rem)' }}
       >
         {/* Close button on mobile */}
         <div className="md:hidden flex justify-end mb-2">
@@ -76,7 +73,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({ sidebar, children }) => {
       </aside>
 
       {/* Main content */}
-      <main className="relative flex-1 min-w-0 p-4 overflow-y-auto">
+      <main className="relative flex-1 min-w-0 min-h-0 p-4 overflow-y-auto">
         {children}
       </main>
     </div>

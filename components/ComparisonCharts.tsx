@@ -1,5 +1,5 @@
 // components/ComparisonCharts.tsx
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { Bar } from 'react-chartjs-2';
 import {
   Chart as ChartJS,
@@ -40,6 +40,13 @@ function useThemeColors() {
 
 const baseElements = { bar: { borderRadius: 6 } } as const;
 
+// Small helpers for numeric tick formatting
+const formatNumber = (v: number) => {
+  if (!isFinite(v)) return String(v);
+  if (Math.abs(v) >= 1000) return v.toLocaleString();
+  return Number.isInteger(v) ? String(v) : v.toFixed(1);
+};
+
 const ComparisonCharts: React.FC<ComparisonChartsProps> = ({ results }) => {
   const theme = useThemeColors();
   const validResults = results.filter(r => r.metrics && !r.isLoading && !r.error);
@@ -47,97 +54,296 @@ const ComparisonCharts: React.FC<ComparisonChartsProps> = ({ results }) => {
   const fullLabels = validResults.map(r => `${r.providerName} (${r.modelName})`);
   const ellipsize = (s: string, max = 28) => (s.length > max ? s.slice(0, max - 1) + '…' : s);
   const labels = fullLabels.map(l => ellipsize(l));
-  const bgColorsLatency = validResults.map(r => getProviderColor(r.providerName).soft);
-  const borderColorsLatency = validResults.map(r => getProviderColor(r.providerName).solid);
+  const baseBgColors = validResults.map(r => getProviderColor(r.providerName).soft);
+  const baseBorderColors = validResults.map(r => getProviderColor(r.providerName).solid);
 
+  // Sort toggle: High → Low (default), can flip to Low → High
+  const [descending, setDescending] = useState(true);
+
+  // Helper to sort arrays consistently for a given metric
+  const sortForChart = (vals: number[]) => {
+    const idx = vals.map((v, i) => i);
+    idx.sort((a, b) => (descending ? vals[b] - vals[a] : vals[a] - vals[b]));
+    return {
+      labels: idx.map(i => labels[i]),
+      full: idx.map(i => fullLabels[i]),
+      values: idx.map(i => vals[i]),
+      bg: idx.map(i => baseBgColors[i]),
+      border: idx.map(i => baseBorderColors[i]),
+    };
+  };
+
+  const latencyVals = validResults.map(r => r.metrics!.finishTime - r.metrics!.startTime);
+  const latencySorted = sortForChart(latencyVals);
   const latencyData = {
-    labels,
+    labels: latencySorted.labels,
     datasets: [{
       label: 'Total Time (ms)',
-      data: validResults.map(r => r.metrics!.finishTime - r.metrics!.startTime),
-      backgroundColor: bgColorsLatency,
-      borderColor: borderColorsLatency,
+      data: latencySorted.values,
+      backgroundColor: latencySorted.bg,
+      borderColor: latencySorted.border,
       borderWidth: 1,
       barThickness: 20,
     }],
   };
 
+  const ttftVals = validResults.map(r => {
+    const m = r.metrics!;
+    return m.firstTokenTime ? (m.firstTokenTime - m.startTime) : 0;
+  });
+  const ttftSorted = sortForChart(ttftVals);
+  const ttftData = {
+    labels: ttftSorted.labels,
+    datasets: [{
+      label: 'TTFT (ms)',
+      data: ttftSorted.values,
+      backgroundColor: ttftSorted.bg,
+      borderColor: ttftSorted.border,
+      borderWidth: 1,
+      barThickness: 20,
+    }],
+  };
+
+  const tpsVals = validResults.map(r => {
+    const { metrics } = r;
+    if (!metrics || !metrics.finishTime || !metrics.firstTokenTime) return 0;
+    const duration = (metrics.finishTime - metrics.firstTokenTime) / 1000;
+    return duration > 0 ? metrics.tokenCount / duration : 0;
+  });
+  const tpsSorted = sortForChart(tpsVals);
   const tpsData = {
-    labels,
+    labels: tpsSorted.labels,
     datasets: [{
       label: 'Tokens per Second',
-      data: validResults.map(r => {
-        const { metrics } = r;
-        if (!metrics || !metrics.finishTime || !metrics.firstTokenTime) return 0;
-        const duration = (metrics.finishTime - metrics.firstTokenTime) / 1000;
-        return duration > 0 ? metrics.tokenCount / duration : 0;
-      }),
-      backgroundColor: validResults.map(r => getProviderColor(r.providerName).soft),
-      borderColor: validResults.map(r => getProviderColor(r.providerName).solid),
+      data: tpsSorted.values,
+      backgroundColor: tpsSorted.bg,
+      borderColor: tpsSorted.border,
       borderWidth: 1,
       barThickness: 20,
     }],
   };
 
-  const containerHeight = useMemo(() => {
-    // 40px per bar + header padding; clamp between 200 and 500
-    const perBar = 40;
-    const base = 80;
+  const tokensVals = validResults.map(r => r.metrics ? r.metrics.tokenCount : 0);
+  const tokensSorted = sortForChart(tokensVals);
+  const tokensData = {
+    labels: tokensSorted.labels,
+    datasets: [{
+      label: 'Total Tokens',
+      data: tokensSorted.values,
+      backgroundColor: tokensSorted.bg,
+      borderColor: tokensSorted.border,
+      borderWidth: 1,
+      barThickness: 20,
+    }],
+  };
+
+  const chartHeight = useMemo(() => {
+    // Height per chart (not the whole grid). Keep compact but readable.
+    const perBar = 28; // px per category bar
+    const base = 72;   // title + paddings
     const h = base + labels.length * perBar;
-    return Math.max(220, Math.min(520, h));
+    return Math.max(160, Math.min(400, h));
   }, [labels.length]);
 
   return (
     <GlassCard className="p-4">
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4" style={{ height: containerHeight }}>
-        <div>
+      <div className="mb-2 flex items-center justify-end">
+        <button
+          type="button"
+          className="btn-ghost text-xs"
+          onClick={() => setDescending(v => !v)}
+          title={descending ? 'Sorted: High → Low (click to reverse)' : 'Sorted: Low → High (click to reverse)'}
+        >
+          Sort: {descending ? 'High → Low' : 'Low → High'}
+        </button>
+      </div>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <div style={{ height: chartHeight }}>
           <Bar
             options={{
               responsive: true,
               maintainAspectRatio: false,
               indexAxis: 'y' as const,
               scales: {
-                y: { beginAtZero: true, ticks: { color: theme.muted }, grid: { color: theme.divider } },
-                x: { beginAtZero: true, ticks: { color: theme.muted }, grid: { color: theme.divider } },
+                y: {
+                  beginAtZero: true,
+                  ticks: { color: theme.muted, font: { size: 11 } },
+                  grid: { color: theme.divider },
+                  border: { display: false },
+                },
+                x: {
+                  beginAtZero: true,
+                  ticks: {
+                    color: theme.muted,
+                    font: { size: 11 },
+                    callback: (val: unknown) => formatNumber(Number(val)),
+                  },
+                  grid: { color: theme.divider },
+                  border: { display: false },
+                },
               },
               elements: baseElements,
               plugins: {
                 legend: { display: false },
-                title: { display: true, color: theme.text, text: 'Total Response Time (ms)', font: { size: 16 } },
+                title: { display: true, color: theme.text, text: 'Total Response Time (ms)', font: { size: 15, weight: 600 }, padding: { top: 8, bottom: 8 }, align: 'center' },
                 tooltip: {
+                  backgroundColor: 'rgba(7,9,13,0.92)',
+                  titleColor: theme.text,
+                  bodyColor: theme.text,
+                  borderColor: 'rgba(255,255,255,0.08)',
+                  borderWidth: 1,
+                  displayColors: false,
                   callbacks: {
-                    title: (items: any[]) => items.map(i => fullLabels[i.dataIndex]),
-                    label: (ctx: any) => `${ctx.raw.toFixed(2)}`
+                    title: (items: any[]) => items.map(i => latencySorted.full[i.dataIndex]),
+                    label: (ctx: any) => `${formatNumber(Number(ctx.raw))}`
                   }
                 },
               },
+              layout: { padding: { left: 4, right: 8, top: 4, bottom: 4 } },
+              animation: { duration: 450, easing: 'easeOutCubic' },
             }}
             data={latencyData}
           />
         </div>
-        <div>
+        <div style={{ height: chartHeight }}>
           <Bar
             options={{
               responsive: true,
               maintainAspectRatio: false,
               indexAxis: 'y' as const,
               scales: {
-                y: { beginAtZero: true, ticks: { color: theme.muted }, grid: { color: theme.divider } },
-                x: { beginAtZero: true, ticks: { color: theme.muted }, grid: { color: theme.divider } },
+                y: {
+                  beginAtZero: true,
+                  ticks: { color: theme.muted, font: { size: 11 } },
+                  grid: { color: theme.divider },
+                  border: { display: false },
+                },
+                x: {
+                  beginAtZero: true,
+                  ticks: {
+                    color: theme.muted,
+                    font: { size: 11 },
+                    callback: (val: unknown) => formatNumber(Number(val)),
+                  },
+                  grid: { color: theme.divider },
+                  border: { display: false },
+                },
               },
               elements: baseElements,
               plugins: {
                 legend: { display: false },
-                title: { display: true, color: theme.text, text: 'Tokens per Second (TPS)', font: { size: 16 } },
+                title: { display: true, color: theme.text, text: 'Tokens per Second (TPS)', font: { size: 15, weight: 600 }, padding: { top: 8, bottom: 8 }, align: 'center' },
                 tooltip: {
+                  backgroundColor: 'rgba(7,9,13,0.92)',
+                  titleColor: theme.text,
+                  bodyColor: theme.text,
+                  borderColor: 'rgba(255,255,255,0.08)',
+                  borderWidth: 1,
+                  displayColors: false,
                   callbacks: {
-                    title: (items: any[]) => items.map(i => fullLabels[i.dataIndex]),
-                    label: (ctx: any) => `${ctx.raw.toFixed(2)}`
+                    title: (items: any[]) => items.map(i => tpsSorted.full[i.dataIndex]),
+                    label: (ctx: any) => `${formatNumber(Number(ctx.raw))}`
                   }
                 },
               },
+              layout: { padding: { left: 4, right: 8, top: 4, bottom: 4 } },
+              animation: { duration: 450, easing: 'easeOutCubic' },
             }}
             data={tpsData}
+          />
+        </div>
+        <div style={{ height: chartHeight }}>
+          <Bar
+            options={{
+              responsive: true,
+              maintainAspectRatio: false,
+              indexAxis: 'y' as const,
+              scales: {
+                y: {
+                  beginAtZero: true,
+                  ticks: { color: theme.muted, font: { size: 11 } },
+                  grid: { color: theme.divider },
+                  border: { display: false },
+                },
+                x: {
+                  beginAtZero: true,
+                  ticks: {
+                    color: theme.muted,
+                    font: { size: 11 },
+                    callback: (val: unknown) => formatNumber(Number(val)),
+                  },
+                  grid: { color: theme.divider },
+                  border: { display: false },
+                },
+              },
+              elements: baseElements,
+              plugins: {
+                legend: { display: false },
+                title: { display: true, color: theme.text, text: 'Time To First Token (ms)', font: { size: 15, weight: 600 }, padding: { top: 8, bottom: 8 }, align: 'center' },
+                tooltip: {
+                  backgroundColor: 'rgba(7,9,13,0.92)',
+                  titleColor: theme.text,
+                  bodyColor: theme.text,
+                  borderColor: 'rgba(255,255,255,0.08)',
+                  borderWidth: 1,
+                  displayColors: false,
+                  callbacks: {
+                    title: (items: any[]) => items.map(i => ttftSorted.full[i.dataIndex]),
+                    label: (ctx: any) => `${formatNumber(Number(ctx.raw))}`
+                  }
+                },
+              },
+              layout: { padding: { left: 4, right: 8, top: 4, bottom: 4 } },
+              animation: { duration: 450, easing: 'easeOutCubic' },
+            }}
+            data={ttftData}
+          />
+        </div>
+        <div style={{ height: chartHeight }}>
+          <Bar
+            options={{
+              responsive: true,
+              maintainAspectRatio: false,
+              indexAxis: 'y' as const,
+              scales: {
+                y: {
+                  beginAtZero: true,
+                  ticks: { color: theme.muted, font: { size: 11 } },
+                  grid: { color: theme.divider },
+                  border: { display: false },
+                },
+                x: {
+                  beginAtZero: true,
+                  ticks: {
+                    color: theme.muted,
+                    font: { size: 11 },
+                    callback: (val: unknown) => formatNumber(Number(val)),
+                  },
+                  grid: { color: theme.divider },
+                  border: { display: false },
+                },
+              },
+              elements: baseElements,
+              plugins: {
+                legend: { display: false },
+                title: { display: true, color: theme.text, text: 'Total Tokens', font: { size: 15, weight: 600 }, padding: { top: 8, bottom: 8 }, align: 'center' },
+                tooltip: {
+                  backgroundColor: 'rgba(7,9,13,0.92)',
+                  titleColor: theme.text,
+                  bodyColor: theme.text,
+                  borderColor: 'rgba(255,255,255,0.08)',
+                  borderWidth: 1,
+                  displayColors: false,
+                  callbacks: {
+                    title: (items: any[]) => items.map(i => tokensSorted.full[i.dataIndex]),
+                    label: (ctx: any) => `${formatNumber(Number(ctx.raw))}`
+                  }
+                },
+              },
+              layout: { padding: { left: 4, right: 8, top: 4, bottom: 4 } },
+              animation: { duration: 450, easing: 'easeOutCubic' },
+            }}
+            data={tokensData}
           />
         </div>
       </div>

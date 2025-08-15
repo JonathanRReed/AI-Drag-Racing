@@ -61,7 +61,7 @@
 /* Glass card utility for high-contrast modals and surfaces */
 .glass-card {
   /* Nearly-opaque dark surface with subtle border and blur */
-  @apply bg-white/10 border border-white/10 backdrop-blur-xl rounded-2xl shadow-xl;
+  @apply bg-white/10 border border-white/10 backdrop-blur-xl rounded-[18px] overflow-hidden shadow-xl;
 }
 
 @layer components {
@@ -78,6 +78,25 @@
     @apply inline-flex items-center gap-2 rounded-[18px] px-4 py-2 text-white bg-[rgba(255,255,255,0.08)] ring-1 ring-white/10 hover:bg-[rgba(255,255,255,0.12)] focus:outline-none focus:ring-2 focus:ring-[#FFB86B]/60 transition;
   }
   .input-glass {
-    @apply h-10 px-3 rounded-xl bg-[rgba(255,255,255,0.06)] ring-1 ring-white/10 text-[13px] text-white placeholder-[rgba(230,231,235,0.64)] focus:outline-none focus:ring-2 focus:ring-[#22D3EE]/60;
+    @apply h-10 px-3 rounded-[18px] ring-1 ring-white/10 text-[16px] text-white placeholder-[rgba(230,231,235,0.64)] focus:outline-none focus:ring-2 focus:ring-[#22D3EE]/60 caret-[#22D3EE] shadow-[inset_0_1px_0_0_rgba(255,255,255,0.22),0_1px_8px_rgba(0,0,0,0.35)] transition-colors duration-150 bg-[rgba(255,255,255,0.06)] focus:bg-[rgba(255,255,255,0.08)] appearance-none;
+    /* Subtle frosted gradient for OLED glass */
+    background-image: linear-gradient(180deg, rgba(255,255,255,0.06) 0%, rgba(255,255,255,0.04) 100%);
+    background-clip: padding-box;
+  }
+  .input-glass:focus {
+    /* Slight elevation on focus */
+    background-image: linear-gradient(180deg, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0.05) 100%);
+  }
+}
+
+/* Utilities */
+@layer utilities {
+  /* Hide scrollbars but keep scrolling (for inline URL-bar grow experience) */
+  .scrollbar-none {
+    -ms-overflow-style: none; /* IE and Edge */
+    scrollbar-width: none; /* Firefox */
+  }
+  .scrollbar-none::-webkit-scrollbar {
+    display: none; /* Chrome, Safari */
   }
 }
