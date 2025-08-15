@@ -26,7 +26,8 @@ function calcTps(metrics: CompletionMetrics | null): string {
   if (!metrics || !metrics.finishTime || !metrics.firstTokenTime) return 'N/A';
   const duration = (metrics.finishTime - metrics.firstTokenTime) / 1000;
   if (duration <= 0) return 'N/A';
-  return (metrics.tokenCount / duration).toFixed(2);
+  const out = typeof metrics.outputTokens === 'number' ? metrics.outputTokens : metrics.tokenCount;
+  return (out / duration).toFixed(2);
 }
 
 const RaceLane: React.FC<RaceLaneProps> = ({
@@ -195,7 +196,10 @@ const RaceLane: React.FC<RaceLaneProps> = ({
               <div><span className="font-semibold">TTFT:</span> {formatMs(ttft)}</div>
               <div><span className="font-semibold">Total:</span> {formatMs(total)}</div>
               <div><span className="font-semibold">TPS:</span> {calcTps(metrics)}</div>
-              <div><span className="font-semibold">Tokens:</span> {metrics ? metrics.tokenCount : 'N/A'}</div>
+              <div>
+                <span className="font-semibold">Output Tokens:</span>{' '}
+                {metrics && typeof metrics.outputTokens === 'number' ? metrics.outputTokens : '—'}
+              </div>
             </div>
           </div>
         </div>

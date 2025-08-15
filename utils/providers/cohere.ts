@@ -5,6 +5,7 @@ import {
   CompletionResult,
   registerProviderService,
 } from '../providerService';
+import { finalTokenTotal, approxTokensFromText } from '../tokens';
 
 // Cohere v2 streams SSE events with types like content-delta, message-end
 async function* streamCohereResponse(
@@ -57,6 +58,7 @@ const cohereService: ProviderService = {
     const startTime = Date.now();
     let firstTokenTime: number | undefined;
     let tokenCount = 0;
+    let generatedText = '';
 
     const response = await fetch('https://api.cohere.com/v2/chat', {
       method: 'POST',
@@ -84,14 +86,18 @@ const cohereService: ProviderService = {
         const content = evt?.delta?.message?.content?.text;
         if (typeof content === 'string' && content.length > 0) {
           if (!firstTokenTime) firstTokenTime = Date.now();
-          tokenCount++;
+          tokenCount++; // maintain for TPS-like metrics; final total computed below
+          generatedText += content;
           yield { type: 'chunk', content };
         }
       }
     }
 
     const finishTime = Date.now();
-    yield { type: 'metrics', data: { startTime, firstTokenTime, finishTime, tokenCount } };
+    const total = finalTokenTotal({ prompt, generated: generatedText });
+    const inputTokens = approxTokensFromText(prompt);
+    const outputTokens = approxTokensFromText(generatedText);
+    yield { type: 'metrics', data: { startTime, firstTokenTime, finishTime, tokenCount: total, inputTokens, outputTokens } };
   },
 };
 

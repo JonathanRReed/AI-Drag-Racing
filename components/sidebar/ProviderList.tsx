@@ -6,7 +6,7 @@ import ApiKeyModal from './ApiKeyModal';
 
 // Icons
 const PlusIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>;
-const CheckIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>;
+const CheckIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>;
 
 
 interface ProviderListItemProps {
@@ -16,11 +16,89 @@ interface ProviderListItemProps {
   onClearKey?: () => void;
 }
 
+// Build CDN URLs (monochrome only)
+const ICON_PNG_LIGHT = (slug: string) => `https://unpkg.com/@lobehub/icons-static-png@latest/light/${slug}.png`;
+const ICON_PNG_DARK = (slug: string) => `https://unpkg.com/@lobehub/icons-static-png@latest/dark/${slug}.png`;
+
+// Slug fallbacks for certain providers with multiple variants in Lobe Icons
+function providerSlugs(providerId: string): string[] {
+  switch (providerId) {
+    case 'google':
+      // Simple Icons uses 'googlegemini' for Gemini
+      return ['googlegemini', 'gemini', 'google'];
+    case 'azure':
+      // Try common Azure variants, prioritize openai-specific if present
+      return ['azure-openai', 'azure', 'azure-ai', 'azureai', 'microsoftazure'];
+    case 'together':
+      return ['togetherai', 'together', 'together-ai'];
+    case 'fireworks':
+      return ['fireworksai', 'fireworks'];
+    case 'openrouter':
+      return ['openrouter'];
+    case 'ai21':
+      return ['ai21'];
+    case 'deepseek':
+      return ['deepseek'];
+    case 'cohere':
+      return ['cohere'];
+    case 'mistral':
+      return ['mistral'];
+    case 'bedrock':
+      // Map to AWS brand for color
+      return ['amazonaws', 'aws', 'bedrock'];
+    case 'xai':
+      // xAI doesn't exist — fallback to 'x' brand
+      return ['x', 'xai'];
+    default:
+      return [providerId];
+  }
+}
+
+// Generic icon component that attempts multiple sources in order
+const IconImg: React.FC<{
+  slugs: string[];
+  className?: string;
+  alt?: string;
+  title?: string;
+  fallback?: React.ReactNode;
+}> = ({ slugs, className, alt = 'icon', title, fallback }) => {
+  const [index, setIndex] = useState(0);
+  // Monochrome only: prefer light → dark
+  const sources = useMemo(() => {
+    const lights = slugs.map(ICON_PNG_LIGHT);
+    const darks = slugs.map(ICON_PNG_DARK);
+    return [...lights, ...darks];
+  }, [slugs]);
+  const src = sources[index];
+  if (!src) return <>{fallback}</>;
+  return (
+    <img
+      src={src}
+      alt={alt}
+      title={title}
+      className={className}
+      loading="lazy"
+      onError={() => setIndex((i) => i + 1)}
+    />
+  );
+};
+
 const ProviderListItem: React.FC<ProviderListItemProps> = ({ provider, hasApiKey, onAddKey, onClearKey }) => {
   return (
     <div className="flex items-center justify-between px-2 py-1.5 rounded-lg hover:bg-white/10 transition-colors duration-200">
-      <div className="flex items-center gap-2">
-        <span className="font-medium text-gray-200">{provider.displayName}</span>
+      <div className="flex items-center gap-2 min-w-0">
+        <IconImg
+          slugs={providerSlugs(provider.id)}
+          alt={`${provider.displayName} logo`}
+          title={provider.displayName}
+          className="w-5 h-5 rounded-sm shrink-0"
+          fallback={
+            <span className="w-5 h-5 inline-flex items-center justify-center rounded-sm text-[10px] font-bold text-gray-200 bg-white/10 border border-white/10 shrink-0">
+              {provider.displayName.slice(0,1).toUpperCase()}
+            </span>
+          }
+        />
+        <span className="font-medium text-gray-200 truncate">{provider.displayName}</span>
         {hasApiKey && <CheckIcon />}
       </div>
       <div className="flex items-center gap-2">
@@ -49,6 +127,44 @@ interface ProviderListProps {
   dispatch: React.Dispatch<any>; // Using 'any' for simplicity, could be typed with AppAction
   // Selected provider-model pairs from parent for controlled multi-select UI
   selectedPairs: { providerId: string; modelId: string }[];
+}
+
+const ICON = (slug: string) => `https://unpkg.com/@lobehub/icons-static-svg@latest/icons/${slug}.svg`;
+
+// Map model IDs to brand icon slug candidates (best-effort)
+function brandSlugsForModel(providerId: string, modelId: string): string[] | undefined {
+  const id = modelId.toLowerCase();
+  // OpenRouter vendor prefix: vendor/model
+  if (providerId === 'openrouter') {
+    const vendor = id.split('/')[0] || '';
+    if (vendor.includes('openai')) return ['openai'];
+    if (vendor.includes('anthropic')) return ['anthropic'];
+    if (vendor.includes('google')) return ['googlegemini', 'gemini', 'google'];
+    if (vendor.includes('mistral') || vendor.includes('mistralai')) return ['mistral'];
+    if (vendor.includes('meta') || vendor.includes('llama')) return ['meta', 'facebook'];
+    if (vendor.includes('xai')) return ['x', 'xai'];
+    if (vendor.includes('deepseek')) return ['deepseek', 'deepseek-ai', 'deepseekai'];
+    if (vendor.includes('cohere')) return ['cohere'];
+    if (vendor.includes('ai21')) return ['ai21'];
+    if (vendor.includes('perplexity')) return ['perplexity'];
+    if (vendor.includes('groq')) return ['groq'];
+    if (vendor.includes('firework')) return ['fireworks', 'fireworksai'];
+    return undefined;
+  }
+  // Provider-specific heuristics
+  if (providerId === 'google' || id.startsWith('gemini')) return ['googlegemini', 'gemini', 'google'];
+  if (providerId === 'anthropic' || id.startsWith('claude')) return ['anthropic'];
+  if (providerId === 'openai' || id.startsWith('gpt') || id.includes('o1') || id.includes('4o')) return ['openai'];
+  if (providerId === 'mistral' || id.includes('mistral') || id.includes('mixtral')) return ['mistral'];
+  if (providerId === 'cohere' || id.includes('command')) return ['cohere'];
+  if (providerId === 'groq') return ['groq'];
+  if (providerId === 'ai21' || id.includes('jamba') || id.includes('ai21')) return ['ai21'];
+  if (providerId === 'xai' || id.includes('grok')) return ['x', 'xai'];
+  if (providerId === 'deepseek' || id.includes('deepseek')) return ['deepseek', 'deepseek-ai', 'deepseekai'];
+  if (providerId === 'bedrock') return ['amazonaws', 'aws', 'bedrock'];
+  if (providerId === 'together') return ['togetherai', 'together', 'together-ai'];
+  if (providerId === 'fireworks') return ['fireworks', 'fireworksai'];
+  return undefined;
 }
 
 const ProviderList: React.FC<ProviderListProps> = ({ apiKeys, dispatch, selectedPairs }) => {
@@ -227,6 +343,8 @@ const ProviderList: React.FC<ProviderListProps> = ({ apiKeys, dispatch, selected
                     }
                     return filtered.map((m) => {
                       const checked = selectedPairs.some(p => p.providerId === provider.id && p.modelId === m);
+                      const brandSlugs = brandSlugsForModel(provider.id, m);
+                      const slugs = brandSlugs?.length ? brandSlugs : providerSlugs(provider.id);
                       return (
                         <label key={m} className="flex items-center gap-2 px-2 py-1 text-sm text-gray-200 hover:bg-white/5">
                           <input
@@ -235,6 +353,7 @@ const ProviderList: React.FC<ProviderListProps> = ({ apiKeys, dispatch, selected
                             checked={checked}
                             onChange={(e) => handleToggleModel(provider.id, m, e.target.checked)}
                           />
+                          <IconImg slugs={slugs} alt="brand" className="w-3.5 h-3.5 rounded-sm opacity-80" />
                           <span className="truncate" title={m}>{formatModelLabel(m)}</span>
                         </label>
                       );

@@ -5,6 +5,7 @@ import {
   CompletionResult,
   registerProviderService,
 } from '../providerService';
+import { finalTokenTotal, approxTokensFromText } from '../tokens';
 
 // A helper to parse the SSE stream from OpenAI
 async function* streamOpenAIResponse(
@@ -63,6 +64,7 @@ const openAIService: ProviderService = {
     const startTime = Date.now();
     let firstTokenTime: number | undefined;
     let tokenCount = 0;
+    let generatedText = '';
 
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
@@ -88,15 +90,19 @@ const openAIService: ProviderService = {
         if (!firstTokenTime) {
           firstTokenTime = Date.now();
         }
-        tokenCount++; // A simplification, actual token count is more complex
+        tokenCount++; // maintain for TPS-style metrics; final total computed below
+        generatedText += content;
         yield { type: 'chunk', content };
       }
     }
 
     const finishTime = Date.now();
+    const total = finalTokenTotal({ prompt, generated: generatedText });
+    const inputTokens = approxTokensFromText(prompt);
+    const outputTokens = approxTokensFromText(generatedText);
     yield {
       type: 'metrics',
-      data: { startTime, firstTokenTime, finishTime, tokenCount },
+      data: { startTime, firstTokenTime, finishTime, tokenCount: total, inputTokens, outputTokens },
     };
   },
 };

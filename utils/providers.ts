@@ -11,57 +11,63 @@ export interface ProviderConfig {
   fetcher?: (apiKey: string, endpoint?: string) => Promise<string[]>;
 }
 
+const ICON = (slug: string) => `https://unpkg.com/@lobehub/icons-static-svg@latest/icons/${slug}.svg`;
+
 export const PROVIDERS: ProviderConfig[] = [
   {
     id: 'openai',
     displayName: 'OpenAI',
     requiresApiKey: true,
-    logoUrl: 'https://upload.wikimedia.org/wikipedia/commons/4/4d/OpenAI_Logo.svg',
+    logoUrl: ICON('openai'),
     fetcher: fetchOpenAIModels,
   },
   {
     id: 'groq',
     displayName: 'Groq',
     requiresApiKey: true,
-    logoUrl: 'https://upload.wikimedia.org/wikipedia/commons/c/cc/Groq_logo.svg',
+    logoUrl: ICON('groq'),
     fetcher: fetchGroqModels,
   },
   {
     id: 'fireworks',
     displayName: 'Fireworks',
     requiresApiKey: true,
+    logoUrl: ICON('fireworks'),
     fetcher: fetchFireworksModels,
   },
   {
     id: 'together',
     displayName: 'Together',
     requiresApiKey: true,
+    logoUrl: ICON('together'),
     fetcher: fetchTogetherModels,
   },
   {
     id: 'azure',
     displayName: 'Azure OpenAI',
     requiresApiKey: true,
+    logoUrl: ICON('azure-ai'),
     fetcher: fetchAzureModels, // always returns []
   },
   {
     id: 'anthropic',
     displayName: 'Anthropic',
     requiresApiKey: true,
-    logoUrl: 'https://upload.wikimedia.org/wikipedia/commons/7/78/Anthropic_logo.svg',
+    logoUrl: ICON('anthropic'),
     fetcher: fetchAnthropicModels,
   },
   {
     id: 'google',
     displayName: 'Google Gemini',
     requiresApiKey: true,
-    logoUrl: 'https://upload.wikimedia.org/wikipedia/commons/8/8f/Google-gemini-icon.svg',
+    logoUrl: ICON('gemini'),
     fetcher: fetchGoogleModels, // always returns []
   },
   {
     id: 'openrouter',
     displayName: 'OpenRouter',
     requiresApiKey: true,
+    logoUrl: ICON('openrouter'),
     fetcher: fetchOpenRouterModels,
   },
   // --- Additional providers (UI only for now) ---
@@ -69,42 +75,49 @@ export const PROVIDERS: ProviderConfig[] = [
     id: 'bedrock',
     displayName: 'AWS Bedrock',
     requiresApiKey: true,
+    logoUrl: ICON('bedrock'),
     fetcher: fetchBedrockModels,
   },
   {
     id: 'cohere',
     displayName: 'Cohere',
     requiresApiKey: true,
+    logoUrl: ICON('cohere'),
     fetcher: fetchCohereModels,
   },
   {
     id: 'mistral',
     displayName: 'Mistral',
     requiresApiKey: true,
+    logoUrl: ICON('mistral'),
     fetcher: fetchMistralModels,
   },
   {
     id: 'perplexity',
     displayName: 'Perplexity',
     requiresApiKey: true,
+    logoUrl: ICON('perplexity'),
     fetcher: fetchPerplexityModels,
   },
   {
     id: 'xai',
     displayName: 'xAI (Grok)',
     requiresApiKey: true,
+    logoUrl: ICON('xai'),
     fetcher: fetchXaiModels,
   },
   {
     id: 'deepseek',
     displayName: 'DeepSeek',
     requiresApiKey: true,
+    logoUrl: ICON('deepseek'),
     fetcher: fetchDeepSeekModels,
   },
   {
     id: 'ai21',
     displayName: 'AI21',
     requiresApiKey: true,
+    logoUrl: ICON('ai21'),
     fetcher: fetchAI21Models,
   },
 ];

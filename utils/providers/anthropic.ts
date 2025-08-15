@@ -5,6 +5,7 @@ import {
   CompletionResult,
   registerProviderService,
 } from '../providerService';
+import { finalTokenTotal, approxTokensFromText } from '../tokens';
 
 // Custom stream parser for Anthropic's API format
 async function* streamAnthropicResponse(
@@ -74,6 +75,7 @@ const anthropicService: ProviderService = {
     const startTime = Date.now();
     let firstTokenTime: number | undefined;
     let tokenCount = 0;
+    let generatedText = '';
 
     const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
@@ -102,16 +104,20 @@ const anthropicService: ProviderService = {
           if (!firstTokenTime) {
             firstTokenTime = Date.now();
           }
-          tokenCount++;
+          tokenCount++; // maintain for TPS-like metrics; final total computed below
+          generatedText += content;
           yield { type: 'chunk', content };
         }
       }
     }
 
     const finishTime = Date.now();
+    const total = finalTokenTotal({ prompt, generated: generatedText });
+    const inputTokens = approxTokensFromText(prompt);
+    const outputTokens = approxTokensFromText(generatedText);
     yield {
       type: 'metrics',
-      data: { startTime, firstTokenTime, finishTime, tokenCount },
+      data: { startTime, firstTokenTime, finishTime, tokenCount: total, inputTokens, outputTokens },
     };
   },
 };

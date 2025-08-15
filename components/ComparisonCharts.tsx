@@ -108,13 +108,14 @@ const ComparisonCharts: React.FC<ComparisonChartsProps> = ({ results }) => {
     const { metrics } = r;
     if (!metrics || !metrics.finishTime || !metrics.firstTokenTime) return 0;
     const duration = (metrics.finishTime - metrics.firstTokenTime) / 1000;
-    return duration > 0 ? metrics.tokenCount / duration : 0;
+    const out = typeof metrics.outputTokens === 'number' ? metrics.outputTokens : metrics.tokenCount;
+    return duration > 0 ? out / duration : 0;
   });
   const tpsSorted = sortForChart(tpsVals);
   const tpsData = {
     labels: tpsSorted.labels,
     datasets: [{
-      label: 'Tokens per Second',
+      label: 'Output Tokens per Second',
       data: tpsSorted.values,
       backgroundColor: tpsSorted.bg,
       borderColor: tpsSorted.border,
@@ -123,12 +124,16 @@ const ComparisonCharts: React.FC<ComparisonChartsProps> = ({ results }) => {
     }],
   };
 
-  const tokensVals = validResults.map(r => r.metrics ? r.metrics.tokenCount : 0);
+  const tokensVals = validResults.map(r => {
+    const m = r.metrics;
+    if (!m) return 0;
+    return typeof m.outputTokens === 'number' ? m.outputTokens : 0;
+  });
   const tokensSorted = sortForChart(tokensVals);
   const tokensData = {
     labels: tokensSorted.labels,
     datasets: [{
-      label: 'Total Tokens',
+      label: 'Output Tokens',
       data: tokensSorted.values,
       backgroundColor: tokensSorted.bg,
       borderColor: tokensSorted.border,
@@ -232,7 +237,7 @@ const ComparisonCharts: React.FC<ComparisonChartsProps> = ({ results }) => {
               elements: baseElements,
               plugins: {
                 legend: { display: false },
-                title: { display: true, color: theme.text, text: 'Tokens per Second (TPS)', font: { size: 15, weight: 600 }, padding: { top: 8, bottom: 8 }, align: 'center' },
+                title: { display: true, color: theme.text, text: 'Output Tokens per Second (TPS)', font: { size: 15, weight: 600 }, padding: { top: 8, bottom: 8 }, align: 'center' },
                 tooltip: {
                   backgroundColor: 'rgba(7,9,13,0.92)',
                   titleColor: theme.text,
@@ -326,7 +331,7 @@ const ComparisonCharts: React.FC<ComparisonChartsProps> = ({ results }) => {
               elements: baseElements,
               plugins: {
                 legend: { display: false },
-                title: { display: true, color: theme.text, text: 'Total Tokens', font: { size: 15, weight: 600 }, padding: { top: 8, bottom: 8 }, align: 'center' },
+                title: { display: true, color: theme.text, text: 'Output Tokens', font: { size: 15, weight: 600 }, padding: { top: 8, bottom: 8 }, align: 'center' },
                 tooltip: {
                   backgroundColor: 'rgba(7,9,13,0.92)',
                   titleColor: theme.text,

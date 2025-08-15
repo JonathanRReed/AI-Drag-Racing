@@ -5,6 +5,7 @@ import {
   CompletionResult,
   registerProviderService,
 } from '../providerService';
+import { finalTokenTotal, approxTokensFromText } from '../tokens';
 
 // Since Groq's API is OpenAI-compatible, we can reuse the stream parser.
 // In a real-world scenario, we might move this to a shared utility file.
@@ -63,6 +64,7 @@ const groqService: ProviderService = {
     const startTime = Date.now();
     let firstTokenTime: number | undefined;
     let tokenCount = 0;
+    let generatedText = '';
 
     const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
       method: 'POST',
@@ -88,15 +90,19 @@ const groqService: ProviderService = {
         if (!firstTokenTime) {
           firstTokenTime = Date.now();
         }
-        tokenCount++;
+        tokenCount++; // maintain for TPS-like metrics; final total computed below
+        generatedText += content;
         yield { type: 'chunk', content };
       }
     }
 
     const finishTime = Date.now();
+    const total = finalTokenTotal({ prompt, generated: generatedText });
+    const inputTokens = approxTokensFromText(prompt);
+    const outputTokens = approxTokensFromText(generatedText);
     yield {
       type: 'metrics',
-      data: { startTime, firstTokenTime, finishTime, tokenCount },
+      data: { startTime, firstTokenTime, finishTime, tokenCount: total, inputTokens, outputTokens },
     };
   },
 };

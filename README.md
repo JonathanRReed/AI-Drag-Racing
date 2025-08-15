@@ -1,6 +1,10 @@
 # API Latency Tester
 
 A T3 Stack project to test AI API latency from different providers.
+Icons provided by Lobe Icons & simple-icons.
+Fun tool to compare latency between different AI providers.
+Can be used to benchmark different providers & models.
+Also can drag race different models for fun.
 
 ## How to Run
 

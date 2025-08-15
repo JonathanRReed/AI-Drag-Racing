@@ -6,6 +6,7 @@ import {
   registerProviderService,
 } from '../providerService';
 import { fetchOpenRouterModels } from '../fetchModels';
+import { finalTokenTotal, approxTokensFromText } from '../tokens';
 
 async function* streamSSE(response: Response): AsyncGenerator<any, void, unknown> {
   const reader = response.body?.getReader();
@@ -47,6 +48,7 @@ const openRouterService: ProviderService = {
     const startTime = Date.now();
     let firstTokenTime: number | undefined;
     let tokenCount = 0;
+    let generatedText = '';
 
     const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
       method: 'POST',
@@ -72,13 +74,17 @@ const openRouterService: ProviderService = {
       const content = chunk.choices?.[0]?.delta?.content;
       if (content) {
         if (!firstTokenTime) firstTokenTime = Date.now();
-        tokenCount++;
+        tokenCount++; // maintain for TPS-like metrics; final total computed below
+        generatedText += content;
         yield { type: 'chunk', content };
       }
     }
 
     const finishTime = Date.now();
-    yield { type: 'metrics', data: { startTime, firstTokenTime, finishTime, tokenCount } };
+    const total = finalTokenTotal({ prompt, generated: generatedText });
+    const inputTokens = approxTokensFromText(prompt);
+    const outputTokens = approxTokensFromText(generatedText);
+    yield { type: 'metrics', data: { startTime, firstTokenTime, finishTime, tokenCount: total, inputTokens, outputTokens } };
   },
 };
 

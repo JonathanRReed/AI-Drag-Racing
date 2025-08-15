@@ -5,6 +5,7 @@ import {
   CompletionResult,
   registerProviderService,
 } from '../providerService';
+import { approxTokensFromText } from '../tokens';
 
 // Parse Server-Sent Events (SSE) from Google Gemini streamGenerateContent
 async function* streamGoogleResponse(
@@ -14,9 +15,21 @@ async function* streamGoogleResponse(
   if (!reader) throw new Error('No response body');
   const decoder = new TextDecoder('utf-8');
   let buffer = '';
+  // Inactivity watchdog to avoid hanging if the server never closes the stream
+  const IDLE_TIMEOUT_MS = 30000; // 30s without data
   while (true) {
-    const { done, value } = await reader.read();
-    if (done) break;
+    // Race the read against an inactivity timeout
+    let timeoutId: any;
+    const readPromise = reader.read();
+    const timeoutPromise = new Promise<{ done: boolean; value?: Uint8Array }>((resolve) => {
+      timeoutId = setTimeout(() => resolve({ done: true }), IDLE_TIMEOUT_MS);
+    });
+    const { done, value } = await Promise.race([readPromise, timeoutPromise]);
+    clearTimeout(timeoutId);
+    if (done) {
+      try { await reader.cancel('idle-timeout-or-eos'); } catch {}
+      break;
+    }
     buffer += decoder.decode(value, { stream: true });
     // Split on double newlines with optional CRs
     const parts = buffer.split(/\r?\n\r?\n/);
@@ -62,9 +75,12 @@ const googleService: ProviderService = {
   ): AsyncGenerator<CompletionResult> {
     const startTime = Date.now();
     let firstTokenTime: number | undefined;
-    let tokenCount = 0;
-    let usageCandidates = 0;
-    let usageTotal = 0;
+    let tokenCount = 0; // approximate generated tokens
+    let usageCandidates = 0; // server-reported output tokens
+    let usagePrompt = 0; // server-reported input tokens
+    let usageTotal = 0; // server-reported total tokens
+    let generatedText = '';
+    const promptApprox = Math.ceil((prompt || '').length / 4);
 
     // Use alt=sse and send API key via query parameter (most reliable per docs)
     // Gemini expects the path segment to include the 'models/' prefix
@@ -91,6 +107,7 @@ const googleService: ProviderService = {
       const usage = chunk.usageMetadata;
       if (usage) {
         usageCandidates = usage.candidatesTokenCount ?? usageCandidates;
+        usagePrompt = usage.promptTokenCount ?? usagePrompt;
         usageTotal = usage.totalTokenCount ?? usageTotal;
       }
 
@@ -104,16 +121,19 @@ const googleService: ProviderService = {
         if (!firstTokenTime) firstTokenTime = Date.now();
         // Approximate token count by characters/parts when usage not yet available
         tokenCount += Math.max(1, Math.ceil(text.length / 4));
+        generatedText += text;
         yield { type: 'chunk', content: text };
       }
     }
 
     const finishTime = Date.now();
-    // Prefer server-reported token counts if available
-    const finalTokenCount = usageCandidates || usageTotal || tokenCount;
+    // Derive breakdown with preference for server usage; fallback to approximations
+    const inputTokens = usagePrompt > 0 ? usagePrompt : approxTokensFromText(prompt);
+    const outputTokens = usageCandidates > 0 ? usageCandidates : approxTokensFromText(generatedText);
+    const finalTokenCount = usageTotal > 0 ? usageTotal : (inputTokens + outputTokens);
     yield {
       type: 'metrics',
-      data: { startTime, firstTokenTime, finishTime, tokenCount: finalTokenCount },
+      data: { startTime, firstTokenTime, finishTime, tokenCount: finalTokenCount, inputTokens, outputTokens },
     };
   },
 };

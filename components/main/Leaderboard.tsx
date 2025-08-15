@@ -25,7 +25,8 @@ function calcTps(r: ResultState): number | null {
   if (!m || !m.finishTime || !m.firstTokenTime) return null;
   const seconds = (m.finishTime - m.firstTokenTime) / 1000;
   if (seconds <= 0) return null;
-  return m.tokenCount / seconds;
+  const out = typeof m.outputTokens === 'number' ? m.outputTokens : m.tokenCount;
+  return out / seconds;
 }
 
 const Leaderboard: React.FC<LeaderboardProps> = ({ results }) => {

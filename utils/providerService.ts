@@ -5,7 +5,9 @@ export interface CompletionMetrics {
   startTime: number;
   firstTokenTime?: number;
   finishTime: number;
-  tokenCount: number;
+  tokenCount: number; // total tokens (input + output)
+  inputTokens?: number; // optional: input token estimate or provider-reported
+  outputTokens?: number; // optional: output token estimate or provider-reported
 }
 
 // Defines the output of our streaming generator.
