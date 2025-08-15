@@ -70,7 +70,10 @@ export async function fetchGoogleModels(apiKey: string): Promise<string[]> {
   if (!res.ok) throw new Error('Gemini model fetch failed');
   const data = await res.json();
   if (!Array.isArray(data.models)) return [];
-  return data.models.map((m: any) => m.name).filter(Boolean);
+  // Normalize names by stripping the leading 'models/' to match provider service expectations
+  return data.models
+    .map((m: any) => (m.name || '').replace(/^models\//, ''))
+    .filter(Boolean);
 }
 
 export async function fetchAzureModels(apiKey: string, endpoint?: string): Promise<string[]> {

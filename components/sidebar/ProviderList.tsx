@@ -1,6 +1,7 @@
 // components/sidebar/ProviderList.tsx
 import React, { useState, useMemo } from 'react';
 import { PROVIDERS, ProviderConfig } from '../../utils/providers';
+import { fetchModels } from '../../utils/fetchModels';
 import ApiKeyModal from './ApiKeyModal';
 
 // Icons
@@ -12,34 +13,63 @@ interface ProviderListItemProps {
   provider: ProviderConfig;
   hasApiKey: boolean;
   onAddKey: () => void;
+  onClearKey?: () => void;
 }
 
-const ProviderListItem: React.FC<ProviderListItemProps> = ({ provider, hasApiKey, onAddKey }) => {
+const ProviderListItem: React.FC<ProviderListItemProps> = ({ provider, hasApiKey, onAddKey, onClearKey }) => {
   return (
-    <li className="flex items-center justify-between p-2 rounded-lg hover:bg-white/10 transition-colors duration-200">
+    <div className="flex items-center justify-between px-2 py-1.5 rounded-lg hover:bg-white/10 transition-colors duration-200">
       <div className="flex items-center gap-2">
         <span className="font-medium text-gray-200">{provider.displayName}</span>
         {hasApiKey && <CheckIcon />}
       </div>
-      <button
-        onClick={onAddKey}
-        className="p-1 rounded-md text-gray-400 hover:bg-white/20 hover:text-white transition-colors"
-        aria-label={`${hasApiKey ? 'Edit' : 'Add'} API key for ${provider.displayName}`}
-      >
-        {/* We can improve this button to show an edit icon if key exists */}
-        <PlusIcon />
-      </button>
-    </li>
+      <div className="flex items-center gap-2">
+        {hasApiKey && (
+          <button
+            onClick={onClearKey}
+            className="px-2 py-0.5 text-xs rounded-md bg-zinc-800 text-gray-300 border border-white/10 hover:border-white/20"
+          >
+            Clear Key
+          </button>
+        )}
+        <button
+          onClick={onAddKey}
+          className="p-1 rounded-md text-gray-400 hover:bg-white/20 hover:text-white transition-colors"
+          aria-label={`${hasApiKey ? 'Edit' : 'Add'} API key for ${provider.displayName}`}
+        >
+          <PlusIcon />
+        </button>
+      </div>
+    </div>
   );
 };
 
 interface ProviderListProps {
   apiKeys: Record<string, string>;
   dispatch: React.Dispatch<any>; // Using 'any' for simplicity, could be typed with AppAction
+  // Selected provider-model pairs from parent for controlled multi-select UI
+  selectedPairs: { providerId: string; modelId: string }[];
 }
 
-const ProviderList: React.FC<ProviderListProps> = ({ apiKeys, dispatch }) => {
+const ProviderList: React.FC<ProviderListProps> = ({ apiKeys, dispatch, selectedPairs }) => {
+  // Show both the beginning and end of long model IDs to avoid hiding key differences
+  const formatModelLabel = React.useCallback((id: string, head = 18, tail = 14) => {
+    if (!id) return id;
+    if (id.length <= head + tail + 3) return id;
+    return `${id.slice(0, head)}…${id.slice(-tail)}`;
+  }, []);
+
   const [modalOpenFor, setModalOpenFor] = useState<ProviderConfig | null>(null);
+  const [modelsByProvider, setModelsByProvider] = useState<Record<string, string[]>>({});
+  const [savedFlash, setSavedFlash] = useState<Record<string, boolean>>({});
+  const [enabledByProvider, setEnabledByProvider] = useState<Record<string, boolean>>({});
+  const [modelQuery, setModelQuery] = useState<Record<string, string>>({});
+
+  // Providers that are wired up server-side for streaming right now
+  const SUPPORTED_FOR_STREAM = useMemo(() => new Set([
+    'openai', 'groq', 'anthropic', 'google', 'cohere', 'mistral',
+    'together', 'fireworks', 'openrouter'
+  ]), []);
 
   const handleSaveApiKey = (apiKey: string) => {
     if (modalOpenFor) {
@@ -49,7 +79,26 @@ const ProviderList: React.FC<ProviderListProps> = ({ apiKeys, dispatch }) => {
       });
       // Also save to localStorage for persistence
       localStorage.setItem(`${modalOpenFor.id}_api_key`, apiKey);
+      // Fetch models after saving key
+      void loadModelsForProvider(modalOpenFor.id, apiKey);
+      // Flash Saved ✓
+      setSavedFlash(prev => ({ ...prev, [modalOpenFor.id]: true }));
+      setTimeout(() => setSavedFlash(prev => ({ ...prev, [modalOpenFor!.id]: false })), 1800);
     }
+  };
+
+  const handleClearKey = (providerId: string) => {
+    // Clear persisted values
+    localStorage.removeItem(`${providerId}_api_key`);
+    localStorage.removeItem(`${providerId}_models`);
+    localStorage.removeItem(`${providerId}_selected_models`);
+    localStorage.removeItem(`${providerId}_model`); // backward-compat
+    // Update app state
+    dispatch({ type: 'SET_API_KEY', payload: { providerId, apiKey: '' } });
+    dispatch({ type: 'CLEAR_PROVIDER_SELECTIONS', payload: { providerId } });
+    setModelsByProvider(prev => ({ ...prev, [providerId]: [] }));
+    setEnabledByProvider(prev => ({ ...prev, [providerId]: false }));
+    localStorage.setItem(`${providerId}_enabled`, 'false');
   };
 
   // On component mount, load keys from localStorage
@@ -59,20 +108,157 @@ const ProviderList: React.FC<ProviderListProps> = ({ apiKeys, dispatch }) => {
       if (savedKey) {
         dispatch({ type: 'SET_API_KEY', payload: { providerId: p.id, apiKey: savedKey } });
       }
+      // Enabled toggle
+      const enabledStr = localStorage.getItem(`${p.id}_enabled`);
+      const enabled = enabledStr === null ? true : enabledStr === 'true';
+      setEnabledByProvider(prev => ({ ...prev, [p.id]: enabled }));
+      dispatch({ type: 'SET_PROVIDER_ENABLED', payload: { providerId: p.id, enabled } });
+      // Load cached models if present
+      const cachedModels = localStorage.getItem(`${p.id}_models`);
+      if (cachedModels) {
+        try {
+          const arr = JSON.parse(cachedModels);
+          if (Array.isArray(arr)) {
+            setModelsByProvider(prev => ({ ...prev, [p.id]: arr }));
+          }
+        } catch {}
+      }
+      // Load cached selected models (multi-select). Backward compat: also read old single-model key
+      const savedMulti = localStorage.getItem(`${p.id}_selected_models`);
+      const savedSingle = localStorage.getItem(`${p.id}_model`);
+      let modelsToSelect: string[] = [];
+      try {
+        if (savedMulti) {
+          const arr = JSON.parse(savedMulti);
+          if (Array.isArray(arr)) modelsToSelect = arr.filter(Boolean);
+        }
+      } catch {}
+      if (!modelsToSelect.length && savedSingle) modelsToSelect = [savedSingle];
+      for (const m of modelsToSelect) {
+        dispatch({ type: 'TOGGLE_MODEL_SELECTION', payload: { providerId: p.id, modelId: m } });
+      }
     });
   }, [dispatch]);
 
+  // When api keys change, fetch models for providers with keys (if not already loaded)
+  React.useEffect(() => {
+    (async () => {
+      for (const p of PROVIDERS) {
+        const key = apiKeys[p.id];
+        if (!key) continue;
+        if (!SUPPORTED_FOR_STREAM.has(p.id)) continue; // only fetch for supported providers
+        if (modelsByProvider[p.id]?.length) continue; // already have
+        try {
+          const list = await fetchModels(p.id, key);
+          if (Array.isArray(list) && list.length) {
+            setModelsByProvider(prev => ({ ...prev, [p.id]: list }));
+            localStorage.setItem(`${p.id}_models`, JSON.stringify(list));
+          }
+        } catch (e) {
+          // swallow; show no dropdown
+          console.warn(`[models] Failed to fetch models for ${p.id}:`, e);
+        }
+      }
+    })();
+  }, [apiKeys, modelsByProvider, SUPPORTED_FOR_STREAM]);
+
+  async function loadModelsForProvider(providerId: string, key: string) {
+    if (!SUPPORTED_FOR_STREAM.has(providerId)) return;
+    try {
+      const list = await fetchModels(providerId, key);
+      if (Array.isArray(list) && list.length) {
+        setModelsByProvider(prev => ({ ...prev, [providerId]: list }));
+        localStorage.setItem(`${providerId}_models`, JSON.stringify(list));
+      }
+    } catch (e) {
+      console.warn(`[models] Failed to fetch models for ${providerId}:`, e);
+    }
+  }
+
+  const handleToggleModel = (providerId: string, modelId: string, checked: boolean) => {
+    // Compute next selection list for persistence
+    const current = selectedPairs.filter(p => p.providerId === providerId).map(p => p.modelId);
+    const next = checked ? Array.from(new Set([...current, modelId])) : current.filter(m => m !== modelId);
+    localStorage.setItem(`${providerId}_selected_models`, JSON.stringify(next));
+    dispatch({ type: 'TOGGLE_MODEL_SELECTION', payload: { providerId, modelId } });
+  };
+
+  const handleToggleEnabled = (providerId: string, enabled: boolean) => {
+    setEnabledByProvider(prev => ({ ...prev, [providerId]: enabled }));
+    localStorage.setItem(`${providerId}_enabled`, String(enabled));
+    dispatch({ type: 'SET_PROVIDER_ENABLED', payload: { providerId, enabled } });
+  };
+
   return (
-    <div>
-      <h2 className="text-lg font-semibold text-white mb-4 px-2">Providers</h2>
-      <ul className="space-y-1">
+    <div className="flex h-full min-h-0 flex-col">
+      <h2 className="text-lg font-semibold text-white mb-3 px-2">Providers</h2>
+      <ul className="space-y-1 flex-1 min-h-0 overflow-auto pr-1">
         {PROVIDERS.map((provider) => (
-          <ProviderListItem
-            key={provider.id}
-            provider={provider}
-            hasApiKey={!!apiKeys[provider.id]}
-            onAddKey={() => setModalOpenFor(provider)}
-          />
+          <li key={provider.id} className="space-y-1">
+            <ProviderListItem
+              provider={provider}
+              hasApiKey={!!apiKeys[provider.id]}
+              onAddKey={() => setModalOpenFor(provider)}
+              onClearKey={() => handleClearKey(provider.id)}
+            />
+            {/* Model selector appears when key is present and provider is supported and models list available */}
+            {apiKeys[provider.id] && SUPPORTED_FOR_STREAM.has(provider.id) && (modelsByProvider[provider.id]?.length ? (
+              <div className="px-2">
+                <label className="block text-xs uppercase tracking-wide text-gray-400 mb-1">Models</label>
+                <div className="mb-1">
+                  <input
+                    type="text"
+                    value={modelQuery[provider.id] || ''}
+                    onChange={(e) => setModelQuery(prev => ({ ...prev, [provider.id]: e.target.value }))}
+                    placeholder="Search models"
+                    aria-label={`Search models for ${provider.displayName}`}
+                    className="w-full px-2 py-1 text-xs rounded-md bg-zinc-900/60 border border-white/10 focus:border-white/20 outline-none text-gray-200 placeholder:text-gray-500"
+                  />
+                </div>
+                <div className="max-h-60 overflow-auto rounded-md border border-white/10 divide-y divide-white/5 bg-zinc-900/40">
+                  {(() => {
+                    const list = modelsByProvider[provider.id] || [];
+                    const q = (modelQuery[provider.id] || '').toLowerCase().trim();
+                    const filtered = q ? list.filter(m => m.toLowerCase().includes(q)) : list;
+                    if (!filtered.length) {
+                      return (
+                        <div className="px-2 py-1 text-xs text-gray-400">No models match</div>
+                      );
+                    }
+                    return filtered.map((m) => {
+                      const checked = selectedPairs.some(p => p.providerId === provider.id && p.modelId === m);
+                      return (
+                        <label key={m} className="flex items-center gap-2 px-2 py-1 text-sm text-gray-200 hover:bg-white/5">
+                          <input
+                            type="checkbox"
+                            className="accent-cyan-400"
+                            checked={checked}
+                            onChange={(e) => handleToggleModel(provider.id, m, e.target.checked)}
+                          />
+                          <span className="truncate" title={m}>{formatModelLabel(m)}</span>
+                        </label>
+                      );
+                    });
+                  })()}
+                </div>
+                {/* Enable toggle and saved chip */}
+                <div className="mt-2 flex items-center justify-between">
+                  <label className="flex items-center gap-2 text-xs text-gray-300">
+                    <input
+                      type="checkbox"
+                      className="accent-cyan-400"
+                      checked={enabledByProvider[provider.id] ?? true}
+                      onChange={(e) => handleToggleEnabled(provider.id, e.target.checked)}
+                    />
+                    Enable for race
+                  </label>
+                  {savedFlash[provider.id] && (
+                    <span className="text-green-400 text-xs">Saved ✓</span>
+                  )}
+                </div>
+              </div>
+            ) : null)}
+          </li>
         ))}
       </ul>
       {modalOpenFor && (

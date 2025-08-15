@@ -1,8 +1,9 @@
 // components/main/ResultsDisplay.tsx
 import React from 'react';
-import ResponseCard from './ResponseCard';
-import { CompletionMetrics } from '../../utils/providerService';
+import RaceLane from './RaceLane';
 import GlassCard from '../layout/GlassCard';
+import { CompletionMetrics } from '../../utils/providerService';
+import { getProviderColor } from '../../utils/providerColors';
 
 export interface ResultState {
   id: string; // A unique ID for this result, e.g., providerId-modelName
@@ -16,9 +17,11 @@ export interface ResultState {
 
 interface ResultsDisplayProps {
   results: ResultState[];
+  hideFailed?: boolean;
+  force?: { version: number; collapsed: boolean };
 }
 
-const ResultsDisplay: React.FC<ResultsDisplayProps> = ({ results }) => {
+const ResultsDisplay: React.FC<ResultsDisplayProps> = ({ results, hideFailed = false, force }) => {
   if (results.length === 0) {
     return (
       <GlassCard className="p-6 text-center text-gray-400">
@@ -27,10 +30,14 @@ const ResultsDisplay: React.FC<ResultsDisplayProps> = ({ results }) => {
     );
   }
 
+  const displayed = hideFailed
+    ? results.filter(r => !r.error)
+    : results;
+
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-      {results.map((result) => (
-        <ResponseCard
+    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
+      {displayed.map((result) => (
+        <RaceLane
           key={result.id}
           providerName={result.providerName}
           modelName={result.modelName}
@@ -38,6 +45,8 @@ const ResultsDisplay: React.FC<ResultsDisplayProps> = ({ results }) => {
           metrics={result.metrics}
           isLoading={result.isLoading}
           error={result.error}
+          laneColor={getProviderColor(result.providerName).solid}
+          force={force}
         />
       ))}
     </div>

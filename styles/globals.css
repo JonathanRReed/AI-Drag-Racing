@@ -12,14 +12,29 @@
 }
 
 @layer base {
+  :root {
+    --bg:#07090D; --panel:rgba(255,255,255,0.06); --panel-elev:rgba(255,255,255,0.08);
+    --ring:rgba(255,255,255,0.10); --divider:rgba(255,255,255,0.08);
+    --text:#E6E7EB; --text-muted:rgba(230,231,235,0.64);
+    --accent:#22D3EE; --complement:#FFB86B;
+    --success:#22D3A6; --warning:#F59E0B; --danger:#FB7185; --info:#60A5FA;
+  }
   body {
-    @apply bg-black text-gray-200;
-    background-image: radial-gradient(circle at 1px 1px, rgba(255,255,255,0.1) 1px, transparent 0);
-    background-size: 24px 24px;
+    color: var(--text);
+    background: var(--bg);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
   }
   html {
     font-family: 'Nebula Sans Book', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'Noto Sans', sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
   }
+}
+
+/* Text selection follows accent for better affordance on OLED */
+::selection {
+  background: color-mix(in srgb, var(--accent) 28%, transparent);
+  color: var(--text);
 }
 
 /* Custom scrollbar styling for a consistent dark theme. */
@@ -46,5 +61,23 @@
 /* Glass card utility for high-contrast modals and surfaces */
 .glass-card {
   /* Nearly-opaque dark surface with subtle border and blur */
-  @apply bg-zinc-900/90 border border-white/10 backdrop-blur-md rounded-2xl shadow-xl;
+  @apply bg-white/10 border border-white/10 backdrop-blur-xl rounded-2xl shadow-xl;
+}
+
+@layer components {
+  .btn {
+    @apply inline-flex items-center gap-2 rounded-[18px] px-4 py-2 bg-white/10 text-white ring-1 ring-white/15 backdrop-blur-xl shadow-[inset_0_1px_0_0_rgba(255,255,255,0.25)] hover:bg-white/15 focus:outline-none focus:ring-2 focus:ring-[#22D3EE]/60 transition disabled:opacity-50;
+  }
+  .btn-ghost {
+    @apply inline-flex items-center gap-2 rounded-[18px] px-3 py-1.5 bg-[rgba(255,255,255,0.06)] text-white/80 ring-1 ring-white/10 hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-[#22D3EE]/60;
+  }
+  .btn-primary {
+    @apply btn bg-[rgba(255,255,255,0.12)] hover:bg-[rgba(255,255,255,0.16)] ring-1 ring-white/15 focus:ring-[#22D3EE]/60;
+  }
+  .btn-secondary {
+    @apply inline-flex items-center gap-2 rounded-[18px] px-4 py-2 text-white bg-[rgba(255,255,255,0.08)] ring-1 ring-white/10 hover:bg-[rgba(255,255,255,0.12)] focus:outline-none focus:ring-2 focus:ring-[#FFB86B]/60 transition;
+  }
+  .input-glass {
+    @apply h-10 px-3 rounded-xl bg-[rgba(255,255,255,0.06)] ring-1 ring-white/10 text-[13px] text-white placeholder-[rgba(230,231,235,0.64)] focus:outline-none focus:ring-2 focus:ring-[#22D3EE]/60;
+  }
 }

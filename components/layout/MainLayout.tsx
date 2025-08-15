@@ -9,11 +9,11 @@ const MainLayout: React.FC<MainLayoutProps> = ({ sidebar, children }) => {
   const [mobileOpen, setMobileOpen] = React.useState(false);
 
   const asideClasses = `
-    fixed inset-y-0 left-0 z-50 w-72 lg:w-80 p-4 overflow-y-auto pb-24
-    border-r border-white/10 bg-black/80 backdrop-blur-lg
+    fixed inset-y-0 left-0 z-50 w-80 lg:w-96 p-4 overflow-hidden pb-4 flex flex-col
+    ring-1 ring-white/10 bg-[rgba(255,255,255,0.06)] backdrop-blur-lg
     transform transition-transform duration-200 ease-out
     ${mobileOpen ? 'translate-x-0' : '-translate-x-full'}
-    md:static md:inset-auto md:left-auto md:z-auto md:translate-x-0 md:bg-transparent md:backdrop-blur-0 md:w-72 md:h-screen md:border-b-0
+    md:static md:inset-auto md:left-auto md:z-auto md:translate-x-0 md:bg-[rgba(255,255,255,0.06)] md:backdrop-blur-lg md:w-80 md:h-screen md:border-b-0
   `;
 
   // Close on Escape
@@ -26,13 +26,18 @@ const MainLayout: React.FC<MainLayoutProps> = ({ sidebar, children }) => {
   }, [mobileOpen]);
 
   return (
-    <div className="flex min-h-dvh w-full bg-black text-gray-200 flex-col md:flex-row isolate">
+    <div className="relative flex min-h-dvh w-full text-gray-200 flex-col md:flex-row isolate">
+      {/* Subtle header glow */}
+      <div
+        className="pointer-events-none absolute inset-x-0 -top-40 h-80 bg-[radial-gradient(1200px_at_50%_-200px,rgba(34,211,238,0.12),transparent)]"
+        aria-hidden="true"
+      />
       {/* Mobile top bar */}
-      <div className="md:hidden sticky top-0 z-40 bg-black/80 backdrop-blur-md border-b border-white/10">
+      <div className="md:hidden sticky top-0 z-40 bg-[rgba(255,255,255,0.06)] backdrop-blur-xl ring-1 ring-white/10">
         <div className="flex items-center justify-between p-3">
           <button
             onClick={() => setMobileOpen(true)}
-            className="px-3 py-2 rounded-md bg-white/10 text-white hover:bg-white/20"
+            className="btn"
             aria-label="Open providers menu"
           >
             Providers
@@ -43,7 +48,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({ sidebar, children }) => {
       {/* Drawer backdrop */}
       {mobileOpen && (
         <div
-          className="fixed inset-0 z-40 bg-black/50 md:hidden"
+          className="fixed inset-0 z-40 bg-black/40 md:hidden"
           onClick={() => setMobileOpen(false)}
           aria-hidden="true"
         />

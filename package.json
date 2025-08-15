@@ -6,6 +6,7 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
+    "build:pages": "npx @cloudflare/next-on-pages@1 && node scripts/patch-routes.js",
     "build:cf": "npx @cloudflare/next-on-pages@1",
     "postbuild:cf": "node scripts/patch-routes.js",
     "deploy:cf": "wrangler pages deploy .vercel/output/static --branch production"

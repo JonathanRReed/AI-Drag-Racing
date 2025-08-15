@@ -21,15 +21,17 @@ async function* streamGoogleResponse(
     const parts = buffer.split('\n\n');
     buffer = parts.pop() || '';
     for (const part of parts) {
-      // Expect lines like: "data: {json}"
-      const line = part.trim();
-      if (!line.startsWith('data:')) continue;
-      const data = line.slice(5).trim();
-      if (!data || data === '[DONE]') continue;
-      try {
-        yield JSON.parse(data);
-      } catch {
-        // ignore malformed chunk
+      // Each SSE event can include multiple lines (e.g., event: x, data: y)
+      const lines = part.split('\n').map(l => l.trim()).filter(Boolean);
+      for (const l of lines) {
+        if (!l.startsWith('data:')) continue;
+        const data = l.slice(5).trim();
+        if (!data || data === '[DONE]') continue;
+        try {
+          yield JSON.parse(data);
+        } catch {
+          // ignore malformed chunk
+        }
       }
     }
   }
@@ -57,7 +59,9 @@ const googleService: ProviderService = {
     let tokenCount = 0;
 
     // Use alt=sse and send API key via header per docs
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:streamGenerateContent?alt=sse`;
+    // Gemini expects the path segment to include the 'models/' prefix
+    const modelPath = model.startsWith('models/') ? model : `models/${model}`;
+    const url = `https://generativelanguage.googleapis.com/v1beta/${modelPath}:streamGenerateContent?alt=sse`;
 
     const response = await fetch(url, {
       method: 'POST',

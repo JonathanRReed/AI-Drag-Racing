@@ -10,6 +10,9 @@ import '../../../../utils/providers/anthropic';
 import '../../../../utils/providers/google';
 import '../../../../utils/providers/cohere';
 import '../../../../utils/providers/mistral';
+import '../../../../utils/providers/together';
+import '../../../../utils/providers/fireworks';
+import '../../../../utils/providers/openrouter';
 
 export default async function handler(req: Request): Promise<Response> {
   if (req.method !== 'POST') {
