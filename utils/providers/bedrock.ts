@@ -54,7 +54,8 @@ const bedrockService: ProviderService = {
   async *generate(
     prompt: string,
     model: string,
-    apiKey: string
+    apiKey: string,
+    signal?: AbortSignal
   ): AsyncGenerator<CompletionResult> {
     const startTime = Date.now();
     let firstTokenTime: number | undefined;

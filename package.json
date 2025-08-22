@@ -6,6 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
+    "lint": "eslint . --ext .js,.cjs,.mjs,.jsx,.ts,.tsx",
+    "lint:fix": "eslint . --ext .js,.cjs,.mjs,.jsx,.ts,.tsx --fix",
     "build:pages": "npx @cloudflare/next-on-pages@1 && node scripts/patch-routes.js",
     "build:cf": "npx @cloudflare/next-on-pages@1",
     "postbuild:cf": "node scripts/patch-routes.js",
@@ -17,18 +19,34 @@
     "@types/node": "20.11.30",
     "autoprefixer": "10.4.14",
     "chart.js": "4.4.1",
-    "next": "^14.2.28",
+    "next": "^15.0.0",
     "postcss": "^8.5.3",
-    "react": "18.2.0",
+    "react": "^19.0.0",
     "react-chartjs-2": "^5.2.0",
-    "react-dom": "18.2.0",
+    "react-dom": "^19.0.0",
     "tailwindcss": "3.4.1",
-    "typescript": "5.4.5"
+    "typescript": "^5.6.3"
   },
   "devDependencies": {
     "@cloudflare/next-on-pages": "^1.13.13",
-    "@types/react": "^18.3.20",
-    "@types/react-dom": "^18.3.6",
+    "@types/react": "19.1.11",
+    "@typescript-eslint/eslint-plugin": "^8.40.0",
+    "@typescript-eslint/parser": "^8.40.0",
+    "typescript-eslint": "^8.40.0",
+    "babel-plugin-react-compiler": "^19.1.0-rc.2",
+    "eslint": "^9.33.0",
+    "eslint-config-next": "^15.0.0",
+    "eslint-plugin-react": "^7.37.5",
+    "eslint-plugin-react-hooks": "^5.2.0",
+    "eslint-plugin-tailwindcss": "^3.18.2",
+    "eslint-plugin-unused-imports": "^4.2.0",
     "sharp": "^0.34.3"
+  },
+  "overrides": {
+    "cookie": "^0.7.0",
+    "undici": "^5.28.6"
+  },
+  "engines": {
+    "node": ">=18.18.0"
   }
 }

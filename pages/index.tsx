@@ -200,7 +200,7 @@ export default function Home() {
       })
     );
     dispatch({ type: 'FINISH_COMPARISON' });
-  }, [state.prompt, state.apiKeys, state.selectedPairs]);
+  }, [state.prompt, state.apiKeys, state.selectedPairs, state.enabledProviders]);
 
   return (
     <>

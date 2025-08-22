@@ -14,7 +14,18 @@ async function* streamSSE(response: Response): AsyncGenerator<any, void, unknown
   const decoder = new TextDecoder('utf-8');
   let buffer = '';
   while (true) {
-    const { done, value } = await reader.read();
+    let done: boolean, value: Uint8Array | undefined;
+    try {
+      ({ done, value } = await reader.read());
+    } catch (e: any) {
+      const msg = String(e?.message || e || '');
+      const code = (e && typeof e === 'object' && 'code' in e) ? (e as any).code : undefined;
+      if (e?.name === 'AbortError' || code === 'ECONNRESET' || msg.includes('aborted')) {
+        // Swallow abort/connection reset and stop streaming silently
+        break;
+      }
+      throw e;
+    }
     if (done) break;
     buffer += decoder.decode(value, { stream: true });
     const parts = buffer.split('\n\n');
@@ -44,6 +55,7 @@ const openRouterService: ProviderService = {
     prompt: string,
     model: string,
     apiKey: string,
+    signal?: AbortSignal,
   ): AsyncGenerator<CompletionResult> {
     const startTime = Date.now();
     let firstTokenTime: number | undefined;
@@ -57,12 +69,14 @@ const openRouterService: ProviderService = {
         Authorization: `Bearer ${apiKey}`,
         // Provide app title for OpenRouter best practices
         'X-Title': 'AI Latency Tester',
+        Accept: 'text/event-stream',
       },
       body: JSON.stringify({
         model,
         messages: [{ role: 'user', content: prompt }],
         stream: true,
       }),
+      signal,
     });
 
     if (!response.ok) {
