@@ -1,4 +1,3 @@
-import { performTogetherInference } from './fetchModels';
 
 export interface ModelApiParams {
   provider: string;

@@ -33,6 +33,7 @@ export interface ProviderService {
     prompt: string,
     model: string,
     apiKey: string,
+    signal?: AbortSignal,
   ): AsyncGenerator<CompletionResult>;
 }
 

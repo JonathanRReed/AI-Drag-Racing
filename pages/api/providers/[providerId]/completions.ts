@@ -64,30 +64,48 @@ export default async function handler(req: Request): Promise<Response> {
   const { readable, writable } = new TransformStream();
   const writer = writable.getWriter();
   const encoder = new TextEncoder();
+  const signal = (req as any).signal as AbortSignal | undefined;
+  let aborted = false;
+  signal?.addEventListener('abort', () => {
+    aborted = true;
+    try { writer.abort(); } catch {}
+  });
 
   const writeEvent = async (data: any) => {
+    if (aborted) return;
     const chunk = `data: ${JSON.stringify(data)}\n\n`;
-    await writer.write(encoder.encode(chunk));
+    try {
+      await writer.write(encoder.encode(chunk));
+    } catch {
+      // Ignore writes after stream has been closed/aborted
+    }
   };
 
   (async () => {
     try {
-      const generator = providerService.generate(prompt, model, apiKey);
+      const generator = providerService.generate(prompt, model, apiKey, signal);
       for await (const result of generator) {
+        if (aborted) break;
         await writeEvent(result);
       }
     } catch (error) {
-      // Swallow errors; the client will handle stream end
+      // Emit error to client unless already aborted
+      if (!aborted) {
+        const message = (error instanceof Error) ? error.message : String(error);
+        try { await writeEvent({ type: 'error', message }); } catch {}
+      }
     } finally {
-      await writer.close();
+      try { await writer.close(); } catch {}
+      try { writer.releaseLock(); } catch {}
     }
   })();
 
   return new Response(readable, {
     headers: {
       'Content-Type': 'text/event-stream; charset=utf-8',
-      'Cache-Control': 'no-cache, no-transform',
+      'Cache-Control': 'no-store, no-transform',
       'Connection': 'keep-alive',
+      'X-Accel-Buffering': 'no',
     },
   });
 }

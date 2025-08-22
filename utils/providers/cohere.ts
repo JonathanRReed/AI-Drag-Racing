@@ -53,7 +53,8 @@ const cohereService: ProviderService = {
   async *generate(
     prompt: string,
     model: string,
-    apiKey: string
+    apiKey: string,
+    signal?: AbortSignal
   ): AsyncGenerator<CompletionResult> {
     const startTime = Date.now();
     let firstTokenTime: number | undefined;
@@ -72,6 +73,7 @@ const cohereService: ProviderService = {
         messages: [{ role: 'user', content: prompt }],
         stream: true,
       }),
+      signal,
     });
 
     if (!response.ok) {

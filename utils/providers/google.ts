@@ -71,7 +71,8 @@ const googleService: ProviderService = {
   async *generate(
     prompt: string,
     model: string,
-    apiKey: string
+    apiKey: string,
+    signal?: AbortSignal
   ): AsyncGenerator<CompletionResult> {
     const startTime = Date.now();
     let firstTokenTime: number | undefined;
@@ -82,19 +83,22 @@ const googleService: ProviderService = {
     let generatedText = '';
     const promptApprox = Math.ceil((prompt || '').length / 4);
 
-    // Use alt=sse and send API key via query parameter (most reliable per docs)
+    // Use alt=sse and send API key via header per docs
     // Gemini expects the path segment to include the 'models/' prefix
     const modelPath = model.startsWith('models/') ? model : `models/${model}`;
-    const url = `https://generativelanguage.googleapis.com/v1beta/${modelPath}:streamGenerateContent?alt=sse&key=${encodeURIComponent(apiKey)}`;
+    const url = `https://generativelanguage.googleapis.com/v1beta/${modelPath}:streamGenerateContent?alt=sse`;
 
     const response = await fetch(url, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        'x-goog-api-key': apiKey,
+        Accept: 'text/event-stream',
       },
       body: JSON.stringify({
         contents: [{ role: 'user', parts: [{ text: prompt }] }],
       }),
+      signal,
     });
 
     if (!response.ok) {

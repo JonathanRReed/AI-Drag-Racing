@@ -44,6 +44,7 @@ const fireworksService: ProviderService = {
     prompt: string,
     model: string,
     apiKey: string,
+    signal?: AbortSignal,
   ): AsyncGenerator<CompletionResult> {
     const startTime = Date.now();
     let firstTokenTime: number | undefined;
@@ -55,12 +56,14 @@ const fireworksService: ProviderService = {
       headers: {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${apiKey}`,
+        Accept: 'text/event-stream',
       },
       body: JSON.stringify({
         model,
         messages: [{ role: 'user', content: prompt }],
         stream: true,
       }),
+      signal,
     });
 
     if (!response.ok) {

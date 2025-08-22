@@ -70,7 +70,8 @@ const anthropicService: ProviderService = {
   async *generate(
     prompt: string,
     model: string,
-    apiKey: string
+    apiKey: string,
+    signal?: AbortSignal
   ): AsyncGenerator<CompletionResult> {
     const startTime = Date.now();
     let firstTokenTime: number | undefined;
@@ -83,6 +84,7 @@ const anthropicService: ProviderService = {
         'Content-Type': 'application/json',
         'x-api-key': apiKey,
         'anthropic-version': '2023-06-01',
+        Accept: 'text/event-stream',
       },
       body: JSON.stringify({
         model,
@@ -90,6 +92,7 @@ const anthropicService: ProviderService = {
         stream: true,
         max_tokens: 4096, // Anthropic requires max_tokens
       }),
+      signal,
     });
 
     if (!response.ok) {
