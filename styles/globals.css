@@ -18,13 +18,20 @@
     --text:#E6E7EB; --text-muted:rgba(230,231,235,0.64);
     --accent:#22D3EE; --complement:#FFB86B;
     --success:#22D3A6; --warning:#F59E0B; --danger:#FB7185; --info:#60A5FA;
+    /* Racing accent colors */
+    --race-gold:#FFD700; --race-silver:#C0C0C0; --race-bronze:#CD7F32;
+    --race-red:#EF4444; --race-green:#22C55E; --race-yellow:#FACC15;
   }
   body {
     color: var(--text);
     background: var(--bg);
+    background-image: 
+      radial-gradient(ellipse 80% 50% at 50% -20%, rgba(34,211,238,0.08) 0%, transparent 50%),
+      radial-gradient(ellipse 60% 40% at 90% 80%, rgba(232,121,249,0.05) 0%, transparent 50%);
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     text-rendering: optimizeLegibility;
+    min-height: 100vh;
   }
   html {
     font-family: 'Nebula Sans Book', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'Noto Sans', sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
@@ -99,4 +106,113 @@
   .scrollbar-none::-webkit-scrollbar {
     display: none; /* Chrome, Safari */
   }
+}
+
+/* Racing Animations */
+@keyframes pulse-glow {
+  0%, 100% { box-shadow: 0 0 8px currentColor, 0 0 16px currentColor; opacity: 1; }
+  50% { box-shadow: 0 0 16px currentColor, 0 0 32px currentColor; opacity: 0.8; }
+}
+
+@keyframes countdown-pop {
+  0% { transform: scale(0.5); opacity: 0; }
+  50% { transform: scale(1.15); }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+@keyframes countdown-exit {
+  0% { transform: scale(1); opacity: 1; }
+  100% { transform: scale(1.5); opacity: 0; }
+}
+
+@keyframes race-stripe {
+  0% { background-position: 0 0; }
+  100% { background-position: 40px 0; }
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+@keyframes trophy-bounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-4px); }
+}
+
+@keyframes finish-flash {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+
+.animate-pulse-glow {
+  animation: pulse-glow 1.5s ease-in-out infinite;
+}
+
+.animate-countdown-pop {
+  animation: countdown-pop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+.animate-countdown-exit {
+  animation: countdown-exit 0.3s ease-out forwards;
+}
+
+.animate-race-stripe {
+  animation: race-stripe 0.8s linear infinite;
+}
+
+.animate-shimmer {
+  background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.1) 50%, transparent 100%);
+  background-size: 200% 100%;
+  animation: shimmer 2s ease-in-out infinite;
+}
+
+.animate-trophy-bounce {
+  animation: trophy-bounce 2s ease-in-out infinite;
+}
+
+/* Checkered flag pattern */
+.checkered-flag {
+  background-image: 
+    linear-gradient(45deg, #fff 25%, transparent 25%),
+    linear-gradient(-45deg, #fff 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, #fff 75%),
+    linear-gradient(-45deg, transparent 75%, #fff 75%);
+  background-size: 8px 8px;
+  background-position: 0 0, 0 4px, 4px -4px, -4px 0px;
+}
+
+/* Racing light states */
+.race-light {
+  transition: all 0.15s ease-out;
+}
+.race-light-off {
+  background: rgba(255,255,255,0.08);
+  box-shadow: none;
+}
+.race-light-red {
+  background: var(--race-red);
+  box-shadow: 0 0 12px var(--race-red), 0 0 24px color-mix(in srgb, var(--race-red) 60%, transparent);
+}
+.race-light-yellow {
+  background: var(--race-yellow);
+  box-shadow: 0 0 12px var(--race-yellow), 0 0 24px color-mix(in srgb, var(--race-yellow) 60%, transparent);
+}
+.race-light-green {
+  background: var(--race-green);
+  box-shadow: 0 0 12px var(--race-green), 0 0 24px color-mix(in srgb, var(--race-green) 60%, transparent);
+}
+
+/* Podium gradient backgrounds */
+.podium-gold {
+  background: linear-gradient(135deg, rgba(255,215,0,0.15) 0%, rgba(255,215,0,0.05) 100%);
+  border-color: rgba(255,215,0,0.3);
+}
+.podium-silver {
+  background: linear-gradient(135deg, rgba(192,192,192,0.12) 0%, rgba(192,192,192,0.04) 100%);
+  border-color: rgba(192,192,192,0.25);
+}
+.podium-bronze {
+  background: linear-gradient(135deg, rgba(205,127,50,0.12) 0%, rgba(205,127,50,0.04) 100%);
+  border-color: rgba(205,127,50,0.25);
 }

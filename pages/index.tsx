@@ -7,9 +7,10 @@ import ResultsDisplay, { ResultState } from '../components/main/ResultsDisplay';
 import ComparisonCharts from '../components/ComparisonCharts';
 import { streamCompletion } from '../utils/apiClient';
 import { CompletionMetrics } from '../utils/providerService';
-import GlassCard from '../components/layout/GlassCard'; // Correct import location
+import GlassCard from '../components/layout/GlassCard';
 import CountdownOverlay from '../components/main/CountdownOverlay';
 import Leaderboard from '../components/main/Leaderboard';
+import RaceSettings, { RaceConfig } from '../components/sidebar/RaceSettings';
 
 // --- State Management using useReducer ---
 
@@ -22,6 +23,7 @@ interface AppState {
   raceState: 'idle' | 'countingDown' | 'racing' | 'finished';
   countdownValue: number | 'Go!' | null;
   enabledProviders: Record<string, boolean>;
+  raceConfig: RaceConfig;
 }
 
 type AppAction =
@@ -37,7 +39,8 @@ type AppAction =
   | { type: 'SET_RACE_STATE'; payload: AppState['raceState'] }
   | { type: 'SET_COUNTDOWN'; payload: AppState['countdownValue'] }
   | { type: 'SET_PROVIDER_ENABLED'; payload: { providerId: string; enabled: boolean } }
-  | { type: 'RESET_RACE' };
+  | { type: 'RESET_RACE' }
+  | { type: 'SET_RACE_CONFIG'; payload: RaceConfig };
 
 const initialState: AppState = {
   prompt: 'Write a short story about a robot who discovers music.',
@@ -48,6 +51,16 @@ const initialState: AppState = {
   raceState: 'idle',
   countdownValue: null,
   enabledProviders: {},
+  raceConfig: {
+    mode: 'drag',
+    tokenLimit: 500,
+    timeLimit: 30,
+    modelSettings: {
+      temperature: 0.7,
+      maxTokens: 2048,
+      topP: 1.0,
+    },
+  },
 };
 
 function appReducer(state: AppState, action: AppAction): AppState {
@@ -122,6 +135,8 @@ function appReducer(state: AppState, action: AppAction): AppState {
         ...state,
         enabledProviders: { ...state.enabledProviders, [action.payload.providerId]: action.payload.enabled },
       };
+    case 'SET_RACE_CONFIG':
+      return { ...state, raceConfig: action.payload };
     default:
       return state;
   }
@@ -171,6 +186,10 @@ export default function Home() {
       dispatch({ type: 'SET_RACE_STATE', payload: 'racing' });
       dispatch({ type: 'SET_COUNTDOWN', payload: null });
     }
+    // Get race config and prepare settings
+    const { mode, tokenLimit, timeLimit, modelSettings } = state.raceConfig;
+    const raceStartTime = Date.now();
+
     await Promise.all(
       providersToTest.map(async (p) => {
         const resultId = `${p.providerId}-${p.modelId}`;
@@ -180,19 +199,53 @@ export default function Home() {
           return;
         }
         try {
-          const stream = streamCompletion(p.providerId, state.prompt, p.modelId, apiKey);
+          const stream = streamCompletion(p.providerId, state.prompt, p.modelId, apiKey, modelSettings);
           let sawMetrics = false;
+          let tokenCount = 0;
+          
           for await (const result of stream) {
+            // Check race mode limits
+            if (mode === 'token_limit' && tokenLimit && tokenCount >= tokenLimit) {
+              // Token limit reached - finish early
+              break;
+            }
+            if (mode === 'time_limit' && timeLimit) {
+              const elapsed = (Date.now() - raceStartTime) / 1000;
+              if (elapsed >= timeLimit) {
+                // Time limit reached - finish early
+                break;
+              }
+            }
+            
             if (result.type === 'chunk') {
+              tokenCount++;
               dispatch({ type: 'RECEIVE_CHUNK', payload: { resultId, chunk: result.content } });
             } else if (result.type === 'metrics') {
               dispatch({ type: 'FINISH_STREAM', payload: { resultId, metrics: result.data } });
               sawMetrics = true;
             }
           }
-          // If the stream closed without emitting metrics, mark as error
+          // If the stream closed without emitting metrics (e.g., due to limits), create synthetic metrics
           if (!sawMetrics) {
-            dispatch({ type: 'SET_ERROR', payload: { resultId, error: 'Stream ended without metrics' } });
+            if (mode === 'token_limit' || mode === 'time_limit') {
+              // For limited races, we create metrics based on what we collected
+              const finishTime = Date.now();
+              dispatch({
+                type: 'FINISH_STREAM',
+                payload: {
+                  resultId,
+                  metrics: {
+                    startTime: raceStartTime,
+                    firstTokenTime: raceStartTime + 100, // approximate
+                    finishTime,
+                    tokenCount,
+                    outputTokens: tokenCount,
+                  },
+                },
+              });
+            } else {
+              dispatch({ type: 'SET_ERROR', payload: { resultId, error: 'Stream ended without metrics' } });
+            }
           }
         } catch (e: any) {
           dispatch({ type: 'SET_ERROR', payload: { resultId, error: e.message } });
@@ -200,12 +253,39 @@ export default function Home() {
       })
     );
     dispatch({ type: 'FINISH_COMPARISON' });
-  }, [state.prompt, state.apiKeys, state.selectedPairs, state.enabledProviders]);
+  }, [state.prompt, state.apiKeys, state.selectedPairs, state.enabledProviders, state.raceConfig]);
 
   return (
     <>
       <Head>
-        <title>AI Latency & Perf Comparator</title>
+        <title>AI Drag Racing - Model Performance Showdown</title>
+        <meta name="description" content="Race AI models head-to-head. Compare TTFT, throughput, and total time across OpenAI, Anthropic, Google, Groq, Cerebras and more." />
+        
+        {/* Canonical URL */}
+        <link rel="canonical" href="https://ai-drag-racing.com/" />
+        
+        {/* Open Graph / Facebook */}
+        <meta property="og:type" content="website" />
+        <meta property="og:url" content="https://ai-drag-racing.com/" />
+        <meta property="og:title" content="AI Drag Racing - Model Performance Showdown" />
+        <meta property="og:description" content="Race AI models head-to-head. Compare TTFT, throughput, and total time across OpenAI, Anthropic, Google, Groq, Cerebras and more." />
+        <meta property="og:image" content="https://ai-drag-racing.com/og-image.png" />
+        <meta property="og:site_name" content="AI Drag Racing" />
+        
+        {/* Twitter */}
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:url" content="https://ai-drag-racing.com/" />
+        <meta name="twitter:title" content="AI Drag Racing - Model Performance Showdown" />
+        <meta name="twitter:description" content="Race AI models head-to-head. Compare TTFT, throughput, and total time across OpenAI, Anthropic, Google, Groq, Cerebras and more." />
+        <meta name="twitter:image" content="https://ai-drag-racing.com/og-image.png" />
+        
+        {/* Additional SEO */}
+        <meta name="robots" content="index, follow" />
+        <meta name="keywords" content="AI, LLM, model comparison, drag race, performance, TTFT, throughput, tokens per second, OpenAI, Anthropic, Claude, GPT, Gemini, Groq, Cerebras" />
+        <meta name="author" content="AI Drag Racing" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <meta name="theme-color" content="#07090D" />
+        
         <link rel="icon" type="image/svg+xml" href="/Favicon/favicon.svg" />
       </Head>
       <MainLayout
@@ -223,6 +303,11 @@ export default function Home() {
                   (p) => state.enabledProviders[p.providerId] !== false && !!state.apiKeys[p.providerId] && !!p.modelId
                 ) || state.raceState === 'countingDown'
               }
+            />
+            {/* Race Settings */}
+            <RaceSettings
+              config={state.raceConfig}
+              onChange={(config) => dispatch({ type: 'SET_RACE_CONFIG', payload: config })}
             />
             <GlassCard className="p-3 w-full max-w-full flex-1 min-h-0 overflow-hidden">
               <ProviderList
@@ -267,9 +352,12 @@ export default function Home() {
                 {/* Primary controls available even when sidebar is closed on mobile */}
                 <button
                   onClick={handleRunComparison}
-                  className="btn btn-primary text-xs hidden sm:inline-flex"
+                  className="btn btn-primary text-xs hidden sm:inline-flex group"
                   disabled={startDisabled || !state.prompt}
                 >
+                  <svg viewBox="0 0 24 24" className="w-3.5 h-3.5 text-cyan-300 group-hover:translate-x-0.5 transition-transform" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M5 12h14M12 5l7 7-7 7" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
                   Start
                 </button>
                 <button

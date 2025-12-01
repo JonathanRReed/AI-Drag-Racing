@@ -4,6 +4,7 @@ import {
   ProviderService,
   CompletionResult,
   registerProviderService,
+  ModelSettings,
 } from '../providerService';
 import { fetchOpenRouterModels } from '../fetchModels';
 import { finalTokenTotal, approxTokensFromText } from '../tokens';
@@ -56,6 +57,7 @@ const openRouterService: ProviderService = {
     model: string,
     apiKey: string,
     signal?: AbortSignal,
+    settings?: ModelSettings
   ): AsyncGenerator<CompletionResult> {
     const startTime = Date.now();
     let firstTokenTime: number | undefined;
@@ -68,13 +70,16 @@ const openRouterService: ProviderService = {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${apiKey}`,
         // Provide app title for OpenRouter best practices
-        'X-Title': 'AI Latency Tester',
+        'X-Title': 'AI Drag Racing',
         Accept: 'text/event-stream',
       },
       body: JSON.stringify({
         model,
         messages: [{ role: 'user', content: prompt }],
         stream: true,
+        temperature: settings?.temperature ?? 0.7,
+        max_tokens: settings?.maxTokens ?? 2048,
+        top_p: settings?.topP ?? 1.0,
       }),
       signal,
     });

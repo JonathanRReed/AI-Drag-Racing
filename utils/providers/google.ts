@@ -4,6 +4,7 @@ import {
   ProviderService,
   CompletionResult,
   registerProviderService,
+  ModelSettings,
 } from '../providerService';
 import { approxTokensFromText } from '../tokens';
 
@@ -72,7 +73,8 @@ const googleService: ProviderService = {
     prompt: string,
     model: string,
     apiKey: string,
-    signal?: AbortSignal
+    signal?: AbortSignal,
+    settings?: ModelSettings
   ): AsyncGenerator<CompletionResult> {
     const startTime = Date.now();
     let firstTokenTime: number | undefined;
@@ -97,6 +99,11 @@ const googleService: ProviderService = {
       },
       body: JSON.stringify({
         contents: [{ role: 'user', parts: [{ text: prompt }] }],
+        generationConfig: {
+          temperature: settings?.temperature ?? 0.7,
+          maxOutputTokens: settings?.maxTokens ?? 2048,
+          topP: settings?.topP ?? 1.0,
+        },
       }),
       signal,
     });

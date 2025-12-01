@@ -1,7 +1,7 @@
 // Centralized provider config for model fetching and display
 // Add new providers here for easy extensibility
 
-import { fetchOpenAIModels, fetchGroqModels, fetchAnthropicModels, fetchGoogleModels, fetchAzureModels, fetchOpenRouterModels, fetchFireworksModels, fetchTogetherModels, fetchCohereModels, fetchMistralModels, fetchBedrockModels, fetchPerplexityModels, fetchXaiModels, fetchDeepSeekModels, fetchAI21Models } from './fetchModels';
+import { fetchOpenAIModels, fetchGroqModels, fetchAnthropicModels, fetchGoogleModels, fetchAzureModels, fetchOpenRouterModels, fetchFireworksModels, fetchTogetherModels, fetchCohereModels, fetchMistralModels, fetchBedrockModels, fetchPerplexityModels, fetchXaiModels, fetchDeepSeekModels, fetchAI21Models, fetchCerebrasModels } from './fetchModels';
 
 export interface ProviderConfig {
   id: string;
@@ -119,6 +119,13 @@ export const PROVIDERS: ProviderConfig[] = [
     requiresApiKey: true,
     logoUrl: ICON('ai21'),
     fetcher: fetchAI21Models,
+  },
+  {
+    id: 'cerebras',
+    displayName: 'Cerebras',
+    requiresApiKey: true,
+    logoUrl: ICON('cerebras'),
+    fetcher: fetchCerebrasModels,
   },
 ];
 

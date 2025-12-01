@@ -238,4 +238,15 @@ export async function fetchDeepSeekModels(_apiKey: string): Promise<string[]> {
 export async function fetchAI21Models(_apiKey: string): Promise<string[]> {
   return [];
 }
+
+// Cerebras model listing - static list since they have fixed models
+export async function fetchCerebrasModels(_apiKey: string): Promise<string[]> {
+  // Cerebras has a fixed set of models
+  return [
+    'llama3.1-8b',
+    'llama-3.3-70b',
+    'qwen-3-32b',
+    'gpt-oss-120b',
+  ];
+}
 // --- END PATCH ---

@@ -108,12 +108,15 @@ const PromptInput: React.FC<PromptInputProps> = ({
           className={`input-glass w-full md:flex-1 md:min-w-0 whitespace-nowrap overflow-x-auto scrollbar-none ${
             !isLoading ? 'transform-gpu transition-[transform,box-shadow,background-color,height] focus:h-11 focus:scale-[1.02] focus:shadow-[0_0_0_6px_rgba(34,211,238,0.12)] focus:ring-2 focus:ring-[#22D3EE]/70 focus:ring-offset-2 focus:ring-offset-[#07090D]' : ''
           }`}
-          placeholder="Write a prompt… Press Enter to start"
+          placeholder="Write a prompt... Press Enter to start"
           aria-label="Enter prompt"
           spellCheck={false}
           autoCapitalize="off"
           autoComplete="off"
           autoCorrect="off"
+          data-form-type="other"
+          data-lpignore="true"
+          data-1p-ignore="true"
           inputMode="text"
           enterKeyHint="go"
           dir="auto"
@@ -133,9 +136,21 @@ const PromptInput: React.FC<PromptInputProps> = ({
           <button
             onClick={onSubmit}
             disabled={!!disabled || isLoading || !prompt}
-            className="btn btn-primary text-sm"
+            className="btn btn-primary text-sm group relative overflow-hidden"
           >
-            {isLoading ? 'Running…' : 'Start'}
+            {isLoading ? (
+              <>
+                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                Racing...
+              </>
+            ) : (
+              <>
+                <svg viewBox="0 0 24 24" className="w-4 h-4 text-cyan-300 group-hover:translate-x-0.5 transition-transform" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M5 12h14M12 5l7 7-7 7" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+                Start Race
+              </>
+            )}
           </button>
         </div>
       </div>
@@ -163,11 +178,14 @@ const PromptInput: React.FC<PromptInputProps> = ({
                 }
               }}
               className="w-full resize-none bg-transparent text-[15px] leading-[1.35] text-white placeholder-[rgba(230,231,235,0.64)] outline-none scrollbar-none min-h-[44px] max-h-[40vh] px-2 py-1"
-              placeholder="Write a prompt…"
+              placeholder="Write a prompt..."
               spellCheck={false}
               autoCapitalize="off"
               autoComplete="off"
               autoCorrect="off"
+              data-form-type="other"
+              data-lpignore="true"
+              data-1p-ignore="true"
               dir="auto"
             />
             <div className="mt-2 flex items-center justify-end gap-2">
@@ -191,7 +209,10 @@ const PromptInput: React.FC<PromptInputProps> = ({
                   }
                 }}
               >
-                Start
+                <svg viewBox="0 0 24 24" className="w-3.5 h-3.5 text-cyan-300" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M5 12h14M12 5l7 7-7 7" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+                Start Race
               </button>
             </div>
           </div>

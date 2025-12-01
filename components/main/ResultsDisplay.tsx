@@ -24,8 +24,12 @@ interface ResultsDisplayProps {
 const ResultsDisplay: React.FC<ResultsDisplayProps> = ({ results, hideFailed = false, force }) => {
   if (results.length === 0) {
     return (
-      <GlassCard className="p-6 text-center text-gray-400">
-        <p>Run a comparison to see results here.</p>
+      <GlassCard className="py-16 px-8">
+        <div className="flex flex-col items-center justify-center text-center">
+          <p className="text-[var(--text-muted)]">
+            Run a comparison to see results here.
+          </p>
+        </div>
       </GlassCard>
     );
   }

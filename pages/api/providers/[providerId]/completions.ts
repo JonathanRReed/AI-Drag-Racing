@@ -13,6 +13,7 @@ import '../../../../utils/providers/mistral';
 import '../../../../utils/providers/together';
 import '../../../../utils/providers/fireworks';
 import '../../../../utils/providers/openrouter';
+import '../../../../utils/providers/cerebras';
 
 export default async function handler(req: Request): Promise<Response> {
   if (req.method !== 'POST') {
@@ -43,7 +44,7 @@ export default async function handler(req: Request): Promise<Response> {
     });
   }
 
-  const { prompt, model, apiKey } = body || {};
+  const { prompt, model, apiKey, settings } = body || {};
 
   if (!prompt || !model || !apiKey) {
     return new Response(JSON.stringify({ error: 'Missing prompt, model, or apiKey' }), {
@@ -51,6 +52,13 @@ export default async function handler(req: Request): Promise<Response> {
       headers: { 'Content-Type': 'application/json' },
     });
   }
+
+  // Extract model settings with defaults
+  const modelSettings = {
+    temperature: settings?.temperature ?? 0.7,
+    maxTokens: settings?.maxTokens ?? 2048,
+    topP: settings?.topP ?? 1.0,
+  };
 
   const providerService = getProviderService(providerId);
 
@@ -83,7 +91,7 @@ export default async function handler(req: Request): Promise<Response> {
 
   (async () => {
     try {
-      const generator = providerService.generate(prompt, model, apiKey, signal);
+      const generator = providerService.generate(prompt, model, apiKey, signal, modelSettings);
       for await (const result of generator) {
         if (aborted) break;
         await writeEvent(result);
