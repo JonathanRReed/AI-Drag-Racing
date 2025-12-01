@@ -228,8 +228,3 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,  
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN  
 THE SOFTWARE.
-```
-
-### Next step
-
-- If you’re happy with this, paste it into [README.md](cci:7://file:///Users/jonathanreed/Downloads/AI-Drag-Racing/README.md:0:0-0:0), or tell me and I’ll apply it directly to the file for you.
