@@ -32,47 +32,47 @@ User-agent: meta-externalagent
 User-agent: LinkedInBot
 Allow: /
 
-# ███ 3. MODEL‑TRAINING & BULK‑AI SCRAPERS (blocked) ███
+# ███ 3. MODEL‑TRAINING & BULK‑AI SCRAPERS ███
 User-agent: GPTBot                     # OpenAI model‑training
-Disallow: /
+Allow: /
 User-agent: OAI-SearchBot              # OpenAI retrieval indexer
-Disallow: /
+Allow: /
 User-agent: ChatGPT-User
 User-agent: ChatGPT-User/2.0
-Disallow: /
+Allow: /
 
 User-agent: anthropic-ai               # Anthropic
 User-agent: ClaudeBot
 User-agent: claude-web
-Disallow: /
+Allow: /
 
 User-agent: PerplexityBot
-Disallow: /
+Allow: /
 User-agent: Perplexity-User/1.0
-Disallow: /
+Allow: /
 
 User-agent: Google-Extended            # Gemini training
-Disallow: /
+Allow: /
 
 User-agent: Amazonbot                  # Alexa / AI tasks
-Disallow: /
+Allow: /
 User-agent: Applebot-Extended          # Apple AI training
-Disallow: /
+Allow: /
 
 User-agent: Bytespider                 # ByteDance / TikTok AI
-Disallow: /
+Allow: /
 
-User-agent: MistralAI-User/1.0         # Mistral “Le Chat” crawler
-Disallow: /
+User-agent: MistralAI-User/1.0         # Mistral “Le Chat” crawler
+Allow: /
 
-User-agent: AI2Bot                     # Allen AI / Semantic Scholar
-Disallow: /
+User-agent: AI2Bot                     # Allen AI / Semantic Scholar
+Allow: /
 
 User-agent: CCBot                      # Common Crawl
-Disallow: /
+Allow: /
 
 User-agent: cohere-ai                  # Cohere
-Disallow: /
+Allow: /
 
 # Placeholder — xAI Grok crawler (token unknown as of May‑2025)
 # User-agent: GrokBot
