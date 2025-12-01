@@ -4,6 +4,7 @@ import {
   ProviderService,
   CompletionResult,
   registerProviderService,
+  ModelSettings,
 } from '../providerService';
 import { finalTokenTotal, approxTokensFromText } from '../tokens';
 
@@ -71,7 +72,8 @@ const anthropicService: ProviderService = {
     prompt: string,
     model: string,
     apiKey: string,
-    signal?: AbortSignal
+    signal?: AbortSignal,
+    settings?: ModelSettings
   ): AsyncGenerator<CompletionResult> {
     const startTime = Date.now();
     let firstTokenTime: number | undefined;
@@ -90,7 +92,9 @@ const anthropicService: ProviderService = {
         model,
         messages: [{ role: 'user', content: prompt }],
         stream: true,
-        max_tokens: 4096, // Anthropic requires max_tokens
+        max_tokens: settings?.maxTokens ?? 4096,
+        temperature: settings?.temperature ?? 0.7,
+        top_p: settings?.topP ?? 1.0,
       }),
       signal,
     });

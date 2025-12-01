@@ -4,6 +4,7 @@ import {
   ProviderService,
   CompletionResult,
   registerProviderService,
+  ModelSettings,
 } from '../providerService';
 import { finalTokenTotal, approxTokensFromText } from '../tokens';
 
@@ -54,7 +55,8 @@ const cohereService: ProviderService = {
     prompt: string,
     model: string,
     apiKey: string,
-    signal?: AbortSignal
+    signal?: AbortSignal,
+    settings?: ModelSettings
   ): AsyncGenerator<CompletionResult> {
     const startTime = Date.now();
     let firstTokenTime: number | undefined;
@@ -72,6 +74,9 @@ const cohereService: ProviderService = {
         model,
         messages: [{ role: 'user', content: prompt }],
         stream: true,
+        temperature: settings?.temperature ?? 0.7,
+        max_tokens: settings?.maxTokens ?? 2048,
+        p: settings?.topP ?? 1.0,
       }),
       signal,
     });

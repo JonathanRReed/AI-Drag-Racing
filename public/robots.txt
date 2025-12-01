@@ -1,5 +1,6 @@
-# robots.txt – https://api-test.helloworldfirm.com/
-# Generated 2025‑05‑07 · SEO‑optimised, AI‑scraper‑aware
+# robots.txt – https://ai-drag-racing.com/
+
+# Generated 2025‑05‑07 · SEO‑optimised, AI‑scraper‑aware
 # ------------------------------------------------------------------
 # ███ 1. MAJOR SEARCH ENGINES (full access) ███
 User-agent: Googlebot
@@ -8,7 +9,7 @@ Allow: /*.css$
 Disallow: /search/
 Disallow: /*?s=
 Disallow: /*?q=
-Sitemap: https://api-test.helloworldfirm.com/sitemap.xml
+Sitemap: https://ai-drag-racing.com/sitemap.xml
 
 User-agent: Bingbot
 Allow: /*.js$

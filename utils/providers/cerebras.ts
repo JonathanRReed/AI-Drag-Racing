@@ -1,4 +1,4 @@
-// utils/providers/fireworks.ts
+// utils/providers/cerebras.ts
 
 import {
   ProviderService,
@@ -6,9 +6,9 @@ import {
   registerProviderService,
   ModelSettings,
 } from '../providerService';
-import { fetchFireworksModels } from '../fetchModels';
 import { finalTokenTotal, approxTokensFromText } from '../tokens';
 
+// Cerebras uses OpenAI-compatible SSE streaming
 async function* streamSSE(response: Response): AsyncGenerator<any, void, unknown> {
   const reader = response.body?.getReader();
   if (!reader) throw new Error('No response body');
@@ -34,11 +34,18 @@ async function* streamSSE(response: Response): AsyncGenerator<any, void, unknown
   }
 }
 
-const fireworksService: ProviderService = {
-  providerId: 'fireworks',
+const cerebrasService: ProviderService = {
+  providerId: 'cerebras',
 
   async getModels(apiKey: string): Promise<string[]> {
-    return await fetchFireworksModels(apiKey);
+    // Cerebras has a fixed set of models - return statically
+    // Models from docs: llama3.1-8b, llama-3.3-70b, qwen-3-32b, gpt-oss-120b
+    return [
+      'llama3.1-8b',
+      'llama-3.3-70b',
+      'qwen-3-32b',
+      'gpt-oss-120b',
+    ];
   },
 
   async *generate(
@@ -53,7 +60,8 @@ const fireworksService: ProviderService = {
     let tokenCount = 0;
     let generatedText = '';
 
-    const response = await fetch('https://api.fireworks.ai/inference/v1/chat/completions', {
+    // Cerebras uses OpenAI-compatible API at api.cerebras.ai/v1
+    const response = await fetch('https://api.cerebras.ai/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -73,14 +81,14 @@ const fireworksService: ProviderService = {
 
     if (!response.ok) {
       const errorBody = await response.text();
-      throw new Error(`Fireworks API error: ${response.status} ${errorBody}`);
+      throw new Error(`Cerebras API error: ${response.status} ${errorBody}`);
     }
 
     for await (const chunk of streamSSE(response)) {
       const content = chunk.choices?.[0]?.delta?.content;
       if (content) {
         if (!firstTokenTime) firstTokenTime = Date.now();
-        tokenCount++; // maintain for TPS-like metrics; final total computed below
+        tokenCount++;
         generatedText += content;
         yield { type: 'chunk', content };
       }
@@ -94,4 +102,4 @@ const fireworksService: ProviderService = {
   },
 };
 
-registerProviderService(fireworksService);
+registerProviderService(cerebrasService);

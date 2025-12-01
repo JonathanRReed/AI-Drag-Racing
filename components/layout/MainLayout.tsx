@@ -32,12 +32,24 @@ const MainLayout: React.FC<MainLayoutProps> = ({ sidebar, children }) => {
       {/* Mobile top bar */}
       <div className="md:hidden sticky top-0 z-40 bg-[rgba(255,255,255,0.06)] backdrop-blur-xl ring-1 ring-white/10" style={{ paddingTop: 'calc(env(safe-area-inset-top) + 0.5rem)' }}>
         <div className="flex items-center justify-between p-3 pt-2">
+          {/* Branding */}
+          <div className="flex items-center gap-2">
+            <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-cyan-500/30 to-purple-500/20 flex items-center justify-center">
+              <svg viewBox="0 0 24 24" className="w-4 h-4 text-cyan-400" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </div>
+            <span className="font-semibold text-white text-sm">AI Drag Racing</span>
+          </div>
           <button
             onClick={() => setMobileOpen(true)}
-            className="btn"
+            className="btn text-sm"
             aria-label="Open providers menu"
           >
-            Providers
+            <svg viewBox="0 0 24 24" className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M4 6h16M4 12h16M4 18h16" strokeLinecap="round" />
+            </svg>
+            Racers
           </button>
         </div>
       </div>

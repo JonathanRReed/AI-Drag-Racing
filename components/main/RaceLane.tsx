@@ -30,6 +30,48 @@ function calcTps(metrics: CompletionMetrics | null): string {
   return (out / duration).toFixed(2);
 }
 
+// Status badge component with better visuals
+const StatusBadge: React.FC<{ status: LaneStatus }> = ({ status }) => {
+  const config = {
+    staging: { 
+      bg: 'bg-amber-500/20', 
+      border: 'border-amber-500/40', 
+      text: 'text-amber-400',
+      dot: 'bg-amber-400',
+      label: 'Staging'
+    },
+    green: { 
+      bg: 'bg-emerald-500/20', 
+      border: 'border-emerald-500/40', 
+      text: 'text-emerald-400',
+      dot: 'bg-emerald-400 animate-pulse',
+      label: 'Racing'
+    },
+    finish: { 
+      bg: 'bg-cyan-500/20', 
+      border: 'border-cyan-500/40', 
+      text: 'text-cyan-400',
+      dot: 'bg-cyan-400',
+      label: 'Finished'
+    },
+    error: { 
+      bg: 'bg-red-500/20', 
+      border: 'border-red-500/40', 
+      text: 'text-red-400',
+      dot: 'bg-red-400',
+      label: 'Error'
+    },
+  };
+  const c = config[status];
+  
+  return (
+    <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-medium ${c.bg} ${c.border} ${c.text} border`}>
+      <span className={`w-1.5 h-1.5 rounded-full ${c.dot}`} />
+      {c.label}
+    </span>
+  );
+};
+
 const RaceLane: React.FC<RaceLaneProps> = ({
   providerName,
   modelName,
@@ -95,84 +137,86 @@ const RaceLane: React.FC<RaceLaneProps> = ({
   }, [force?.version]);
 
   return (
-    <div className="relative">
-      {/* Neon lane border */}
-      <GlassCard className={(expanded ? "p-4" : "p-3") + " relative"}>
-        <div className="flex items-start gap-3">
-          {/* Checkered accent strip */}
-          <div
-            className="self-stretch w-1 rounded-sm opacity-60"
-            style={{
-              backgroundImage:
-                'repeating-linear-gradient(45deg, color-mix(in srgb, var(--text) 55%, transparent) 0 5px, var(--divider) 5px 10px)'
-            }}
-          />
-          {/* Christmas tree lights (simple) */}
-          <div className="flex flex-col items-center mt-1">
-            {/* Staging (amber) */}
-            <span
-              className="block w-2.5 h-2.5 rounded-full mb-1"
-              style={{
-                background: status === 'staging' || status === 'green' || status === 'finish' ? 'var(--warning)' : 'rgba(255,255,255,0.08)',
-                boxShadow: status === 'staging' || status === 'green' || status === 'finish' ? '0 0 8px color-mix(in srgb, var(--warning) 80%, transparent)' : 'none'
-              }}
+    <div className="relative group">
+      {/* Racing lane card */}
+      <GlassCard className={(expanded ? "p-4" : "p-3") + " relative overflow-hidden"}>
+        {/* Racing stripe accent at top */}
+        <div 
+          className="absolute top-0 left-0 right-0 h-1 opacity-80"
+          style={{ background: `linear-gradient(90deg, ${laneColor}, ${laneColor}88)` }}
+        />
+        
+        <div className="flex items-start gap-3 pt-1">
+          {/* Mini Christmas tree */}
+          <div className="flex flex-col items-center gap-1 pt-1">
+            <div 
+              className={`w-2 h-2 rounded-full transition-all duration-200 ${
+                status === 'staging' ? 'bg-amber-400 shadow-[0_0_8px_rgba(251,191,36,0.6)]' : 'bg-white/10'
+              }`}
             />
-            {/* Green (go) */}
-            <span
-              className="block w-2.5 h-2.5 rounded-full mb-1"
-              style={{
-                background: status === 'green' || status === 'finish' ? 'var(--success)' : 'rgba(255,255,255,0.08)',
-                boxShadow: status === 'green' || status === 'finish' ? '0 0 8px color-mix(in srgb, var(--success) 80%, transparent)' : 'none'
-              }}
+            <div 
+              className={`w-2 h-2 rounded-full transition-all duration-200 ${
+                status === 'green' ? 'bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.6)] animate-pulse' : 'bg-white/10'
+              }`}
             />
-            {/* Finish (checkered) */}
-            <span className="block w-3 h-3 rounded-sm text-xs leading-3">
-              {status === 'finish' ? '🏁' : ' '}
-            </span>
+            <div 
+              className={`w-2 h-2 rounded-full transition-all duration-200 ${
+                status === 'finish' ? 'bg-cyan-400 shadow-[0_0_8px_rgba(34,211,238,0.6)]' : 'bg-white/10'
+              }`}
+            />
+            {status === 'finish' && (
+              <span className="text-xs mt-0.5">🏁</span>
+            )}
           </div>
 
           {/* Main lane content */}
           <div className="flex-1 min-w-0">
-            <div className="flex items-center justify-between">
+            {/* Header row */}
+            <div className="flex items-start justify-between gap-2 mb-2">
               <div className="flex items-center gap-2 min-w-0 flex-1">
                 {logoUrl ? (
                   <img
                     src={logoUrl}
                     alt={`${displayName} logo`}
-                    className="w-5 h-5 rounded-sm"
-                    style={{ boxShadow: `0 0 0 1px ${laneColor}66` }}
+                    className="w-6 h-6 rounded-md"
+                    style={{ boxShadow: `0 0 0 1px ${laneColor}44, 0 0 8px ${laneColor}22` }}
                     loading="lazy"
                   />
                 ) : (
                   <span
-                    className="w-5 h-5 inline-flex items-center justify-center rounded-sm text-[10px] font-bold text-white"
-                    style={{ background: laneColor, boxShadow: `0 0 0 1px ${laneColor}66` }}
+                    className="w-6 h-6 inline-flex items-center justify-center rounded-md text-[11px] font-bold text-white"
+                    style={{ background: `linear-gradient(135deg, ${laneColor}, ${laneColor}88)`, boxShadow: `0 0 8px ${laneColor}33` }}
                     aria-hidden
                   >
-                    {displayName.slice(0, 1).toUpperCase()}
+                    {displayName.slice(0, 2).toUpperCase()}
                   </span>
                 )}
-                <h3 className="font-semibold text-base text-[var(--text)] truncate max-w-[16ch] sm:max-w-[20ch]" title={displayName}>{displayName}</h3>
-                <span className="text-xs text-[var(--text-muted)] truncate max-w-[40ch] sm:max-w-[48ch]" title={modelName}>
-                  ({modelName})
-                </span>
+                <div className="min-w-0">
+                  <h3 className="font-semibold text-sm text-[var(--text)] truncate" title={displayName}>
+                    {displayName}
+                  </h3>
+                  <span className="text-[11px] text-[var(--text-muted)] truncate block max-w-[180px]" title={modelName}>
+                    {modelName}
+                  </span>
+                </div>
               </div>
-              <div className="flex items-center gap-3 text-xs text-[var(--text-muted)] shrink-0">
-                <span
-                  className="inline-flex items-center px-2 py-0.5 rounded-md border"
-                  style={{
-                    borderColor: status === 'error' ? 'color-mix(in srgb, var(--danger) 70%, transparent)' : 'var(--ring)',
-                    color: status === 'error' ? 'var(--danger)' : 'var(--text-muted)'
-                  }}
-                >
-                  {status}
-                </span>
+              <div className="flex items-center gap-2 shrink-0">
+                <StatusBadge status={status} />
                 <button
                   onClick={() => setExpanded((v) => !v)}
-                  className="btn-ghost px-2 py-1 text-[13px]"
+                  className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-[var(--text-muted)] hover:text-white transition-colors"
                   aria-expanded={expanded}
+                  title={expanded ? 'Collapse' : 'Expand'}
                 >
-                  {expanded ? 'Collapse' : 'Expand'}
+                  <svg 
+                    viewBox="0 0 24 24" 
+                    className={`w-4 h-4 transition-transform duration-200 ${expanded ? 'rotate-180' : ''}`}
+                    fill="none" 
+                    stroke="currentColor" 
+                    strokeWidth="2"
+                  >
+                    <path d="M6 9l6 6 6-6" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
                 </button>
               </div>
             </div>
@@ -180,53 +224,79 @@ const RaceLane: React.FC<RaceLaneProps> = ({
             {/* Response streaming area */}
             <div
               ref={scrollRef}
-              className={`mt-2 overflow-y-auto overflow-x-hidden pr-1 transition-[max-height] duration-300 ${expanded ? 'max-h-64' : 'max-h-12'}`}
+              className={`overflow-y-auto overflow-x-hidden pr-1 transition-all duration-300 ${
+                expanded ? 'max-h-64 opacity-100' : 'max-h-0 opacity-0'
+              }`}
               role="status"
               aria-live="polite"
             >
               {isLoading && !responseText && !error && (
-                <p className="text-[var(--text-muted)]">Staging… waiting for start.</p>
+                <div className="flex items-center gap-2 text-[var(--text-muted)] text-sm py-2">
+                  <div className="w-4 h-4 border-2 border-white/20 border-t-cyan-400 rounded-full animate-spin" />
+                  <span>Waiting for first token...</span>
+                </div>
               )}
-              {error && <p className="text-[13px] text-[var(--danger)]">Error: {error}</p>}
-              <p className={`whitespace-pre-wrap break-words text-white/90 ${expanded ? '' : 'line-clamp-3'}`}>{responseText}</p>
+              {error && (
+                <div className="flex items-start gap-2 text-red-400 text-sm py-2 px-3 rounded-lg bg-red-500/10 border border-red-500/20">
+                  <svg viewBox="0 0 24 24" className="w-4 h-4 mt-0.5 shrink-0" fill="none" stroke="currentColor" strokeWidth="2">
+                    <circle cx="12" cy="12" r="10" />
+                    <path d="M12 8v4M12 16h.01" strokeLinecap="round" />
+                  </svg>
+                  <span>{error}</span>
+                </div>
+              )}
+              {responseText && (
+                <div className="text-sm text-white/85 whitespace-pre-wrap break-words leading-relaxed py-1">
+                  {responseText}
+                </div>
+              )}
             </div>
 
-            {/* Metrics */}
-            <div className="mt-3 grid grid-cols-4 gap-2 text-[11px] text-[var(--text-muted)]">
-              <div><span className="font-semibold">TTFT:</span> {formatMs(ttft)}</div>
-              <div><span className="font-semibold">Total:</span> {formatMs(total)}</div>
-              <div><span className="font-semibold">TPS:</span> {calcTps(metrics)}</div>
-              <div>
-                <span className="font-semibold">Output Tokens:</span>{' '}
-                {metrics && typeof metrics.outputTokens === 'number' ? metrics.outputTokens : '—'}
+            {/* Metrics bar */}
+            <div className={`grid grid-cols-4 gap-2 text-[11px] pt-2 mt-2 border-t border-white/5 ${expanded ? '' : 'border-t-0 pt-0'}`}>
+              <div className="flex flex-col">
+                <span className="text-[var(--text-muted)] uppercase tracking-wider text-[9px]">TTFT</span>
+                <span className="text-[var(--text)] font-mono font-medium">{formatMs(ttft)}</span>
+              </div>
+              <div className="flex flex-col">
+                <span className="text-[var(--text-muted)] uppercase tracking-wider text-[9px]">Total</span>
+                <span className="text-[var(--text)] font-mono font-medium">{formatMs(total)}</span>
+              </div>
+              <div className="flex flex-col">
+                <span className="text-[var(--text-muted)] uppercase tracking-wider text-[9px]">TPS</span>
+                <span className="text-[var(--text)] font-mono font-medium">{calcTps(metrics)}</span>
+              </div>
+              <div className="flex flex-col">
+                <span className="text-[var(--text-muted)] uppercase tracking-wider text-[9px]">Tokens</span>
+                <span className="text-[var(--text)] font-mono font-medium">
+                  {metrics && typeof metrics.outputTokens === 'number' ? metrics.outputTokens : '—'}
+                </span>
               </div>
             </div>
           </div>
         </div>
-        {/* Clipped, state-aware lane glow (kept inside GlassCard to avoid bleed) */}
-        {(() => {
-          const accent = status === 'error' ? 'var(--danger)' : laneColor;
-          const border = !expanded
-            ? `${accent}44`
-            : (status === 'green' && !metrics)
-              ? `${accent}66`
-              : (status === 'finish')
-                ? `${accent}44`
-                : `${accent}33`;
-          const insetGlow = !expanded
-            ? `inset 0 0 4px ${accent}22`
-            : (status === 'green' && !metrics)
-              ? `inset 0 0 8px ${accent}33`
-              : (status === 'finish')
-                ? `inset 0 0 6px ${accent}22`
-                : `inset 0 0 5px ${accent}22`;
-          return (
-            <div
-              className="pointer-events-none absolute inset-0 rounded-[18px]"
-              style={{ border: `1px solid ${border}`, boxShadow: insetGlow }}
-            />
-          );
-        })()}
+
+        {/* Animated glow border for active racing state */}
+        {status === 'green' && !metrics && (
+          <div 
+            className="pointer-events-none absolute inset-0 rounded-[18px] animate-pulse"
+            style={{ 
+              border: `1px solid ${laneColor}66`,
+              boxShadow: `inset 0 0 12px ${laneColor}22, 0 0 20px ${laneColor}11`
+            }}
+          />
+        )}
+        
+        {/* Finish celebration glow */}
+        {status === 'finish' && (
+          <div 
+            className="pointer-events-none absolute inset-0 rounded-[18px]"
+            style={{ 
+              border: `1px solid ${laneColor}44`,
+              boxShadow: `inset 0 0 8px ${laneColor}15`
+            }}
+          />
+        )}
       </GlassCard>
     </div>
   );

@@ -1,12 +1,19 @@
 // utils/apiClient.ts
 import { CompletionResult } from './providerService';
 
+export interface ModelSettings {
+  temperature?: number;
+  maxTokens?: number;
+  topP?: number;
+}
+
 // This function will connect to our POST endpoint and stream the response.
 export async function* streamCompletion(
   providerId: string,
   prompt: string,
   model: string,
-  apiKey: string
+  apiKey: string,
+  settings?: ModelSettings
 ): AsyncGenerator<CompletionResult> {
 
   const response = await fetch(`/api/providers/${providerId}/completions`, {
@@ -14,7 +21,7 @@ export async function* streamCompletion(
     headers: {
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify({ prompt, model, apiKey }),
+    body: JSON.stringify({ prompt, model, apiKey, settings }),
   });
 
   if (!response.ok || !response.body) {

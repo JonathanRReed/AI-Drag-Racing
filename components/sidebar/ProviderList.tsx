@@ -49,6 +49,8 @@ function providerSlugs(providerId: string): string[] {
     case 'xai':
       // xAI doesn't exist — fallback to 'x' brand
       return ['x', 'xai'];
+    case 'cerebras':
+      return ['cerebras'];
     default:
       return [providerId];
   }
@@ -307,7 +309,18 @@ const ProviderList: React.FC<ProviderListProps> = ({ apiKeys, dispatch, selected
 
   return (
     <div className="flex h-full min-h-0 flex-col">
-      <h2 className="text-lg font-semibold text-white mb-3 px-2">Providers</h2>
+      {/* Racing-themed header */}
+      <div className="flex items-center gap-2.5 mb-4 px-2">
+        <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-cyan-500/20 to-cyan-600/10 flex items-center justify-center ring-1 ring-cyan-500/20">
+          <svg viewBox="0 0 24 24" className="w-5 h-5 text-cyan-400" fill="none" stroke="currentColor" strokeWidth="1.5">
+            <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        </div>
+        <div>
+          <h2 className="text-base font-semibold text-white">Racers</h2>
+          <p className="text-[10px] text-[var(--text-muted)] uppercase tracking-wider">Select your lineup</p>
+        </div>
+      </div>
       <ul className="space-y-1 flex-1 min-h-0 overflow-auto pr-1">
         {PROVIDERS.map((provider) => (
           <li key={provider.id} className="space-y-1">

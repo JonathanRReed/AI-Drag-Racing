@@ -1,6 +1,8 @@
 {
-  "name": "AI Provider Latency Tester",
-  "short_name": "AI Latency",
+  "name": "AI Drag Racing - Model Performance Showdown",
+  "short_name": "AI Drag Racing",
+  "description": "Race AI models head-to-head. Compare TTFT, throughput, and total time across providers.",
+  "start_url": "/",
   "icons": [
     {
       "src": "/Favicon/icon-192.png",
@@ -15,7 +17,7 @@
       "purpose": "any maskable"
     }
   ],
-  "theme_color": "#000000",
-  "background_color": "#000000",
+  "theme_color": "#07090D",
+  "background_color": "#07090D",
   "display": "standalone"
 }

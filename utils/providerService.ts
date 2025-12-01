@@ -20,6 +20,13 @@ export type CompletionResult = {
   data: CompletionMetrics;
 };
 
+// Model settings that can be passed to providers
+export interface ModelSettings {
+  temperature: number;
+  maxTokens: number;
+  topP: number;
+}
+
 // This is the core interface that every provider implementation must adhere to.
 export interface ProviderService {
   // A unique identifier for the provider.
@@ -34,6 +41,7 @@ export interface ProviderService {
     model: string,
     apiKey: string,
     signal?: AbortSignal,
+    settings?: ModelSettings,
   ): AsyncGenerator<CompletionResult>;
 }
 
