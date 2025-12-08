@@ -84,10 +84,27 @@ const MainLayout: React.FC<MainLayoutProps> = ({ sidebar, children }) => {
         {sidebar}
       </aside>
 
-      {/* Main content */}
-      <main className="relative flex-1 min-w-0 min-h-0 p-4 overflow-y-auto">
-        {children}
-      </main>
+      {/* Main content wrapper */}
+      <div className="flex flex-col flex-1 min-w-0 min-h-0">
+        <main className="relative flex-1 min-w-0 min-h-0 p-4 overflow-y-auto">
+          {children}
+        </main>
+
+        {/* Footer with hub links */}
+        <footer className="shrink-0 px-4 py-3 bg-[rgba(255,255,255,0.04)] border-t border-white/5">
+          <nav className="flex flex-wrap justify-center gap-x-6 gap-y-2 text-xs text-white/50" aria-label="Related sites">
+            <a href="https://jonathanrreed.com" rel="noopener noreferrer" className="hover:text-white/80 transition-colors">
+              Jonathan Reed
+            </a>
+            <a href="https://ai-stats.jonathanrreed.com" rel="noopener noreferrer" className="hover:text-white/80 transition-colors">
+              AI Stats - Model Comparisons
+            </a>
+            <a href="https://ai-news.helloworldfirm.com/" rel="noopener noreferrer" className="hover:text-white/80 transition-colors">
+              AI News
+            </a>
+          </nav>
+        </footer>
+      </div>
     </div>
   );
 };

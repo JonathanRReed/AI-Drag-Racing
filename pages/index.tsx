@@ -114,7 +114,7 @@ function appReducer(state: AppState, action: AppAction): AppState {
         ),
       };
     case 'SET_ERROR':
-       return {
+      return {
         ...state,
         results: state.results.map(r =>
           r.id === action.payload.resultId
@@ -202,7 +202,7 @@ export default function Home() {
           const stream = streamCompletion(p.providerId, state.prompt, p.modelId, apiKey, modelSettings);
           let sawMetrics = false;
           let tokenCount = 0;
-          
+
           for await (const result of stream) {
             // Check race mode limits
             if (mode === 'token_limit' && tokenLimit && tokenCount >= tokenLimit) {
@@ -216,7 +216,7 @@ export default function Home() {
                 break;
               }
             }
-            
+
             if (result.type === 'chunk') {
               tokenCount++;
               dispatch({ type: 'RECEIVE_CHUNK', payload: { resultId, chunk: result.content } });
@@ -258,34 +258,61 @@ export default function Home() {
   return (
     <>
       <Head>
-        <title>AI Drag Racing - Model Performance Showdown</title>
+        <title>AI Drag Racing - LLM Speed Benchmark | Jonathan Reed</title>
         <meta name="description" content="Race AI models head-to-head. Compare TTFT, throughput, and total time across OpenAI, Anthropic, Google, Groq, Cerebras and more." />
-        
+
         {/* Canonical URL */}
-        <link rel="canonical" href="https://ai-drag-racing.com/" />
-        
+        <link rel="canonical" href="https://ai-dragrace.jonathanrreed.com/" />
+
         {/* Open Graph / Facebook */}
         <meta property="og:type" content="website" />
-        <meta property="og:url" content="https://ai-drag-racing.com/" />
-        <meta property="og:title" content="AI Drag Racing - Model Performance Showdown" />
+        <meta property="og:url" content="https://ai-dragrace.jonathanrreed.com/" />
+        <meta property="og:title" content="AI Drag Racing - LLM Speed Benchmark | Jonathan Reed" />
         <meta property="og:description" content="Race AI models head-to-head. Compare TTFT, throughput, and total time across OpenAI, Anthropic, Google, Groq, Cerebras and more." />
-        <meta property="og:image" content="https://ai-drag-racing.com/og-image.png" />
+        <meta property="og:image" content="https://ai-dragrace.jonathanrreed.com/og-image.png" />
         <meta property="og:site_name" content="AI Drag Racing" />
-        
+
         {/* Twitter */}
         <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:url" content="https://ai-drag-racing.com/" />
-        <meta name="twitter:title" content="AI Drag Racing - Model Performance Showdown" />
+        <meta name="twitter:url" content="https://ai-dragrace.jonathanrreed.com/" />
+        <meta name="twitter:title" content="AI Drag Racing - LLM Speed Benchmark | Jonathan Reed" />
         <meta name="twitter:description" content="Race AI models head-to-head. Compare TTFT, throughput, and total time across OpenAI, Anthropic, Google, Groq, Cerebras and more." />
-        <meta name="twitter:image" content="https://ai-drag-racing.com/og-image.png" />
-        
+        <meta name="twitter:image" content="https://ai-dragrace.jonathanrreed.com/og-image.png" />
+
         {/* Additional SEO */}
         <meta name="robots" content="index, follow" />
         <meta name="keywords" content="AI, LLM, model comparison, drag race, performance, TTFT, throughput, tokens per second, OpenAI, Anthropic, Claude, GPT, Gemini, Groq, Cerebras" />
-        <meta name="author" content="AI Drag Racing" />
+        <meta name="author" content="Jonathan Reed" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <meta name="theme-color" content="#07090D" />
-        
+
+        {/* JSON-LD Structured Data */}
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "WebApplication",
+              "name": "AI Drag Racing",
+              "description": "Race AI models head-to-head. Compare TTFT, throughput, and total time across OpenAI, Anthropic, Google, Groq, Cerebras and more.",
+              "url": "https://ai-dragrace.jonathanrreed.com/",
+              "applicationCategory": "DeveloperApplication",
+              "operatingSystem": "Any",
+              "browserRequirements": "Requires JavaScript",
+              "author": {
+                "@type": "Person",
+                "name": "Jonathan Reed",
+                "url": "https://jonathanrreed.com"
+              },
+              "offers": {
+                "@type": "Offer",
+                "price": "0",
+                "priceCurrency": "USD"
+              }
+            })
+          }}
+        />
+
         <link rel="icon" type="image/svg+xml" href="/Favicon/favicon.svg" />
       </Head>
       <MainLayout
@@ -327,21 +354,19 @@ export default function Home() {
               <div className="inline-flex rounded-[18px] overflow-hidden ring-1 ring-white/10">
                 <button
                   onClick={() => setActiveTab('results')}
-                  className={`px-3 py-1.5 text-xs transition ${
-                    activeTab === 'results'
+                  className={`px-3 py-1.5 text-xs transition ${activeTab === 'results'
                       ? 'bg-[rgba(255,255,255,0.12)] text-white'
                       : 'bg-[rgba(255,255,255,0.06)] text-white/80 hover:bg-[rgba(255,255,255,0.10)]'
-                  }`}
+                    }`}
                 >
                   Results
                 </button>
                 <button
                   onClick={() => setActiveTab('charts')}
-                  className={`px-3 py-1.5 text-xs transition ${
-                    activeTab === 'charts'
+                  className={`px-3 py-1.5 text-xs transition ${activeTab === 'charts'
                       ? 'bg-[rgba(255,255,255,0.12)] text-white'
                       : 'bg-[rgba(255,255,255,0.06)] text-white/80 hover:bg-[rgba(255,255,255,0.10)]'
-                  }`}
+                    }`}
                   disabled={state.results.length === 0}
                 >
                   Charts
@@ -408,5 +433,5 @@ export default function Home() {
     </>
   );
 }
- 
+
 
