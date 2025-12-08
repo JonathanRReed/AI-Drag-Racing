@@ -1,4 +1,4 @@
-# robots.txt – https://ai-drag-racing.com/
+# robots.txt – https://ai-dragrace.jonathanrreed.com/
 
 # Generated 2025‑05‑07 · SEO‑optimised, AI‑scraper‑aware
 # ------------------------------------------------------------------
@@ -9,7 +9,7 @@ Allow: /*.css$
 Disallow: /search/
 Disallow: /*?s=
 Disallow: /*?q=
-Sitemap: https://ai-drag-racing.com/sitemap.xml
+Sitemap: https://ai-dragrace.jonathanrreed.com/sitemap.xml
 
 User-agent: Bingbot
 Allow: /*.js$

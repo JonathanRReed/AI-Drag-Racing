@@ -162,8 +162,8 @@ const ComparisonCharts: React.FC<ComparisonChartsProps> = ({ results }) => {
           Sort: {descending ? 'High → Low' : 'Low → High'}
         </button>
       </div>
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <div style={{ height: chartHeight }}>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4" role="region" aria-label="Performance comparison charts">
+        <div style={{ height: chartHeight }} role="img" aria-label="Bar chart showing total response time in milliseconds for each AI model">
           <Bar
             options={{
               responsive: true,
@@ -210,7 +210,7 @@ const ComparisonCharts: React.FC<ComparisonChartsProps> = ({ results }) => {
             data={latencyData}
           />
         </div>
-        <div style={{ height: chartHeight }}>
+        <div style={{ height: chartHeight }} role="img" aria-label="Bar chart showing output tokens per second for each AI model">
           <Bar
             options={{
               responsive: true,
@@ -257,7 +257,7 @@ const ComparisonCharts: React.FC<ComparisonChartsProps> = ({ results }) => {
             data={tpsData}
           />
         </div>
-        <div style={{ height: chartHeight }}>
+        <div style={{ height: chartHeight }} role="img" aria-label="Bar chart showing time to first token in milliseconds for each AI model">
           <Bar
             options={{
               responsive: true,
@@ -304,7 +304,7 @@ const ComparisonCharts: React.FC<ComparisonChartsProps> = ({ results }) => {
             data={ttftData}
           />
         </div>
-        <div style={{ height: chartHeight }}>
+        <div style={{ height: chartHeight }} role="img" aria-label="Bar chart showing total output tokens for each AI model">
           <Bar
             options={{
               responsive: true,
