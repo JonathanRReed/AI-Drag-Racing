@@ -91,18 +91,37 @@ const MainLayout: React.FC<MainLayoutProps> = ({ sidebar, children }) => {
         </main>
 
         {/* Footer with hub links */}
-        <footer className="shrink-0 px-4 py-3 bg-[rgba(255,255,255,0.04)] border-t border-white/5">
-          <nav className="flex flex-wrap justify-center gap-x-6 gap-y-2 text-xs text-white/50" aria-label="Related sites">
-            <a href="https://jonathanrreed.com" rel="noopener noreferrer" className="hover:text-white/80 transition-colors">
-              Jonathan Reed
-            </a>
-            <a href="https://ai-stats.jonathanrreed.com" rel="noopener noreferrer" className="hover:text-white/80 transition-colors">
-              AI Stats - Model Comparisons
-            </a>
-            <a href="https://ai-news.helloworldfirm.com/" rel="noopener noreferrer" className="hover:text-white/80 transition-colors">
-              AI News
-            </a>
-          </nav>
+        <footer className="shrink-0 relative">
+          {/* Gradient accent line */}
+          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-48 h-px bg-gradient-to-r from-transparent via-cyan-500/40 to-transparent" />
+
+          <div className="px-6 py-5 bg-[rgba(255,255,255,0.03)] border-t border-white/5">
+            <div className="flex flex-col items-center gap-4 max-w-lg mx-auto">
+              {/* Identity line */}
+              <p className="text-xs text-white/40 text-center leading-relaxed">
+                Built by <span className="text-white/60">Jonathan R Reed</span> AI & cybersecurity developer, red team specialist.
+              </p>
+
+              {/* Links row */}
+              <nav className="flex flex-wrap justify-center gap-x-2 gap-y-2 text-xs" aria-label="Related sites">
+                <a
+                  href="https://jonathanrreed.com/projects/"
+                  rel="noopener noreferrer"
+                  className="px-3 py-1.5 rounded-full bg-gradient-to-r from-cyan-500/10 to-purple-500/10 text-white/70 hover:text-white hover:from-cyan-500/20 hover:to-purple-500/20 transition-all ring-1 ring-white/10"
+                >
+                  See more Jonathan Reed Portfolio →
+                </a>
+                <span className="text-white/20">•</span>
+                <a href="https://ai-stats.jonathanrreed.com" rel="noopener noreferrer" className="text-white/40 hover:text-white/70 transition-colors">
+                  AI Stats
+                </a>
+                <span className="text-white/20">•</span>
+                <a href="https://ai-news.helloworldfirm.com/" rel="noopener noreferrer" className="text-white/40 hover:text-white/70 transition-colors">
+                  AI News
+                </a>
+              </nav>
+            </div>
+          </div>
         </footer>
       </div>
     </div>

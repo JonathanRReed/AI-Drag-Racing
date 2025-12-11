@@ -258,8 +258,8 @@ export default function Home() {
   return (
     <>
       <Head>
-        <title>AI Drag Racing - LLM Speed Benchmark | Jonathan Reed</title>
-        <meta name="description" content="Race AI models head-to-head. Compare TTFT, throughput, and total time across OpenAI, Anthropic, Google, Groq, Cerebras and more." />
+        <title>AI Drag Racing | LLM speed and latency experiments by Jonathan R Reed</title>
+        <meta name="description" content="AI Drag Racing is a live benchmark experiment by Jonathan R Reed that races AI models so you can see speed and latency in practice." />
 
         {/* Canonical URL */}
         <link rel="canonical" href="https://ai-dragrace.jonathanrreed.com/" />
@@ -267,22 +267,22 @@ export default function Home() {
         {/* Open Graph / Facebook */}
         <meta property="og:type" content="website" />
         <meta property="og:url" content="https://ai-dragrace.jonathanrreed.com/" />
-        <meta property="og:title" content="AI Drag Racing - LLM Speed Benchmark | Jonathan Reed" />
-        <meta property="og:description" content="Race AI models head-to-head. Compare TTFT, throughput, and total time across OpenAI, Anthropic, Google, Groq, Cerebras and more." />
+        <meta property="og:title" content="AI Drag Racing | LLM speed and latency experiments by Jonathan R Reed" />
+        <meta property="og:description" content="AI Drag Racing is a live benchmark experiment by Jonathan R Reed that races AI models so you can see speed and latency in practice." />
         <meta property="og:image" content="https://ai-dragrace.jonathanrreed.com/og-image.png" />
         <meta property="og:site_name" content="AI Drag Racing" />
 
         {/* Twitter */}
         <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:url" content="https://ai-dragrace.jonathanrreed.com/" />
-        <meta name="twitter:title" content="AI Drag Racing - LLM Speed Benchmark | Jonathan Reed" />
-        <meta name="twitter:description" content="Race AI models head-to-head. Compare TTFT, throughput, and total time across OpenAI, Anthropic, Google, Groq, Cerebras and more." />
+        <meta name="twitter:title" content="AI Drag Racing | LLM speed and latency experiments by Jonathan R Reed" />
+        <meta name="twitter:description" content="AI Drag Racing is a live benchmark experiment by Jonathan R Reed that races AI models so you can see speed and latency in practice." />
         <meta name="twitter:image" content="https://ai-dragrace.jonathanrreed.com/og-image.png" />
 
         {/* Additional SEO */}
         <meta name="robots" content="index, follow" />
-        <meta name="keywords" content="AI, LLM, model comparison, drag race, performance, TTFT, throughput, tokens per second, OpenAI, Anthropic, Claude, GPT, Gemini, Groq, Cerebras" />
-        <meta name="author" content="Jonathan Reed" />
+        <meta name="keywords" content="AI, LLM, model comparison, drag race, performance, TTFT, throughput, tokens per second, OpenAI, Anthropic, Claude, GPT, Gemini, Groq, Cerebras, latency, speed benchmark" />
+        <meta name="author" content="Jonathan R Reed" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <meta name="theme-color" content="#07090D" />
 
@@ -294,7 +294,7 @@ export default function Home() {
               "@context": "https://schema.org",
               "@type": "WebApplication",
               "name": "AI Drag Racing",
-              "description": "Race AI models head-to-head. Compare TTFT, throughput, and total time across OpenAI, Anthropic, Google, Groq, Cerebras and more.",
+              "description": "AI Drag Racing is a live benchmark experiment by Jonathan R Reed that races AI models so you can see speed and latency in practice.",
               "url": "https://ai-dragrace.jonathanrreed.com/",
               "applicationCategory": "DeveloperApplication",
               "operatingSystem": "Any",
@@ -302,6 +302,7 @@ export default function Home() {
               "author": {
                 "@type": "Person",
                 "name": "Jonathan Reed",
+                "alternateName": "Jonathan R Reed",
                 "url": "https://jonathanrreed.com"
               },
               "offers": {
@@ -346,6 +347,22 @@ export default function Home() {
           </div>
         }
       >
+        {/* Hero intro copy */}
+        <div className="mb-8 relative">
+          <div className="flex items-start gap-3 p-4 rounded-2xl bg-gradient-to-r from-cyan-500/10 via-purple-500/5 to-transparent border border-white/10 backdrop-blur-sm">
+            <div className="shrink-0 w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-500/20 to-purple-500/20 flex items-center justify-center ring-1 ring-white/10">
+              <svg viewBox="0 0 24 24" className="w-5 h-5 text-cyan-400" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </div>
+            <div>
+              <p className="text-sm text-white/80 leading-relaxed">
+                <span className="text-white font-medium">AI Drag Racing</span> is a small experiment by{' '}
+                <span className="text-cyan-300">Jonathan R Reed</span> that lets you race AI models side by side and watch their latency in real time.
+              </p>
+            </div>
+          </div>
+        </div>
         <div className="space-y-4">
           {/* Tabs + actions toolbar (sticky on md+, static on mobile) */}
           <div className="md:sticky md:top-0 z-10 -mx-1">
@@ -355,8 +372,8 @@ export default function Home() {
                 <button
                   onClick={() => setActiveTab('results')}
                   className={`px-3 py-1.5 text-xs transition ${activeTab === 'results'
-                      ? 'bg-[rgba(255,255,255,0.12)] text-white'
-                      : 'bg-[rgba(255,255,255,0.06)] text-white/80 hover:bg-[rgba(255,255,255,0.10)]'
+                    ? 'bg-[rgba(255,255,255,0.12)] text-white'
+                    : 'bg-[rgba(255,255,255,0.06)] text-white/80 hover:bg-[rgba(255,255,255,0.10)]'
                     }`}
                 >
                   Results
@@ -364,8 +381,8 @@ export default function Home() {
                 <button
                   onClick={() => setActiveTab('charts')}
                   className={`px-3 py-1.5 text-xs transition ${activeTab === 'charts'
-                      ? 'bg-[rgba(255,255,255,0.12)] text-white'
-                      : 'bg-[rgba(255,255,255,0.06)] text-white/80 hover:bg-[rgba(255,255,255,0.10)]'
+                    ? 'bg-[rgba(255,255,255,0.12)] text-white'
+                    : 'bg-[rgba(255,255,255,0.06)] text-white/80 hover:bg-[rgba(255,255,255,0.10)]'
                     }`}
                   disabled={state.results.length === 0}
                 >
