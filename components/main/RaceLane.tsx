@@ -231,9 +231,17 @@ const RaceLane: React.FC<RaceLaneProps> = ({
               aria-live="polite"
             >
               {isLoading && !responseText && !error && (
-                <div className="flex items-center gap-2 text-[var(--text-muted)] text-sm py-2">
-                  <div className="w-4 h-4 border-2 border-white/20 border-t-cyan-400 rounded-full animate-spin" />
-                  <span>Waiting for first token...</span>
+                <div className="space-y-3 py-2">
+                  <div className="flex items-center gap-2 text-[var(--text-muted)] text-sm">
+                    <div className="w-4 h-4 border-2 border-white/20 border-t-cyan-400 rounded-full animate-spin" />
+                    <span className="animate-pulse">Waiting for first token...</span>
+                  </div>
+                  {/* Shimmer skeleton lines */}
+                  <div className="space-y-2">
+                    <div className="skeleton h-3 w-full rounded" />
+                    <div className="skeleton h-3 w-4/5 rounded" />
+                    <div className="skeleton h-3 w-3/5 rounded" />
+                  </div>
                 </div>
               )}
               {error && (

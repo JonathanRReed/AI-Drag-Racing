@@ -51,6 +51,10 @@ function providerSlugs(providerId: string): string[] {
       return ['x', 'xai'];
     case 'cerebras':
       return ['cerebras'];
+    case 'moonshot':
+      return ['moonshot', 'kimi'];
+    case 'zhipu':
+      return ['zhipu', 'chatglm', 'glm'];
     default:
       return [providerId];
   }
@@ -96,7 +100,7 @@ const ProviderListItem: React.FC<ProviderListItemProps> = ({ provider, hasApiKey
           className="w-5 h-5 rounded-sm shrink-0"
           fallback={
             <span className="w-5 h-5 inline-flex items-center justify-center rounded-sm text-[10px] font-bold text-gray-200 bg-white/10 border border-white/10 shrink-0">
-              {provider.displayName.slice(0,1).toUpperCase()}
+              {provider.displayName.slice(0, 1).toUpperCase()}
             </span>
           }
         />
@@ -186,7 +190,7 @@ const ProviderList: React.FC<ProviderListProps> = ({ apiKeys, dispatch, selected
   // Providers that are wired up server-side for streaming right now
   const SUPPORTED_FOR_STREAM = useMemo(() => new Set([
     'openai', 'groq', 'anthropic', 'google', 'cohere', 'mistral',
-    'together', 'fireworks', 'openrouter'
+    'together', 'fireworks', 'openrouter', 'moonshot', 'zhipu'
   ]), []);
 
   const handleSaveApiKey = (apiKey: string) => {
@@ -239,7 +243,7 @@ const ProviderList: React.FC<ProviderListProps> = ({ apiKeys, dispatch, selected
           if (Array.isArray(arr)) {
             setModelsByProvider(prev => ({ ...prev, [p.id]: arr }));
           }
-        } catch {}
+        } catch { }
       }
       // Load cached selected models (multi-select). Backward compat: also read old single-model key
       const savedMulti = localStorage.getItem(`${p.id}_selected_models`);
@@ -250,7 +254,7 @@ const ProviderList: React.FC<ProviderListProps> = ({ apiKeys, dispatch, selected
           const arr = JSON.parse(savedMulti);
           if (Array.isArray(arr)) modelsToSelect = arr.filter(Boolean);
         }
-      } catch {}
+      } catch { }
       if (!modelsToSelect.length && savedSingle) modelsToSelect = [savedSingle];
       for (const m of modelsToSelect) {
         dispatch({ type: 'TOGGLE_MODEL_SELECTION', payload: { providerId: p.id, modelId: m } });

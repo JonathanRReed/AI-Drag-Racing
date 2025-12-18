@@ -27,7 +27,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({ sidebar, children }) => {
   }, [mobileOpen]);
 
   return (
-    <div className="relative flex min-h-dvh w-full text-gray-200 flex-col md:flex-row isolate">
+    <div className="relative flex min-h-dvh w-full text-gray-200 flex-col md:flex-row isolate dot-grid-fade">
       {/* Removed global header glow to prevent top-wide gradient leak */}
       {/* Mobile top bar */}
       <div className="md:hidden sticky top-0 z-40 bg-[rgba(255,255,255,0.06)] backdrop-blur-xl ring-1 ring-white/10" style={{ paddingTop: 'calc(env(safe-area-inset-top) + 0.5rem)' }}>
@@ -91,32 +91,32 @@ const MainLayout: React.FC<MainLayoutProps> = ({ sidebar, children }) => {
         </main>
 
         {/* Footer with hub links */}
-        <footer className="shrink-0 relative">
+        <footer className="shrink-0 relative noise-overlay">
           {/* Gradient accent line */}
-          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-48 h-px bg-gradient-to-r from-transparent via-cyan-500/40 to-transparent" />
+          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-64 h-px bg-gradient-to-r from-transparent via-cyan-500/50 to-transparent" />
 
-          <div className="px-6 py-5 bg-[rgba(255,255,255,0.03)] border-t border-white/5">
-            <div className="flex flex-col items-center gap-4 max-w-lg mx-auto">
+          <div className="px-6 py-6 bg-[rgba(255,255,255,0.02)] border-t border-white/5">
+            <div className="flex flex-col items-center gap-5 max-w-lg mx-auto">
               {/* Identity line */}
-              <p className="text-xs text-white/40 text-center leading-relaxed">
-                Built by <span className="text-white/60">Jonathan R Reed</span> AI & cybersecurity developer, red team specialist.
+              <p className="text-xs text-white/40 text-center leading-relaxed heading-tight">
+                Built by <span className="text-gradient font-medium">Jonathan R Reed</span> AI & cybersecurity developer, red team specialist.
               </p>
 
               {/* Links row */}
-              <nav className="flex flex-wrap justify-center gap-x-2 gap-y-2 text-xs" aria-label="Related sites">
+              <nav className="flex flex-wrap justify-center gap-x-3 gap-y-2 text-xs" aria-label="Related sites">
                 <a
                   href="https://jonathanrreed.com/projects/"
                   rel="noopener noreferrer"
-                  className="px-3 py-1.5 rounded-full bg-gradient-to-r from-cyan-500/10 to-purple-500/10 text-white/70 hover:text-white hover:from-cyan-500/20 hover:to-purple-500/20 transition-all ring-1 ring-white/10"
+                  className="px-4 py-2 rounded-full bg-gradient-to-r from-cyan-500/10 to-purple-500/10 text-white/70 hover:text-white hover:from-cyan-500/20 hover:to-purple-500/20 transition-all ring-1 ring-white/10 hover:ring-white/20 press-scale"
                 >
-                  See more Jonathan Reed Portfolio →
+                  See more projects →
                 </a>
-                <span className="text-white/20">•</span>
-                <a href="https://ai-stats.jonathanrreed.com" rel="noopener noreferrer" className="text-white/40 hover:text-white/70 transition-colors">
+                <span className="text-white/20 self-center">•</span>
+                <a href="https://ai-stats.jonathanrreed.com" rel="noopener noreferrer" className="text-white/40 hover:text-white/70 transition-colors px-2 py-1">
                   AI Stats
                 </a>
-                <span className="text-white/20">•</span>
-                <a href="https://ai-news.helloworldfirm.com/" rel="noopener noreferrer" className="text-white/40 hover:text-white/70 transition-colors">
+                <span className="text-white/20 self-center">•</span>
+                <a href="https://ai-news.helloworldfirm.com/" rel="noopener noreferrer" className="text-white/40 hover:text-white/70 transition-colors px-2 py-1">
                   AI News
                 </a>
               </nav>

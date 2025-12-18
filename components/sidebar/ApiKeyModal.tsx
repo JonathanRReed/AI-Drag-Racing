@@ -21,7 +21,7 @@ const ApiKeyModal: React.FC<ApiKeyModalProps> = ({
   }
 
   const handleSave = () => {
-    onSave(apiKey);
+    onSave(apiKey.trim());
     onClose();
   };
 

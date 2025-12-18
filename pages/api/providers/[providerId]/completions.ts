@@ -14,6 +14,8 @@ import '../../../../utils/providers/together';
 import '../../../../utils/providers/fireworks';
 import '../../../../utils/providers/openrouter';
 import '../../../../utils/providers/cerebras';
+import '../../../../utils/providers/moonshot';
+import '../../../../utils/providers/zhipu';
 
 export default async function handler(req: Request): Promise<Response> {
   if (req.method !== 'POST') {
@@ -58,6 +60,7 @@ export default async function handler(req: Request): Promise<Response> {
     temperature: settings?.temperature ?? 0.7,
     maxTokens: settings?.maxTokens ?? 2048,
     topP: settings?.topP ?? 1.0,
+    reasoningEffort: settings?.reasoningEffort, // Pass through for o1/o3/GPT-5/Kimi K2/GLM thinking models
   };
 
   const providerService = getProviderService(providerId);

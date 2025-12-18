@@ -39,19 +39,24 @@ const ResultsDisplay: React.FC<ResultsDisplayProps> = ({ results, hideFailed = f
     : results;
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
-      {displayed.map((result) => (
-        <RaceLane
-          key={result.id}
-          providerName={result.providerName}
-          modelName={result.modelName}
-          responseText={result.responseText}
-          metrics={result.metrics}
-          isLoading={result.isLoading}
-          error={result.error}
-          laneColor={getProviderColor(result.providerName).solid}
-          force={force}
-        />
+    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+      {displayed.map((result, index) => (
+        <div 
+          key={result.id} 
+          className="animate-fade-up opacity-0"
+          style={{ animationDelay: `${index * 0.05}s`, animationFillMode: 'forwards' }}
+        >
+          <RaceLane
+            providerName={result.providerName}
+            modelName={result.modelName}
+            responseText={result.responseText}
+            metrics={result.metrics}
+            isLoading={result.isLoading}
+            error={result.error}
+            laneColor={getProviderColor(result.providerName).solid}
+            force={force}
+          />
+        </div>
       ))}
     </div>
   );
