@@ -1,4 +1,4 @@
-import type { NextApiRequest, NextApiResponse } from 'next';
+export const config = { runtime: 'edge' };
 
 type ModelResponse = {
     data: string[];
@@ -107,28 +107,38 @@ function sanitizeApiKey(key: string): string {
     return key.trim().replace(/^["']|["']$/g, '');
 }
 
-export default async function handler(
-    req: NextApiRequest,
-    res: NextApiResponse<ModelResponse>
-) {
-    // Set CORS headers for browser requests
-    res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+const corsHeaders = {
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Methods': 'POST, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type',
+    'Content-Type': 'application/json',
+};
 
+function jsonResponse(data: ModelResponse, status = 200): Response {
+    return new Response(JSON.stringify(data), { status, headers: corsHeaders });
+}
+
+export default async function handler(req: Request): Promise<Response> {
     if (req.method === 'OPTIONS') {
-        return res.status(200).end();
+        return new Response(null, { status: 200, headers: corsHeaders });
     }
 
     if (req.method !== 'POST') {
-        return res.status(405).json({ data: [], error: 'Method not allowed' });
+        return jsonResponse({ data: [], error: 'Method not allowed' }, 405);
     }
 
-    const { providerId, apiKey: rawApiKey } = req.body;
+    let body: any;
+    try {
+        body = await req.json();
+    } catch {
+        return jsonResponse({ data: [], error: 'Invalid JSON body' }, 400);
+    }
+
+    const { providerId, apiKey: rawApiKey } = body;
     const apiKey = sanitizeApiKey(rawApiKey);
 
     if (!apiKey) {
-        return res.status(400).json({ data: [], error: 'API key required' });
+        return jsonResponse({ data: [], error: 'API key required' }, 400);
     }
 
     // Log safely for debugging
@@ -265,7 +275,7 @@ export default async function handler(
             }
         }
 
-        return res.status(200).json({ data: ids });
+        return jsonResponse({ data: ids });
 
     } catch (error: any) {
         console.error(`[Proxy Error] Provider: ${providerId}, Key: ${keySample}`);
@@ -275,14 +285,14 @@ export default async function handler(
         const fallback = STATIC_FALLBACKS[providerId];
         if (fallback && fallback.length > 0) {
             console.log(`[Proxy] Returning fallback for ${providerId}`);
-            return res.status(200).json({ data: fallback });
+            return jsonResponse({ data: fallback });
         }
 
-        return res.status(500).json({
+        return jsonResponse({
             data: [],
             error: error.message?.includes('401') || error.message?.includes('403')
                 ? 'Invalid API Key'
                 : 'Failed to fetch models'
-        });
+        }, 500);
     }
 }
