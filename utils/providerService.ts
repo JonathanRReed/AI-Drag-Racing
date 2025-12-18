@@ -25,6 +25,7 @@ export interface ModelSettings {
   temperature: number;
   maxTokens: number;
   topP: number;
+  reasoningEffort?: 'low' | 'medium' | 'high';
 }
 
 // This is the core interface that every provider implementation must adhere to.

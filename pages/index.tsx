@@ -199,7 +199,13 @@ export default function Home() {
           return;
         }
         try {
-          const stream = streamCompletion(p.providerId, state.prompt, p.modelId, apiKey, modelSettings);
+          // Clone settings and remove reasoningEffort if this model was excluded (toggled off)
+          const effectiveSettings = { ...modelSettings };
+          if (state.raceConfig.excludedReasoningModels?.includes(p.modelId)) {
+            effectiveSettings.reasoningEffort = undefined;
+          }
+
+          const stream = streamCompletion(p.providerId, state.prompt, p.modelId, apiKey, effectiveSettings);
           let sawMetrics = false;
           let tokenCount = 0;
 
@@ -336,6 +342,7 @@ export default function Home() {
             <RaceSettings
               config={state.raceConfig}
               onChange={(config) => dispatch({ type: 'SET_RACE_CONFIG', payload: config })}
+              selectedPairs={state.selectedPairs}
             />
             <GlassCard className="p-3 w-full max-w-full flex-1 min-h-0 overflow-hidden">
               <ProviderList
@@ -348,17 +355,20 @@ export default function Home() {
         }
       >
         {/* Hero intro copy */}
-        <div className="mb-8 relative">
-          <div className="flex items-start gap-3 p-4 rounded-2xl bg-gradient-to-r from-cyan-500/10 via-purple-500/5 to-transparent border border-white/10 backdrop-blur-sm">
-            <div className="shrink-0 w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-500/20 to-purple-500/20 flex items-center justify-center ring-1 ring-white/10">
-              <svg viewBox="0 0 24 24" className="w-5 h-5 text-cyan-400" fill="none" stroke="currentColor" strokeWidth="2">
+        <div className="mb-10 relative">
+          <div className="flex items-start gap-4 p-5 rounded-2xl bg-gradient-to-r from-cyan-500/10 via-purple-500/5 to-transparent border border-white/10 backdrop-blur-sm spotlight-card noise-overlay">
+            <div className="shrink-0 w-12 h-12 rounded-xl bg-gradient-to-br from-cyan-500/20 to-purple-500/20 flex items-center justify-center ring-1 ring-white/10 float-subtle">
+              <svg viewBox="0 0 24 24" className="w-6 h-6 text-cyan-400" fill="none" stroke="currentColor" strokeWidth="2">
                 <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
             </div>
-            <div>
-              <p className="text-sm text-white/80 leading-relaxed">
-                <span className="text-white font-medium">AI Drag Racing</span> is a small experiment by{' '}
-                <span className="text-cyan-300">Jonathan R Reed</span> that lets you race AI models side by side and watch their latency in real time.
+            <div className="space-y-1">
+              <h1 className="text-lg font-semibold heading-tight">
+                <span className="text-gradient">AI Drag Racing</span>
+              </h1>
+              <p className="text-sm text-white/70 leading-relaxed">
+                A live benchmark experiment by{' '}
+                <span className="text-cyan-300 font-medium">Jonathan R Reed</span> that races AI models side by side so you can watch latency in real time.
               </p>
             </div>
           </div>
@@ -394,7 +404,7 @@ export default function Home() {
                 {/* Primary controls available even when sidebar is closed on mobile */}
                 <button
                   onClick={handleRunComparison}
-                  className="btn btn-primary text-xs hidden sm:inline-flex group"
+                  className="btn btn-primary text-xs hidden sm:inline-flex group press-scale"
                   disabled={startDisabled || !state.prompt}
                 >
                   <svg viewBox="0 0 24 24" className="w-3.5 h-3.5 text-cyan-300 group-hover:translate-x-0.5 transition-transform" fill="none" stroke="currentColor" strokeWidth="2">
@@ -404,7 +414,7 @@ export default function Home() {
                 </button>
                 <button
                   onClick={() => dispatch({ type: 'RESET_RACE' })}
-                  className="btn-ghost text-xs hidden sm:inline-flex"
+                  className="btn-ghost text-xs hidden sm:inline-flex press-scale"
                   disabled={state.isLoading || state.raceState === 'countingDown'}
                 >
                   Reset

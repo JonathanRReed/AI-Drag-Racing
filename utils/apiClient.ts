@@ -2,9 +2,10 @@
 import { CompletionResult } from './providerService';
 
 export interface ModelSettings {
-  temperature?: number;
-  maxTokens?: number;
-  topP?: number;
+  temperature: number;
+  maxTokens: number;
+  topP: number;
+  reasoningEffort?: 'low' | 'medium' | 'high';
 }
 
 // This function will connect to our POST endpoint and stream the response.

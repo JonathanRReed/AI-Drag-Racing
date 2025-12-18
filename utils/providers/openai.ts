@@ -83,6 +83,15 @@ const openAIService: ProviderService = {
         temperature: settings?.temperature ?? 0.7,
         max_tokens: settings?.maxTokens ?? 2048,
         top_p: settings?.topP ?? 1.0,
+        ...(settings?.reasoningEffort && (
+          model.startsWith('o1') ||
+          model.startsWith('o3') ||
+          model.startsWith('gpt-5') ||
+          model.includes('reasoning')
+        )
+          ? { reasoning_effort: settings.reasoningEffort }
+          : {}
+        )
       }),
       signal,
     });

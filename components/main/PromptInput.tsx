@@ -105,9 +105,7 @@ const PromptInput: React.FC<PromptInputProps> = ({
             }
           }}
           ref={inputRef}
-          className={`input-glass w-full md:flex-1 md:min-w-0 whitespace-nowrap overflow-x-auto scrollbar-none ${
-            !isLoading ? 'transform-gpu transition-[transform,box-shadow,background-color,height] focus:h-11 focus:scale-[1.02] focus:shadow-[0_0_0_6px_rgba(34,211,238,0.12)] focus:ring-2 focus:ring-[#22D3EE]/70 focus:ring-offset-2 focus:ring-offset-[#07090D]' : ''
-          }`}
+          className={`input-glass w-full md:flex-1 md:min-w-0 whitespace-nowrap overflow-x-auto scrollbar-none`}
           placeholder="Write a prompt... Press Enter to start"
           aria-label="Enter prompt"
           spellCheck={false}

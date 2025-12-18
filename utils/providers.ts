@@ -1,7 +1,7 @@
 // Centralized provider config for model fetching and display
 // Add new providers here for easy extensibility
 
-import { fetchOpenAIModels, fetchGroqModels, fetchAnthropicModels, fetchGoogleModels, fetchAzureModels, fetchOpenRouterModels, fetchFireworksModels, fetchTogetherModels, fetchCohereModels, fetchMistralModels, fetchBedrockModels, fetchPerplexityModels, fetchXaiModels, fetchDeepSeekModels, fetchAI21Models, fetchCerebrasModels } from './fetchModels';
+import { fetchOpenAIModels, fetchGroqModels, fetchAnthropicModels, fetchGoogleModels, fetchAzureModels, fetchOpenRouterModels, fetchFireworksModels, fetchTogetherModels, fetchCohereModels, fetchMistralModels, fetchBedrockModels, fetchPerplexityModels, fetchXaiModels, fetchDeepSeekModels, fetchAI21Models, fetchCerebrasModels, fetchMoonshotModels, fetchZhipuModels } from './fetchModels';
 
 export interface ProviderConfig {
   id: string;
@@ -126,6 +126,20 @@ export const PROVIDERS: ProviderConfig[] = [
     requiresApiKey: true,
     logoUrl: ICON('cerebras'),
     fetcher: fetchCerebrasModels,
+  },
+  {
+    id: 'moonshot',
+    displayName: 'Moonshot AI',
+    requiresApiKey: true,
+    logoUrl: ICON('moonshot'), // Lobe icons has moonshot support 
+    fetcher: fetchMoonshotModels,
+  },
+  {
+    id: 'zhipu',
+    displayName: 'Z.AI (GLM)',
+    requiresApiKey: true,
+    logoUrl: ICON('zhipu'), // Lobe icons has zhipu support
+    fetcher: fetchZhipuModels,
   },
 ];
 
