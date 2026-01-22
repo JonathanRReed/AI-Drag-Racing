@@ -112,7 +112,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({ sidebar, children }) => {
                   See more projects →
                 </a>
                 <span className="text-white/20 self-center">•</span>
-                <a href="https://ai-stats.jonathanrreed.com" rel="noopener noreferrer" className="text-white/40 hover:text-white/70 transition-colors px-2 py-1">
+                <a href="https://aistats.jonathanrreed.com" rel="noopener noreferrer" className="text-white/40 hover:text-white/70 transition-colors px-2 py-1">
                   AI Stats
                 </a>
                 <span className="text-white/20 self-center">•</span>
