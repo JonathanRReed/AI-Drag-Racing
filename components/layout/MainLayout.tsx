@@ -34,12 +34,12 @@ const MainLayout: React.FC<MainLayoutProps> = ({ sidebar, children }) => {
         <div className="flex items-center justify-between p-3 pt-2">
           {/* Branding */}
           <div className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-cyan-500/30 to-purple-500/20 flex items-center justify-center">
-              <svg viewBox="0 0 24 24" className="w-4 h-4 text-cyan-400" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" strokeLinecap="round" strokeLinejoin="round" />
+            <div className="w-7 h-7 rounded-md bg-zinc-900 border border-white/10 flex items-center justify-center">
+              <svg viewBox="0 0 24 24" className="w-4 h-4 text-red-500" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M12 4v4M12 16v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M4 12h4M16 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
             </div>
-            <span className="font-semibold text-white text-sm">AI Drag Racing</span>
+            <span className="font-semibold tracking-tight text-white text-sm">AI Drag Racing</span>
           </div>
           <button
             onClick={() => setMobileOpen(true)}
@@ -93,30 +93,30 @@ const MainLayout: React.FC<MainLayoutProps> = ({ sidebar, children }) => {
         {/* Footer with hub links */}
         <footer className="shrink-0 relative noise-overlay">
           {/* Gradient accent line */}
-          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-64 h-px bg-gradient-to-r from-transparent via-cyan-500/50 to-transparent" />
+          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-lg h-[2px] bg-gradient-to-r from-transparent via-red-500 to-transparent opacity-50" />
 
-          <div className="px-6 py-6 bg-[rgba(255,255,255,0.02)] border-t border-white/5">
+          <div className="px-6 py-6 bg-black/40 border-t border-white/5">
             <div className="flex flex-col items-center gap-5 max-w-lg mx-auto">
               {/* Identity line */}
-              <p className="text-xs text-white/40 text-center leading-relaxed heading-tight">
-                Built by <span className="text-gradient font-medium">Jonathan R Reed</span> AI & cybersecurity developer, red team specialist.
+              <p className="text-xs text-zinc-500 text-center leading-relaxed heading-tight">
+                Built by <span className="text-red-400 font-bold tracking-tight">Jonathan R Reed</span> AI & cybersecurity developer, red team specialist.
               </p>
 
               {/* Links row */}
-              <nav className="flex flex-wrap justify-center gap-x-3 gap-y-2 text-xs" aria-label="Related sites">
+              <nav className="flex flex-wrap justify-center gap-x-3 gap-y-2 text-xs font-medium tracking-wide" aria-label="Related sites">
                 <a
                   href="https://jonathanrreed.com/projects/"
                   rel="noopener noreferrer"
-                  className="px-4 py-2 rounded-full bg-gradient-to-r from-cyan-500/10 to-purple-500/10 text-white/70 hover:text-white hover:from-cyan-500/20 hover:to-purple-500/20 transition-all ring-1 ring-white/10 hover:ring-white/20 press-scale"
+                  className="px-4 py-2 rounded-lg bg-zinc-900 border border-zinc-800 text-zinc-300 hover:text-white hover:border-zinc-700 hover:bg-zinc-800 transition-all shadow-sm press-scale"
                 >
                   See more projects →
                 </a>
-                <span className="text-white/20 self-center">•</span>
-                <a href="https://aistats.jonathanrreed.com" rel="noopener noreferrer" className="text-white/40 hover:text-white/70 transition-colors px-2 py-1">
+                <span className="text-zinc-700 self-center">•</span>
+                <a href="https://aistats.jonathanrreed.com" rel="noopener noreferrer" className="text-zinc-500 hover:text-white transition-colors px-2 py-1">
                   AI Stats
                 </a>
-                <span className="text-white/20 self-center">•</span>
-                <a href="https://ai-news.helloworldfirm.com/" rel="noopener noreferrer" className="text-white/40 hover:text-white/70 transition-colors px-2 py-1">
+                <span className="text-zinc-700 self-center">•</span>
+                <a href="https://ai-news.helloworldfirm.com/" rel="noopener noreferrer" className="text-zinc-500 hover:text-white transition-colors px-2 py-1">
                   AI News
                 </a>
               </nav>

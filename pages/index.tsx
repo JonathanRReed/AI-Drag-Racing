@@ -362,20 +362,22 @@ export default function Home() {
         }
       >
         {/* Hero intro copy */}
-        <div className="mb-10 relative">
-          <div className="flex items-start gap-4 p-5 rounded-2xl bg-gradient-to-r from-cyan-500/10 via-purple-500/5 to-transparent border border-white/10 backdrop-blur-sm spotlight-card noise-overlay">
-            <div className="shrink-0 w-12 h-12 rounded-xl bg-gradient-to-br from-cyan-500/20 to-purple-500/20 flex items-center justify-center ring-1 ring-white/10 float-subtle">
-              <svg viewBox="0 0 24 24" className="w-6 h-6 text-cyan-400" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" strokeLinecap="round" strokeLinejoin="round" />
+        <div className="mb-8 relative">
+          <div className="flex items-start gap-4 p-6 rounded-2xl bg-zinc-900/40 border border-white/10 shadow-2xl relative overflow-hidden backdrop-blur-xl">
+            {/* Top red accent line */}
+            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-red-500 to-yellow-500" />
+            <div className="shrink-0 w-12 h-12 rounded-xl bg-zinc-950 border border-white/5 flex items-center justify-center ring-1 ring-white/10">
+              <svg viewBox="0 0 24 24" className="w-6 h-6 text-red-500" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M12 4v4M12 16v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M4 12h4M16 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
             </div>
             <div className="space-y-1">
-              <h1 className="text-lg font-semibold heading-tight">
-                <span className="text-gradient">AI Drag Racing</span>
+              <h1 className="text-xl font-semibold tracking-tight text-white flex items-center gap-2">
+                AI Drag Racing
               </h1>
-              <p className="text-sm text-white/70 leading-relaxed">
+              <p className="text-sm text-zinc-400 leading-relaxed max-w-2xl font-medium">
                 A live benchmark experiment by{' '}
-                <span className="text-cyan-300 font-medium">Jonathan R Reed</span> that races AI models side by side so you can watch latency in real time.
+                <span className="text-zinc-200">Jonathan R Reed</span> that races AI models side by side so you can watch latency in real time.
               </p>
             </div>
           </div>
@@ -411,38 +413,40 @@ export default function Home() {
                 {/* Primary controls available even when sidebar is closed on mobile */}
                 <button
                   onClick={handleRunComparison}
-                  className="btn btn-primary text-xs hidden sm:inline-flex group press-scale"
+                  className="btn btn-primary font-bold uppercase tracking-wider text-xs hidden sm:inline-flex group press-scale"
                   disabled={startDisabled || !state.prompt}
                 >
-                  <svg viewBox="0 0 24 24" className="w-3.5 h-3.5 text-cyan-300 group-hover:translate-x-0.5 transition-transform" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M5 12h14M12 5l7 7-7 7" strokeLinecap="round" strokeLinejoin="round" />
-                  </svg>
-                  Start
+                  <span className="flex items-center gap-1.5">
+                    <svg viewBox="0 0 24 24" className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" fill="currentColor">
+                      <path d="M5 3l14 9-14 9V3z" />
+                    </svg>
+                    START RACE
+                  </span>
                 </button>
                 <button
                   onClick={() => dispatch({ type: 'RESET_RACE' })}
-                  className="btn-ghost text-xs hidden sm:inline-flex press-scale"
+                  className="btn-ghost text-xs hidden sm:inline-flex press-scale font-medium uppercase tracking-wide"
                   disabled={state.isLoading || state.raceState === 'countingDown'}
                 >
                   Reset
                 </button>
                 <button
                   onClick={() => setHideFailed((v) => !v)}
-                  className="btn-ghost text-xs"
+                  className="btn-ghost text-xs font-medium uppercase tracking-wide"
                   disabled={activeTab !== 'results' || state.results.length === 0}
                 >
                   {hideFailed ? 'Show failed' : 'Hide failed'}
                 </button>
                 <button
                   onClick={() => setForce((f) => ({ version: f.version + 1, collapsed: true }))}
-                  className="btn-ghost text-xs"
+                  className="btn-ghost text-xs font-medium uppercase tracking-wide"
                   disabled={activeTab !== 'results' || state.results.length === 0}
                 >
                   Collapse all
                 </button>
                 <button
                   onClick={() => setForce((f) => ({ version: f.version + 1, collapsed: false }))}
-                  className="btn-ghost text-xs"
+                  className="btn-ghost text-xs font-medium uppercase tracking-wide"
                   disabled={activeTab !== 'results' || state.results.length === 0}
                 >
                   Expand all
