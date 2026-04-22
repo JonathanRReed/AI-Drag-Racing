@@ -72,6 +72,10 @@ export default function About() {
             incomplete, terse, or formatted poorly. The best read is both mechanical and editorial: compare the time, then
             inspect what each model actually produced.
           </p>
+          <p className="mt-4 text-base leading-8 text-zinc-300">
+            AI Drag Racing keeps that comparison small on purpose: one prompt, a set of model lanes, timing numbers, and
+            the responses you can review directly. It is a quick field check before deeper evaluation work.
+          </p>
           <p className="mt-6 text-sm text-zinc-500">
             Published <time dateTime="2026-04-21">April 21, 2026</time>.
           </p>

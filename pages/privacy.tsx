@@ -71,6 +71,16 @@ export default function Privacy() {
             provider, and avoid confidential client data, medical records, financial details, or private employer material
             unless your own provider agreement allows that use.
           </p>
+          <p className="mt-4 text-base leading-8 text-zinc-300">
+            Clearing site data in your browser removes saved provider keys and local settings for this site. The app does
+            not provide account recovery because it does not create accounts. If you rotate or revoke a provider key, do it
+            directly with that provider and update the local value before running another race.
+          </p>
+          <p className="mt-4 text-base leading-8 text-zinc-300">
+            Race results are displayed in the browser so you can compare output quality beside latency. Avoid using the
+            tool for regulated or confidential prompts unless your own provider policies, data processing terms, and
+            internal rules permit that workflow.
+          </p>
           <p className="mt-6 text-sm text-zinc-500">
             Published <time dateTime="2026-04-21">April 21, 2026</time>.
           </p>

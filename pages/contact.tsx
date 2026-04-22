@@ -67,6 +67,16 @@ export default function Contact() {
             The project is intentionally focused on live latency and output comparison, so clear workflow examples are
             more useful than broad requests for another dashboard.
           </p>
+          <p className="mt-4 text-base leading-8 text-zinc-300">
+            Timing reports are most useful when they separate provider behavior from interface behavior. Note whether the
+            race failed before the request started, during streaming, after the final token, or while drawing the result
+            chart. That makes it easier to tell whether the fix belongs in provider routing, browser storage, UI state, or
+            result formatting.
+          </p>
+          <p className="mt-4 text-base leading-8 text-zinc-300">
+            Do not send provider API keys, private prompts, client data, or screenshots that expose secrets. A short
+            sanitized prompt, the selected providers, and the visible error text are enough for most debugging.
+          </p>
           <a
             href="https://jonathanrreed.com/contact/"
             className="mt-6 inline-flex rounded-xl border border-white/10 bg-white/10 px-4 py-3 text-sm font-semibold text-white hover:bg-white/15"
