@@ -5,8 +5,8 @@
     "": {
       "name": "ai-comparator",
       "dependencies": {
-        "@aws-sdk/client-bedrock": "^3.971.0",
-        "@aws-sdk/client-bedrock-runtime": "^3.971.0",
+        "@aws-sdk/client-bedrock": "^3.972.0",
+        "@aws-sdk/client-bedrock-runtime": "^3.972.0",
         "@types/node": "20.11.30",
         "autoprefixer": "10.4.14",
         "chart.js": "4.4.1",
@@ -21,8 +21,8 @@
       "devDependencies": {
         "@cloudflare/next-on-pages": "^1.13.16",
         "@types/react": "19.1.11",
-        "@typescript-eslint/eslint-plugin": "^8.53.0",
-        "@typescript-eslint/parser": "^8.53.0",
+        "@typescript-eslint/eslint-plugin": "^8.53.1",
+        "@typescript-eslint/parser": "^8.53.1",
         "babel-plugin-react-compiler": "^19.1.0-rc.1-rc-af1b7da-20250421",
         "eslint": "^9.39.2",
         "eslint-config-next": "15.5.9",
@@ -31,7 +31,7 @@
         "eslint-plugin-tailwindcss": "^3.18.2",
         "eslint-plugin-unused-imports": "^4.3.0",
         "sharp": "^0.34.5",
-        "typescript-eslint": "^8.53.0",
+        "typescript-eslint": "^8.53.1",
       },
     },
   },
