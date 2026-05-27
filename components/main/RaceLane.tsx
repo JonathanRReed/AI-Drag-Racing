@@ -178,6 +178,8 @@ const RaceLane: React.FC<RaceLaneProps> = ({
                     <img
                       src={logoUrl}
                       alt={`${displayName} logo`}
+                      width={32}
+                      height={32}
                       className="w-8 h-8 rounded-md bg-white p-0.5 relative z-10"
                       style={{ boxShadow: `0 0 0 2px ${laneColor}44, 0 0 12px ${laneColor}44` }}
                       loading="lazy"

@@ -1,16 +1,19 @@
 import React, { useReducer, useCallback, useState } from 'react';
 import Head from 'next/head';
+import dynamic from 'next/dynamic';
 import MainLayout from '../components/layout/MainLayout';
 import ProviderList from '../components/sidebar/ProviderList';
 import PromptInput from '../components/main/PromptInput';
-import ResultsDisplay, { ResultState } from '../components/main/ResultsDisplay';
-import ComparisonCharts from '../components/ComparisonCharts';
+import type { ResultState } from '../components/main/ResultsDisplay';
 import { streamCompletion } from '../utils/apiClient';
 import { CompletionMetrics } from '../utils/providerService';
 import GlassCard from '../components/layout/GlassCard';
 import CountdownOverlay from '../components/main/CountdownOverlay';
-import Leaderboard from '../components/main/Leaderboard';
 import RaceSettings, { RaceConfig } from '../components/sidebar/RaceSettings';
+
+const ResultsDisplay = dynamic(() => import('../components/main/ResultsDisplay'), { ssr: false });
+const Leaderboard = dynamic(() => import('../components/main/Leaderboard'), { ssr: false });
+const ComparisonCharts = dynamic(() => import('../components/ComparisonCharts'), { ssr: false });
 
 // --- State Management using useReducer ---
 
@@ -264,8 +267,8 @@ export default function Home() {
   return (
     <>
       <Head>
-        <title>AI Drag Racing | LLM speed and latency experiments by Jonathan R Reed</title>
-        <meta name="description" content="AI Drag Racing is a live benchmark experiment by Jonathan R Reed that races AI models so you can see speed and latency in practice." />
+        <title>AI Drag Racing | LLM Speed Test</title>
+        <meta name="description" content="Race AI models side by side, compare latency, time to first token, throughput, and output quality in a live browser benchmark by Jonathan R Reed." />
 
         {/* Canonical URL */}
         <link rel="canonical" href="https://ai-dragrace.jonathanrreed.com/" />
@@ -273,17 +276,17 @@ export default function Home() {
         {/* Open Graph / Facebook */}
         <meta property="og:type" content="website" />
         <meta property="og:url" content="https://ai-dragrace.jonathanrreed.com/" />
-        <meta property="og:title" content="AI Drag Racing | LLM speed and latency experiments by Jonathan R Reed" />
-        <meta property="og:description" content="AI Drag Racing is a live benchmark experiment by Jonathan R Reed that races AI models so you can see speed and latency in practice." />
-        <meta property="og:image" content="https://ai-dragrace.jonathanrreed.com/og-image.png" />
+        <meta property="og:title" content="AI Drag Racing | LLM Speed Test" />
+        <meta property="og:description" content="Race AI models side by side, compare latency, time to first token, throughput, and output quality in a live browser benchmark by Jonathan R Reed." />
+        <meta property="og:image" content="https://ai-dragrace.jonathanrreed.com/Favicon/icon-512.png" />
         <meta property="og:site_name" content="AI Drag Racing" />
 
         {/* Twitter */}
         <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:url" content="https://ai-dragrace.jonathanrreed.com/" />
-        <meta name="twitter:title" content="AI Drag Racing | LLM speed and latency experiments by Jonathan R Reed" />
-        <meta name="twitter:description" content="AI Drag Racing is a live benchmark experiment by Jonathan R Reed that races AI models so you can see speed and latency in practice." />
-        <meta name="twitter:image" content="https://ai-dragrace.jonathanrreed.com/og-image.png" />
+        <meta name="twitter:title" content="AI Drag Racing | LLM Speed Test" />
+        <meta name="twitter:description" content="Race AI models side by side, compare latency, time to first token, throughput, and output quality in a live browser benchmark by Jonathan R Reed." />
+        <meta name="twitter:image" content="https://ai-dragrace.jonathanrreed.com/Favicon/icon-512.png" />
 
         {/* Additional SEO */}
         <meta name="robots" content="index, follow" />
@@ -300,11 +303,13 @@ export default function Home() {
               "@context": "https://schema.org",
               "@type": "WebApplication",
               "name": "AI Drag Racing",
-              "description": "AI Drag Racing is a live benchmark experiment by Jonathan R Reed that races AI models so you can see speed and latency in practice.",
+              "description": "Race AI models side by side, compare latency, time to first token, throughput, and output quality in a live browser benchmark by Jonathan R Reed.",
               "url": "https://ai-dragrace.jonathanrreed.com/",
               "applicationCategory": "DeveloperApplication",
               "operatingSystem": "Any",
               "browserRequirements": "Requires JavaScript",
+              "datePublished": "2026-04-21",
+              "dateModified": "2026-04-21",
               "author": {
                 "@type": "Person",
                 "name": "Jonathan Reed",
@@ -327,7 +332,7 @@ export default function Home() {
           }}
         />
 
-        <link rel="icon" type="image/svg+xml" href="/Favicon/favicon.svg" />
+        <link rel="icon" href="/Favicon/favicon.ico" sizes="any" />
       </Head>
       <MainLayout
         sidebar={
@@ -379,9 +384,43 @@ export default function Home() {
                 A live benchmark experiment by{' '}
                 <span className="text-zinc-200">Jonathan R Reed</span> that races AI models side by side so you can watch latency in real time.
               </p>
+              <p className="text-sm text-zinc-500 leading-relaxed max-w-2xl">
+                Use the same prompt and comparable settings when you want a fair read. The useful signal is not only who
+                finishes first, but which model starts quickly, streams steadily, handles the task cleanly, and avoids
+                provider errors during a real browser session.
+              </p>
             </div>
           </div>
         </div>
+        <details className="mb-6 rounded-2xl border border-white/10 bg-zinc-950/45 p-5 text-sm leading-7 text-zinc-300">
+          <summary className="cursor-pointer text-sm font-semibold text-white">
+            How to read an AI model race
+          </summary>
+          <div className="mt-4 space-y-3">
+            <p>
+              AI Drag Racing compares model behavior under the same prompt, selected settings, and local browser
+              session. Time to first token shows how quickly a provider starts responding. Total response time shows
+              how long the full answer takes. Tokens per second is useful for longer generations because a model can
+              start quickly but still stream slowly after the first token appears.
+            </p>
+            <p>
+              Treat every run as a live measurement, not a permanent leaderboard. Network route, provider load,
+              regional availability, selected model, prompt length, reasoning settings, and output length all affect
+              results. For a fair comparison, select comparable models, reuse the same prompt, run more than one race,
+              and compare both the timing metrics and the actual answer quality.
+            </p>
+            <p>
+              The app is built for practical evaluation work: checking which model feels fastest for coding prompts,
+              support drafts, writing tasks, summarization, structured extraction, and agent workflows. It is also a
+              useful way to spot provider errors, slow starts, rate-limit behavior, and models that look fast only
+              because they produce shorter answers.
+            </p>
+            <p>
+              Repeated runs matter. A single race can show a spike, but a few consistent runs reveal whether the delay
+              comes from the provider, the model, the prompt shape, or the current network path.
+            </p>
+          </div>
+        </details>
         <div className="space-y-4">
           {/* Tabs + actions toolbar (sticky on md+, static on mobile) */}
           <div className="md:sticky md:top-0 z-10 -mx-1">
@@ -471,5 +510,3 @@ export default function Home() {
     </>
   );
 }
-
-
