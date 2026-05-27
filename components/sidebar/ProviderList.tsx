@@ -17,8 +17,7 @@ interface ProviderListItemProps {
 }
 
 // Build CDN URLs (monochrome only)
-const ICON_PNG_LIGHT = (slug: string) => `https://unpkg.com/@lobehub/icons-static-png@latest/light/${slug}.png`;
-const ICON_PNG_DARK = (slug: string) => `https://unpkg.com/@lobehub/icons-static-png@latest/dark/${slug}.png`;
+const ICON_SVG = (slug: string) => `https://unpkg.com/@lobehub/icons-static-svg@latest/icons/${slug}.svg`;
 
 // Slug fallbacks for certain providers with multiple variants in Lobe Icons
 function providerSlugs(providerId: string): string[] {
@@ -66,14 +65,13 @@ const IconImg: React.FC<{
   className?: string;
   alt?: string;
   title?: string;
+  width?: number;
+  height?: number;
   fallback?: React.ReactNode;
-}> = ({ slugs, className, alt = 'icon', title, fallback }) => {
+}> = ({ slugs, className, alt = 'icon', title, width = 20, height = 20, fallback }) => {
   const [index, setIndex] = useState(0);
-  // Monochrome only: prefer light → dark
   const sources = useMemo(() => {
-    const lights = slugs.map(ICON_PNG_LIGHT);
-    const darks = slugs.map(ICON_PNG_DARK);
-    return [...lights, ...darks];
+    return slugs.map(ICON_SVG);
   }, [slugs]);
   const src = sources[index];
   if (!src) return <>{fallback}</>;
@@ -82,8 +80,10 @@ const IconImg: React.FC<{
       src={src}
       alt={alt}
       title={title}
+      width={width}
+      height={height}
       className={className}
-      loading="lazy"
+      loading="eager"
       onError={() => setIndex((i) => i + 1)}
     />
   );
@@ -97,6 +97,8 @@ const ProviderListItem: React.FC<ProviderListItemProps> = ({ provider, hasApiKey
           slugs={providerSlugs(provider.id)}
           alt={`${provider.displayName} logo`}
           title={provider.displayName}
+          width={20}
+          height={20}
           className="w-5 h-5 rounded-sm shrink-0"
           fallback={
             <span className="w-5 h-5 inline-flex items-center justify-center rounded-sm text-[10px] font-bold text-gray-200 bg-white/10 border border-white/10 shrink-0">
@@ -370,7 +372,7 @@ const ProviderList: React.FC<ProviderListProps> = ({ apiKeys, dispatch, selected
                             checked={checked}
                             onChange={(e) => handleToggleModel(provider.id, m, e.target.checked)}
                           />
-                          <IconImg slugs={slugs} alt="brand" className="w-3.5 h-3.5 rounded-sm opacity-80" />
+                          <IconImg slugs={slugs} alt="brand" width={14} height={14} className="w-3.5 h-3.5 rounded-sm opacity-80" />
                           <span className="truncate" title={m}>{formatModelLabel(m)}</span>
                         </label>
                       );

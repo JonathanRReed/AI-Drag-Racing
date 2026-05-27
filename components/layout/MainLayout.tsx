@@ -44,7 +44,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({ sidebar, children }) => {
           <button
             onClick={() => setMobileOpen(true)}
             className="btn text-sm"
-            aria-label="Open providers menu"
+            aria-label="Open racers providers menu"
           >
             <svg viewBox="0 0 24 24" className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M4 6h16M4 12h16M4 18h16" strokeLinecap="round" />
@@ -104,6 +104,18 @@ const MainLayout: React.FC<MainLayoutProps> = ({ sidebar, children }) => {
 
               {/* Links row */}
               <nav className="flex flex-wrap justify-center gap-x-3 gap-y-2 text-xs font-medium tracking-wide" aria-label="Related sites">
+                <a href="/about" className="text-zinc-500 hover:text-white transition-colors px-2 py-1">
+                  About
+                </a>
+                <span className="text-zinc-700 self-center">•</span>
+                <a href="/contact" className="text-zinc-500 hover:text-white transition-colors px-2 py-1">
+                  Contact
+                </a>
+                <span className="text-zinc-700 self-center">•</span>
+                <a href="/privacy" className="text-zinc-500 hover:text-white transition-colors px-2 py-1">
+                  Privacy
+                </a>
+                <span className="text-zinc-700 self-center">•</span>
                 <a
                   href="https://jonathanrreed.com/projects/"
                   rel="noopener noreferrer"

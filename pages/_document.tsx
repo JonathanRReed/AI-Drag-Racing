@@ -12,9 +12,9 @@ export default function Document() {
           type="font/woff2"
           crossOrigin=""
         />
+        <link rel="preconnect" href="https://unpkg.com" crossOrigin="" />
         {/* Favicons: minimal set */}
         <link rel="icon" href="/Favicon/favicon.ico" sizes="any" />
-        <link rel="icon" type="image/svg+xml" href="/Favicon/favicon.svg" />
         <link rel="apple-touch-icon" href="/Favicon/apple-touch-icon.png" />
         <link rel="manifest" href="/Favicon/site.webmanifest" />
       </Head>
