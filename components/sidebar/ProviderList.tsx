@@ -5,8 +5,7 @@ import { fetchModels } from '../../utils/fetchModels';
 import ApiKeyModal from './ApiKeyModal';
 
 // Icons
-const PlusIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>;
-const CheckIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>;
+const CheckIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="provider-check" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>;
 
 
 interface ProviderListItemProps {
@@ -91,40 +90,38 @@ const IconImg: React.FC<{
 
 const ProviderListItem: React.FC<ProviderListItemProps> = ({ provider, hasApiKey, onAddKey, onClearKey }) => {
   return (
-    <div className="flex items-center justify-between px-2 py-1.5 rounded-lg hover:bg-white/10 transition-colors duration-200">
-      <div className="flex items-center gap-2 min-w-0">
+    <div className="provider-row">
+      <div className="provider-main">
         <IconImg
           slugs={providerSlugs(provider.id)}
           alt={`${provider.displayName} logo`}
           title={provider.displayName}
           width={20}
           height={20}
-          className="w-5 h-5 rounded-sm shrink-0"
+          className="provider-logo"
           fallback={
-            <span className="w-5 h-5 inline-flex items-center justify-center rounded-sm text-[10px] font-bold text-gray-200 bg-white/10 border border-white/10 shrink-0">
+            <span className="provider-logo-fallback">
               {provider.displayName.slice(0, 1).toUpperCase()}
             </span>
           }
         />
-        <span className="font-medium text-gray-200 truncate">{provider.displayName}</span>
+        <span className="provider-name">{provider.displayName}</span>
         {hasApiKey && <CheckIcon />}
       </div>
-      <div className="flex items-center gap-2">
+      <div className="provider-actions">
         {hasApiKey && (
           <button
             onClick={onClearKey}
-            className="px-2 py-0.5 text-xs rounded-md bg-zinc-800 text-gray-300 border border-white/10 hover:border-white/20"
+            className="provider-clear"
           >
             Clear Key
           </button>
         )}
         <button
           onClick={onAddKey}
-          className="p-1 rounded-md text-gray-400 hover:bg-white/20 hover:text-white transition-colors"
+          className="provider-key-button"
           aria-label={`${hasApiKey ? 'Edit' : 'Add'} API key for ${provider.displayName}`}
-        >
-          <PlusIcon />
-        </button>
+        />
       </div>
     </div>
   );
@@ -314,20 +311,20 @@ const ProviderList: React.FC<ProviderListProps> = ({ apiKeys, dispatch, selected
   };
 
   return (
-    <div className="flex h-full min-h-0 flex-col">
+    <div className="provider-panel">
       {/* Racing-themed header */}
-      <div className="flex items-center gap-2.5 mb-4 px-2">
-        <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-cyan-500/20 to-cyan-600/10 flex items-center justify-center ring-1 ring-cyan-500/20">
-          <svg viewBox="0 0 24 24" className="w-5 h-5 text-cyan-400" fill="none" stroke="currentColor" strokeWidth="1.5">
+      <div className="provider-panel-header">
+        <div className="provider-panel-icon">
+          <svg viewBox="0 0 24 24" className="provider-panel-icon-svg" fill="none" stroke="currentColor" strokeWidth="1.5">
             <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
         </div>
         <div>
-          <h2 className="text-base font-semibold text-white">Racers</h2>
-          <p className="text-[10px] text-[var(--text-muted)] uppercase tracking-wider">Select your lineup</p>
+          <h2 className="provider-panel-title">Racers</h2>
+          <p className="provider-panel-subtitle">Select your lineup</p>
         </div>
       </div>
-      <ul className="space-y-1 flex-1 min-h-0 overflow-auto pr-1">
+      <ul className="provider-list">
         {PROVIDERS.map((provider) => (
           <li key={provider.id} className="space-y-1">
             <ProviderListItem
