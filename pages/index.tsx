@@ -364,6 +364,11 @@ export default function Home() {
               <h1 className="race-hero-title">
                 AI Drag Racing
               </h1>
+              <p className="sr-only">
+                AI Drag Racing compares large language model latency, time to first token, streaming throughput, provider
+                errors, prompt handling, and repeat-run consistency in a live browser benchmark for practical model
+                evaluation.
+              </p>
               <p className="race-hero-lead">
                 A live benchmark experiment by{' '}
                 <span className="text-zinc-200">Jonathan R Reed</span> that races AI models side by side so you can watch latency in real time.
