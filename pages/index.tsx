@@ -273,24 +273,8 @@ export default function Home() {
         {/* Canonical URL */}
         <link rel="canonical" href="https://ai-dragrace.jonathanrreed.com/" />
 
-        {/* Open Graph / Facebook */}
-        <meta property="og:type" content="website" />
-        <meta property="og:url" content="https://ai-dragrace.jonathanrreed.com/" />
-        <meta property="og:title" content="AI Drag Racing | LLM Speed Test" />
-        <meta property="og:description" content="Race AI models side by side, compare latency, time to first token, throughput, and output quality in a live browser benchmark by Jonathan R Reed." />
-        <meta property="og:image" content="https://ai-dragrace.jonathanrreed.com/Favicon/icon-512.png" />
-        <meta property="og:site_name" content="AI Drag Racing" />
-
-        {/* Twitter */}
-        <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:url" content="https://ai-dragrace.jonathanrreed.com/" />
-        <meta name="twitter:title" content="AI Drag Racing | LLM Speed Test" />
-        <meta name="twitter:description" content="Race AI models side by side, compare latency, time to first token, throughput, and output quality in a live browser benchmark by Jonathan R Reed." />
-        <meta name="twitter:image" content="https://ai-dragrace.jonathanrreed.com/Favicon/icon-512.png" />
-
         {/* Additional SEO */}
         <meta name="robots" content="index, follow" />
-        <meta name="keywords" content="AI, LLM, model comparison, drag race, performance, TTFT, throughput, tokens per second, OpenAI, Anthropic, Claude, GPT, Gemini, Groq, Cerebras, latency, speed benchmark" />
         <meta name="author" content="Jonathan R Reed" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <meta name="theme-color" content="#07090D" />
@@ -367,24 +351,24 @@ export default function Home() {
         }
       >
         {/* Hero intro copy */}
-        <div className="mb-8 relative">
-          <div className="flex items-start gap-4 p-6 rounded-2xl bg-zinc-900/40 border border-white/10 shadow-2xl relative overflow-hidden backdrop-blur-xl">
+        <div className="race-hero-wrap">
+          <div className="race-hero">
             {/* Top red accent line */}
-            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-red-500 to-yellow-500" />
-            <div className="shrink-0 w-12 h-12 rounded-xl bg-zinc-950 border border-white/5 flex items-center justify-center ring-1 ring-white/10">
-              <svg viewBox="0 0 24 24" className="w-6 h-6 text-red-500" fill="none" stroke="currentColor" strokeWidth="2">
+            <div className="race-hero-accent" />
+            <div className="race-hero-icon">
+              <svg viewBox="0 0 24 24" className="race-hero-svg" fill="none" stroke="currentColor" strokeWidth="2">
                 <path d="M12 4v4M12 16v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M4 12h4M16 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
             </div>
-            <div className="space-y-1">
-              <h1 className="text-xl font-semibold tracking-tight text-white flex items-center gap-2">
+            <div className="race-hero-copy">
+              <h1 className="race-hero-title">
                 AI Drag Racing
               </h1>
-              <p className="text-sm text-zinc-400 leading-relaxed max-w-2xl font-medium">
+              <p className="race-hero-lead">
                 A live benchmark experiment by{' '}
                 <span className="text-zinc-200">Jonathan R Reed</span> that races AI models side by side so you can watch latency in real time.
               </p>
-              <p className="text-sm text-zinc-500 leading-relaxed max-w-2xl">
+              <p className="race-hero-body">
                 Use the same prompt and comparable settings when you want a fair read. The useful signal is not only who
                 finishes first, but which model starts quickly, streams steadily, handles the task cleanly, and avoids
                 provider errors during a real browser session.
@@ -392,11 +376,11 @@ export default function Home() {
             </div>
           </div>
         </div>
-        <details className="mb-6 rounded-2xl border border-white/10 bg-zinc-950/45 p-5 text-sm leading-7 text-zinc-300">
-          <summary className="cursor-pointer text-sm font-semibold text-white">
+        <details className="race-details">
+          <summary className="race-details-summary">
             How to read an AI model race
           </summary>
-          <div className="mt-4 space-y-3">
+          <div className="race-details-copy">
             <p>
               AI Drag Racing compares model behavior under the same prompt, selected settings, and local browser
               session. Time to first token shows how quickly a provider starts responding. Total response time shows
@@ -423,36 +407,30 @@ export default function Home() {
         </details>
         <div className="space-y-4">
           {/* Tabs + actions toolbar (sticky on md+, static on mobile) */}
-          <div className="md:sticky md:top-0 z-10 -mx-1">
-            <div className="px-1 py-2 bg-[rgba(255,255,255,0.06)] ring-1 ring-white/10 backdrop-blur-xl rounded-[18px] overflow-hidden flex items-center justify-between">
+          <div className="race-toolbar-wrap">
+            <div className="race-toolbar">
               {/* Tabs */}
-              <div className="inline-flex rounded-[18px] overflow-hidden ring-1 ring-white/10">
+              <div className="race-tabs">
                 <button
                   onClick={() => setActiveTab('results')}
-                  className={`px-3 py-1.5 text-xs transition ${activeTab === 'results'
-                    ? 'bg-[rgba(255,255,255,0.12)] text-white'
-                    : 'bg-[rgba(255,255,255,0.06)] text-white/80 hover:bg-[rgba(255,255,255,0.10)]'
-                    }`}
+                  className={`race-tab ${activeTab === 'results' ? 'is-active' : ''}`}
                 >
                   Results
                 </button>
                 <button
                   onClick={() => setActiveTab('charts')}
-                  className={`px-3 py-1.5 text-xs transition ${activeTab === 'charts'
-                    ? 'bg-[rgba(255,255,255,0.12)] text-white'
-                    : 'bg-[rgba(255,255,255,0.06)] text-white/80 hover:bg-[rgba(255,255,255,0.10)]'
-                    }`}
+                  className={`race-tab ${activeTab === 'charts' ? 'is-active' : ''}`}
                   disabled={state.results.length === 0}
                 >
                   Charts
                 </button>
               </div>
               {/* Actions */}
-              <div className="flex items-center gap-2">
+              <div className="race-actions">
                 {/* Primary controls available even when sidebar is closed on mobile */}
                 <button
                   onClick={handleRunComparison}
-                  className="btn btn-primary font-bold uppercase tracking-wider text-xs hidden sm:inline-flex group press-scale"
+                  className="race-start-button group press-scale"
                   disabled={startDisabled || !state.prompt}
                 >
                   <span className="flex items-center gap-1.5">
@@ -464,28 +442,28 @@ export default function Home() {
                 </button>
                 <button
                   onClick={() => dispatch({ type: 'RESET_RACE' })}
-                  className="btn-ghost text-xs hidden sm:inline-flex press-scale font-medium uppercase tracking-wide"
+                  className="race-reset-button press-scale"
                   disabled={state.isLoading || state.raceState === 'countingDown'}
                 >
                   Reset
                 </button>
                 <button
                   onClick={() => setHideFailed((v) => !v)}
-                  className="btn-ghost text-xs font-medium uppercase tracking-wide"
+                  className="race-tool-button"
                   disabled={activeTab !== 'results' || state.results.length === 0}
                 >
                   {hideFailed ? 'Show failed' : 'Hide failed'}
                 </button>
                 <button
                   onClick={() => setForce((f) => ({ version: f.version + 1, collapsed: true }))}
-                  className="btn-ghost text-xs font-medium uppercase tracking-wide"
+                  className="race-tool-button"
                   disabled={activeTab !== 'results' || state.results.length === 0}
                 >
                   Collapse all
                 </button>
                 <button
                   onClick={() => setForce((f) => ({ version: f.version + 1, collapsed: false }))}
-                  className="btn-ghost text-xs font-medium uppercase tracking-wide"
+                  className="race-tool-button"
                   disabled={activeTab !== 'results' || state.results.length === 0}
                 >
                   Expand all
