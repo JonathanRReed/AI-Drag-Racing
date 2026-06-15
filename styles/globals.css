@@ -829,6 +829,27 @@
   animation: trophy-bounce 2s ease-in-out infinite;
 }
 
+/* Winner podium reveal */
+@keyframes winner-pop {
+  0% {
+    transform: scale(0.98) translateY(8px);
+    opacity: 0;
+  }
+
+  60% {
+    transform: scale(1.01) translateY(0);
+  }
+
+  100% {
+    transform: scale(1) translateY(0);
+    opacity: 1;
+  }
+}
+
+.animate-winner-pop {
+  animation: winner-pop 0.5s var(--ease-out-back) forwards;
+}
+
 .animate-fade-up {
   animation: fade-up 0.5s var(--ease-out-expo) forwards;
 }
@@ -1102,4 +1123,120 @@
 
 .press-scale:active {
   transform: scale(0.98);
+}
+
+/* ============================================================
+   DRAG STRIP — arcade racing view
+   ============================================================ */
+
+/* Italic, tight "speed" numerals for racing readouts */
+.font-speed {
+  font-style: italic;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Asphalt lane surface with a faint aggregate texture */
+.asphalt {
+  background-color: #121419;
+  background-image:
+    repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.02) 0 2px, transparent 2px 9px),
+    radial-gradient(rgba(255, 255, 255, 0.045) 0.5px, transparent 0.5px);
+  background-size: auto, 7px 7px;
+}
+
+/* Checkerboard (finish line + flags) */
+.checker-bg {
+  background-image:
+    linear-gradient(45deg, rgba(255, 255, 255, 0.88) 25%, transparent 25%),
+    linear-gradient(-45deg, rgba(255, 255, 255, 0.88) 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, rgba(255, 255, 255, 0.88) 75%),
+    linear-gradient(-45deg, transparent 75%, rgba(255, 255, 255, 0.88) 75%);
+  background-size: 8px 8px;
+  background-position: 0 0, 0 4px, 4px -4px, -4px 0;
+}
+
+/* Dashed lane centerline */
+.lane-dashes {
+  background-image: repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.22) 0 14px, transparent 14px 30px);
+}
+
+/* Engine flame behind a launched dragster */
+@keyframes flame-flicker {
+  0%, 100% { transform: scaleX(1) scaleY(1); opacity: 0.92; }
+  50% { transform: scaleX(1.35) scaleY(0.8); opacity: 0.6; }
+}
+
+.car-flame {
+  animation: flame-flicker 0.1s linear infinite;
+  transform-origin: right center;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.dragster[data-running="true"] .car-flame {
+  opacity: 1;
+}
+
+.leader-crown {
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.dragster[data-leader="true"] .leader-crown {
+  opacity: 1;
+}
+
+.dragster[data-running="true"] {
+  filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.5));
+}
+
+/* Burnout / launch smoke puff */
+@keyframes smoke-puff {
+  0% { transform: scale(0.4); opacity: 0.55; }
+  100% { transform: scale(2.6); opacity: 0; }
+}
+
+.smoke-puff {
+  animation: smoke-puff 0.7s ease-out forwards;
+}
+
+/* Waving checkered flag on finish */
+@keyframes flag-wave {
+  0%, 100% { transform: rotate(-5deg) skewX(-2deg); }
+  50% { transform: rotate(5deg) skewX(2deg); }
+}
+
+.flag-wave {
+  animation: flag-wave 0.45s ease-in-out infinite;
+  transform-origin: left center;
+}
+
+/* Speed streak shimmer */
+@keyframes streak-shift {
+  0% { background-position: 0 0; }
+  100% { background-position: -24px 0; }
+}
+
+.speed-streak {
+  background: repeating-linear-gradient(90deg, currentColor 0 6px, transparent 6px 12px);
+  animation: streak-shift 0.18s linear infinite;
+}
+
+/* ============================================================
+   Reduced-motion: neutralize ALL animation/transition globally
+   (the JS paths already branch; this covers always-on CSS like
+   the Live pill, spinners, status pulses, and the arcade FX).
+   ============================================================ */
+@media (prefers-reduced-motion: reduce) {
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
 }

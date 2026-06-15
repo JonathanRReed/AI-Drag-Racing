@@ -16,6 +16,8 @@ export interface RaceLaneProps {
   laneColor?: string; // optional tint for lane & charts cohesion
   // Optional broadcast control to force collapse/expand from parent toolbars
   force?: { version: number; collapsed: boolean };
+  // Initial expanded state — lanes start collapsed when the pace chart leads the layout
+  initialExpanded?: boolean;
 }
 
 function formatMs(ms?: number) {
@@ -25,7 +27,7 @@ function formatMs(ms?: number) {
 function calcTps(metrics: CompletionMetrics | null): string {
   if (!metrics || !metrics.finishTime || !metrics.firstTokenTime) return 'N/A';
   const duration = (metrics.finishTime - metrics.firstTokenTime) / 1000;
-  if (duration <= 0) return 'N/A';
+  if (duration < 0.15) return 'N/A'; // sub-150ms window = buffered flush, not real throughput
   const out = typeof metrics.outputTokens === 'number' ? metrics.outputTokens : metrics.tokenCount;
   return (out / duration).toFixed(2);
 }
@@ -48,10 +50,10 @@ const StatusBadge: React.FC<{ status: LaneStatus }> = ({ status }) => {
       label: 'Racing'
     },
     finish: {
-      bg: 'bg-cyan-500/20',
-      border: 'border-cyan-500/40',
-      text: 'text-cyan-400',
-      dot: 'bg-cyan-400',
+      bg: 'bg-white/10',
+      border: 'border-white/20',
+      text: 'text-zinc-200',
+      dot: 'bg-zinc-200',
       label: 'Finished'
     },
     error: {
@@ -81,6 +83,7 @@ const RaceLane: React.FC<RaceLaneProps> = ({
   error,
   laneColor = '#38bdf8', // cyan default
   force,
+  initialExpanded = true,
 }) => {
   const providerCfg = getProviderById(providerName);
   const displayName = providerCfg?.displayName || providerName;
@@ -96,7 +99,7 @@ const RaceLane: React.FC<RaceLaneProps> = ({
   const total = metrics?.finishTime ? metrics.finishTime - metrics.startTime : undefined;
 
   // Expanded state for the response area
-  const [expanded, setExpanded] = useState(true);
+  const [expanded, setExpanded] = useState(initialExpanded);
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const autoCollapseTimer = useRef<number | null>(null);
 
@@ -162,7 +165,7 @@ const RaceLane: React.FC<RaceLaneProps> = ({
                 }`}
             />
             <div
-              className={`w-2.5 h-2.5 rounded-full transition-all duration-200 border border-zinc-800 ${status === 'finish' ? 'bg-cyan-400 shadow-[0_0_8px_rgba(34,211,238,0.8)]' : 'bg-black/50'
+              className={`w-2.5 h-2.5 rounded-full transition-all duration-200 border border-zinc-800 ${status === 'finish' ? 'bg-zinc-200 shadow-[0_0_8px_rgba(255,255,255,0.7)]' : 'bg-black/50'
                 }`}
             />
           </div>
@@ -240,7 +243,7 @@ const RaceLane: React.FC<RaceLaneProps> = ({
               {isLoading && !responseText && !error && (
                 <div className="space-y-3 py-2">
                   <div className="flex items-center gap-2 text-[var(--text-muted)] text-sm">
-                    <div className="w-4 h-4 border-2 border-white/20 border-t-cyan-400 rounded-full animate-spin" />
+                    <div className="w-4 h-4 border-2 border-white/20 border-t-[var(--accent)] rounded-full animate-spin" />
                     <span className="animate-pulse">Waiting for first token...</span>
                   </div>
                   {/* Shimmer skeleton lines */}
@@ -317,4 +320,4 @@ const RaceLane: React.FC<RaceLaneProps> = ({
   );
 };
 
-export default RaceLane;
+export default React.memo(RaceLane);

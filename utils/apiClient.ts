@@ -14,7 +14,8 @@ export async function* streamCompletion(
   prompt: string,
   model: string,
   apiKey: string,
-  settings?: ModelSettings
+  settings?: ModelSettings,
+  signal?: AbortSignal
 ): AsyncGenerator<CompletionResult> {
 
   const response = await fetch(`/api/providers/${providerId}/completions`, {
@@ -23,6 +24,7 @@ export async function* streamCompletion(
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({ prompt, model, apiKey, settings }),
+    signal,
   });
 
   if (!response.ok || !response.body) {
