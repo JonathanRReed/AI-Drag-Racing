@@ -40,6 +40,11 @@ export default function Subprocessors() {
                 '@type': 'Person',
                 name: 'Jonathan R. Reed',
                 url: 'https://jonathanrreed.com',
+                sameAs: [
+                  'https://jonathanrreed.com/',
+                  'https://github.com/JonathanRReed',
+                  'https://helloworldfirm.com/',
+                ],
               },
             }),
           }}

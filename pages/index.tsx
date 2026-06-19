@@ -594,7 +594,12 @@ export default function Home() {
                 "@type": "Person",
                 "name": "Jonathan R. Reed",
                 "alternateName": "Jonathan Reed",
-                "url": "https://jonathanrreed.com"
+                "url": "https://jonathanrreed.com",
+                "sameAs": [
+                  "https://jonathanrreed.com/",
+                  "https://github.com/JonathanRReed",
+                  "https://helloworldfirm.com/"
+                ]
               },
               "offers": {
                 "@type": "Offer",
