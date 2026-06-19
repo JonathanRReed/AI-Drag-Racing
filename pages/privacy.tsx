@@ -35,10 +35,10 @@ export default function Privacy() {
                 'AI Drag Racing stores provider keys in your browser local storage and sends prompts only to the provider APIs you choose for a race.',
               url: 'https://ai-dragrace.jonathanrreed.com/privacy',
               datePublished: '2026-04-21',
-              dateModified: '2026-04-21',
+              dateModified: '2026-06-19',
               author: {
                 '@type': 'Person',
-                name: 'Jonathan R Reed',
+                name: 'Jonathan R. Reed',
                 url: 'https://jonathanrreed.com',
               },
             }),
@@ -59,7 +59,11 @@ export default function Privacy() {
           </p>
           <p className="mt-4 text-base leading-8 text-zinc-300">
             When you start a race, your prompt and selected model settings are sent to the provider APIs you choose.
-            Cloudflare Pages may process routine request metadata to host and protect the site.
+            Cloudflare Pages may process routine request metadata to host and protect the site. See the{' '}
+            <a href="/subprocessors" className="text-red-300 underline underline-offset-4">
+              subprocessor disclosure
+            </a>{' '}
+            for the current hosting and infrastructure context.
           </p>
           <p className="mt-4 text-base leading-8 text-zinc-300">
             Provider API keys stay in browser storage so the app can run directly from your device. Do not paste keys on a
@@ -82,7 +86,7 @@ export default function Privacy() {
             internal rules permit that workflow.
           </p>
           <p className="mt-6 text-sm text-zinc-500">
-            Published <time dateTime="2026-04-21">April 21, 2026</time>.
+            Last updated <time dateTime="2026-06-19">June 19, 2026</time>.
           </p>
         </article>
       </main>

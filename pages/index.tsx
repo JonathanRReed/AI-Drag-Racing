@@ -555,16 +555,25 @@ export default function Home() {
     <>
       <Head>
         <title>AI Drag Racing | LLM Speed Test</title>
-        <meta name="description" content="Race AI models side by side, compare latency, time to first token, throughput, and output quality in a live browser benchmark by Jonathan R Reed." />
+        <meta name="description" content="Race AI models side by side, compare latency, time to first token, throughput, and output quality in a live browser benchmark by Jonathan R. Reed." />
 
         {/* Canonical URL */}
         <link rel="canonical" href="https://ai-dragrace.jonathanrreed.com/" />
 
         {/* Additional SEO */}
         <meta name="robots" content="index, follow" />
-        <meta name="author" content="Jonathan R Reed" />
+        <meta name="author" content="Jonathan R. Reed" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <meta name="theme-color" content="#07090D" />
+        <meta property="og:type" content="website" />
+        <meta property="og:title" content="AI Drag Racing | LLM Speed Test" />
+        <meta property="og:description" content="Race AI models side by side, compare latency, time to first token, throughput, and output quality in a live browser benchmark by Jonathan R. Reed." />
+        <meta property="og:url" content="https://ai-dragrace.jonathanrreed.com/" />
+        <meta property="og:image" content="https://ai-dragrace.jonathanrreed.com/Favicon/icon-512.png" />
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content="AI Drag Racing | LLM Speed Test" />
+        <meta name="twitter:description" content="Race AI models side by side, compare latency, time to first token, throughput, and output quality in a live browser benchmark by Jonathan R. Reed." />
+        <meta name="twitter:image" content="https://ai-dragrace.jonathanrreed.com/Favicon/icon-512.png" />
 
         {/* JSON-LD Structured Data */}
         <script
@@ -574,17 +583,17 @@ export default function Home() {
               "@context": "https://schema.org",
               "@type": "WebApplication",
               "name": "AI Drag Racing",
-              "description": "Race AI models side by side, compare latency, time to first token, throughput, and output quality in a live browser benchmark by Jonathan R Reed.",
+              "description": "Race AI models side by side, compare latency, time to first token, throughput, and output quality in a live browser benchmark by Jonathan R. Reed.",
               "url": "https://ai-dragrace.jonathanrreed.com/",
               "applicationCategory": "DeveloperApplication",
               "operatingSystem": "Any",
               "browserRequirements": "Requires JavaScript",
               "datePublished": "2026-04-21",
-              "dateModified": "2026-04-21",
+              "dateModified": "2026-06-19",
               "author": {
                 "@type": "Person",
-                "name": "Jonathan Reed",
-                "alternateName": "Jonathan R Reed",
+                "name": "Jonathan R. Reed",
+                "alternateName": "Jonathan Reed",
                 "url": "https://jonathanrreed.com"
               },
               "offers": {
@@ -658,7 +667,7 @@ export default function Home() {
               </p>
               <p className="race-hero-lead">
                 A live benchmark experiment by{' '}
-                <span className="text-zinc-200">Jonathan R Reed</span> that races AI models side by side so you can watch latency in real time.
+                <span className="text-zinc-200">Jonathan R. Reed</span> that races AI models side by side so you can watch latency in real time.
               </p>
               <p className="race-hero-body">
                 Use the same prompt and comparable settings when you want a fair read. The useful signal is not only who

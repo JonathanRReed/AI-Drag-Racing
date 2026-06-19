@@ -92,7 +92,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({ sidebar, children }) => {
             <div className="app-footer-inner">
               {/* Identity line */}
               <p className="app-footer-meta heading-tight">
-                Built by <span className="app-footer-name">Jonathan R Reed</span> AI & cybersecurity developer, red team specialist.
+                Built by <span className="app-footer-name">Jonathan R. Reed</span> AI and cybersecurity developer, red team specialist.
               </p>
 
               {/* Links row */}
@@ -107,6 +107,10 @@ const MainLayout: React.FC<MainLayoutProps> = ({ sidebar, children }) => {
                 <span className="app-footer-separator">•</span>
                 <a href="/privacy" className="app-footer-link">
                   Privacy
+                </a>
+                <span className="app-footer-separator">•</span>
+                <a href="/subprocessors" className="app-footer-link">
+                  Subprocessors
                 </a>
                 <span className="app-footer-separator">•</span>
                 <a

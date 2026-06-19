@@ -4,24 +4,24 @@ export default function About() {
   return (
     <>
       <Head>
-        <title>About AI Drag Racing | Jonathan R Reed</title>
+        <title>About AI Drag Racing | Jonathan R. Reed</title>
         <meta
           name="description"
-          content="AI Drag Racing is a live browser benchmark by Jonathan R Reed for comparing LLM latency, throughput, and output behavior side by side."
+          content="AI Drag Racing is a live browser benchmark by Jonathan R. Reed for comparing LLM latency, throughput, and output behavior side by side."
         />
         <link rel="canonical" href="https://ai-dragrace.jonathanrreed.com/about" />
         <meta property="og:type" content="website" />
-        <meta property="og:title" content="About AI Drag Racing | Jonathan R Reed" />
+        <meta property="og:title" content="About AI Drag Racing | Jonathan R. Reed" />
         <meta
           property="og:description"
-          content="AI Drag Racing is a live browser benchmark by Jonathan R Reed for comparing LLM latency, throughput, and output behavior side by side."
+          content="AI Drag Racing is a live browser benchmark by Jonathan R. Reed for comparing LLM latency, throughput, and output behavior side by side."
         />
         <meta property="og:image" content="https://ai-dragrace.jonathanrreed.com/Favicon/icon-512.png" />
         <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:title" content="About AI Drag Racing | Jonathan R Reed" />
+        <meta name="twitter:title" content="About AI Drag Racing | Jonathan R. Reed" />
         <meta
           name="twitter:description"
-          content="AI Drag Racing is a live browser benchmark by Jonathan R Reed for comparing LLM latency, throughput, and output behavior side by side."
+          content="AI Drag Racing is a live browser benchmark by Jonathan R. Reed for comparing LLM latency, throughput, and output behavior side by side."
         />
         <meta name="twitter:image" content="https://ai-dragrace.jonathanrreed.com/Favicon/icon-512.png" />
         <script
@@ -32,13 +32,13 @@ export default function About() {
               '@type': 'AboutPage',
               name: 'About AI Drag Racing',
               description:
-                'AI Drag Racing is a live browser benchmark by Jonathan R Reed for comparing LLM latency, throughput, and output behavior side by side.',
+                'AI Drag Racing is a live browser benchmark by Jonathan R. Reed for comparing LLM latency, throughput, and output behavior side by side.',
               url: 'https://ai-dragrace.jonathanrreed.com/about',
               datePublished: '2026-04-21',
-              dateModified: '2026-04-21',
+              dateModified: '2026-06-19',
               author: {
                 '@type': 'Person',
-                name: 'Jonathan R Reed',
+                name: 'Jonathan R. Reed',
                 url: 'https://jonathanrreed.com',
               },
             }),
@@ -55,7 +55,7 @@ export default function About() {
           </h1>
           <p className="mt-5 text-base leading-8 text-zinc-300">
             AI Drag Racing lets you run model responses side by side and compare time to first token, total response
-            time, throughput, and response behavior in one browser view. It is built by Jonathan R Reed for quick
+            time, throughput, and response behavior in one browser view. It is built by Jonathan R. Reed for quick
             hands-on checks when model speed matters as much as answer quality.
           </p>
           <p className="mt-4 text-base leading-8 text-zinc-300">
@@ -77,7 +77,7 @@ export default function About() {
             the responses you can review directly. It is a quick field check before deeper evaluation work.
           </p>
           <p className="mt-6 text-sm text-zinc-500">
-            Published <time dateTime="2026-04-21">April 21, 2026</time>.
+            Last updated <time dateTime="2026-06-19">June 19, 2026</time>.
           </p>
         </article>
       </main>

@@ -19,8 +19,12 @@ AI Drag Racing is Jonathan R. Reed's live browser benchmark for comparing model 
 
 - Homepage: https://ai-dragrace.jonathanrreed.com/
 - Alternate domain: https://airacing.jonathanrreed.com/
+- About: https://ai-dragrace.jonathanrreed.com/about
+- Privacy: https://ai-dragrace.jonathanrreed.com/privacy
+- Contact: https://ai-dragrace.jonathanrreed.com/contact
+- Subprocessors: https://ai-dragrace.jonathanrreed.com/subprocessors
 - Creator: https://jonathanrreed.com/
-- Contact: https://jonathanrreed.com/contact/
+- Creator contact: https://jonathanrreed.com/contact/
 
 ## Contact
 
