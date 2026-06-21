@@ -740,6 +740,7 @@ export default function Home() {
                 {/* Primary controls available even when sidebar is closed on mobile */}
                 <button
                   onClick={handleRunComparison}
+                  title={(!state.prompt) ? "Enter a prompt to start" : startDisabled ? "No racers selected" : state.raceState === "racing" ? "Race in progress" : "Start Race"}
                   className="race-start-button group press-scale"
                   disabled={startDisabled || !state.prompt}
                 >
@@ -752,6 +753,7 @@ export default function Home() {
                 </button>
                 <button
                   onClick={handleReset}
+                  title={(state.isLoading || state.raceState === "countingDown") ? "Cannot reset while racing" : "Reset race"}
                   className="race-reset-button press-scale"
                   disabled={state.isLoading || state.raceState === 'countingDown'}
                 >

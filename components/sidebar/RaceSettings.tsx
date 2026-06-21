@@ -111,6 +111,8 @@ const RaceSettings: React.FC<RaceSettingsProps> = ({ config, onChange, selectedP
       {/* Header */}
       <button
         onClick={() => setExpanded(!expanded)}
+        aria-expanded={expanded}
+        aria-controls="race-settings-content"
         className="w-full flex items-center justify-between text-left"
       >
         <div className="flex items-center gap-2">
@@ -140,7 +142,7 @@ const RaceSettings: React.FC<RaceSettingsProps> = ({ config, onChange, selectedP
 
       {/* Expanded content */}
       {expanded && (
-        <div className="mt-4 space-y-4">
+        <div id="race-settings-content" className="mt-4 space-y-4">
           {/* Race Mode Selection */}
           <div>
             <label className="block text-xs uppercase tracking-wide text-[var(--text-muted)] mb-2">
