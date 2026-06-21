@@ -125,6 +125,7 @@ const PromptInput: React.FC<PromptInputProps> = ({
             <button
               type="button"
               onClick={onReset}
+              title={isLoading ? "Cannot reset while racing" : "Reset prompt"}
               className="btn-secondary text-xs"
               disabled={isLoading}
             >
@@ -134,6 +135,7 @@ const PromptInput: React.FC<PromptInputProps> = ({
           <button
             onClick={onSubmit}
             disabled={!!disabled || isLoading || !prompt}
+            title={(!prompt) ? "Enter a prompt to start" : disabled ? "No racers selected" : isLoading ? "Race in progress" : "Start Race"}
             className="btn btn-primary text-sm group relative overflow-hidden"
           >
             {isLoading ? (
@@ -199,6 +201,8 @@ const PromptInput: React.FC<PromptInputProps> = ({
               </button>
               <button
                 type="button"
+                disabled={!!disabled || isLoadingRef.current || !prompt}
+                title={(!prompt) ? "Enter a prompt to start" : disabled ? "No racers selected" : isLoadingRef.current ? "Race in progress" : "Start Race"}
                 className="btn btn-primary text-xs"
                 onClick={() => {
                   if (!disabled && !isLoadingRef.current && prompt) {

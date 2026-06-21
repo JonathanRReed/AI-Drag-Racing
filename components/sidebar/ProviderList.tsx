@@ -362,7 +362,7 @@ const ProviderList: React.FC<ProviderListProps> = ({ apiKeys, dispatch, selected
                       const brandSlugs = brandSlugsForModel(provider.id, m);
                       const slugs = brandSlugs?.length ? brandSlugs : providerSlugs(provider.id);
                       return (
-                        <label key={m} className="flex items-center gap-2 px-2 py-1 text-sm text-gray-200 hover:bg-white/5">
+                        <label key={m} className="flex items-center gap-2 px-2 py-1 text-sm text-gray-200 hover:bg-white/5 cursor-pointer">
                           <input
                             type="checkbox"
                             className="accent-cyan-400"
@@ -378,7 +378,7 @@ const ProviderList: React.FC<ProviderListProps> = ({ apiKeys, dispatch, selected
                 </div>
                 {/* Enable toggle and saved chip */}
                 <div className="mt-2 flex items-center justify-between">
-                  <label className="flex items-center gap-2 text-xs text-gray-300">
+                  <label className="flex items-center gap-2 text-xs text-gray-300 cursor-pointer">
                     <input
                       type="checkbox"
                       className="accent-cyan-400"
