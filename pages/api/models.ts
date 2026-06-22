@@ -310,7 +310,6 @@ export default async function handler(req: Request): Promise<Response> {
         // Return fallback data instead of error when possible
         const fallback = STATIC_FALLBACKS[providerId];
         if (fallback && fallback.length > 0) {
-            console.log(`[Proxy] Returning fallback for ${providerId}`);
             return jsonResponse({ data: fallback });
         }
 
