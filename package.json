@@ -43,7 +43,8 @@
     "eslint-plugin-tailwindcss": "^3.18.3",
     "eslint-plugin-unused-imports": "^4.4.1",
     "sharp": "^0.34.5",
-    "typescript-eslint": "^8.60.1"
+    "typescript-eslint": "^8.60.1",
+    "vitest": "^4.1.9"
   },
   "overrides": {
     "cookie": "^0.7.0",
