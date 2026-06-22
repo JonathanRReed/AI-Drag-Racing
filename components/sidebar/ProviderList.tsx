@@ -263,24 +263,23 @@ const ProviderList: React.FC<ProviderListProps> = ({ apiKeys, dispatch, selected
 
   // When api keys change, fetch models for providers with keys (if not already loaded)
   React.useEffect(() => {
-    (async () => {
-      for (const p of PROVIDERS) {
-        const key = apiKeys[p.id];
-        if (!key) continue;
-        if (!SUPPORTED_FOR_STREAM.has(p.id)) continue; // only fetch for supported providers
-        if (modelsByProvider[p.id]?.length) continue; // already have
-        try {
-          const list = await fetchModels(p.id, key);
-          if (Array.isArray(list) && list.length) {
-            setModelsByProvider(prev => ({ ...prev, [p.id]: list }));
-            localStorage.setItem(`${p.id}_models`, JSON.stringify(list));
-          }
-        } catch (e) {
-          // swallow; show no dropdown
-          console.warn(`[models] Failed to fetch models for ${p.id}:`, e);
+    const fetchPromises = PROVIDERS.map(async (p) => {
+      const key = apiKeys[p.id];
+      if (!key) return;
+      if (!SUPPORTED_FOR_STREAM.has(p.id)) return; // only fetch for supported providers
+      if (modelsByProvider[p.id]?.length) return; // already have
+      try {
+        const list = await fetchModels(p.id, key);
+        if (Array.isArray(list) && list.length) {
+          setModelsByProvider(prev => ({ ...prev, [p.id]: list }));
+          localStorage.setItem(`${p.id}_models`, JSON.stringify(list));
         }
+      } catch (e) {
+        // swallow; show no dropdown
+        console.warn(`[models] Failed to fetch models for ${p.id}:`, e);
       }
-    })();
+    });
+    void Promise.all(fetchPromises);
   }, [apiKeys, modelsByProvider, SUPPORTED_FOR_STREAM]);
 
   async function loadModelsForProvider(providerId: string, key: string) {
