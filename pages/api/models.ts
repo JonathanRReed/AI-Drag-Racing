@@ -227,7 +227,7 @@ export default async function handler(req: Request): Promise<Response> {
             }
         }
 
-        else if (['openai', 'fireworks', 'openrouter', 'together', 'mistral', 'cohere'].includes(providerId)) {
+        else if (['openai', 'fireworks', 'openrouter', 'together', 'mistral', 'cohere', 'perplexity', 'xai', 'deepseek', 'ai21'].includes(providerId)) {
             // Standard OpenAI-compatible listing
             const urls: Record<string, string> = {
                 openai: 'https://api.openai.com/v1/models',
@@ -236,6 +236,10 @@ export default async function handler(req: Request): Promise<Response> {
                 together: 'https://api.together.xyz/v1/models',
                 mistral: 'https://api.mistral.ai/v1/models',
                 cohere: 'https://api.cohere.com/v1/models',
+                perplexity: 'https://api.perplexity.ai/v1/models',
+                xai: 'https://api.x.ai/v1/models',
+                deepseek: 'https://api.deepseek.com/models',
+                ai21: 'https://api.ai21.com/studio/v1/models',
             };
 
             const url = urls[providerId];
