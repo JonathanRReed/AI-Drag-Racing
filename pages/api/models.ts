@@ -163,10 +163,6 @@ export default async function handler(req: Request): Promise<Response> {
         return jsonResponse({ data: [], error: 'API key required' }, 400);
     }
 
-    // Log safely for debugging
-    const keySample = apiKey.length > 6
-        ? `${apiKey.substring(0, 4)}...${apiKey.substring(apiKey.length - 4)}`
-        : '[SHORT]';
 
     try {
         let ids: string[] = [];
@@ -304,7 +300,7 @@ export default async function handler(req: Request): Promise<Response> {
         return jsonResponse({ data: ids });
 
     } catch (error: any) {
-        console.error(`[Proxy Error] Provider: ${providerId}, Key: ${keySample}`);
+        console.error(`[Proxy Error] Provider: ${providerId}`);
         console.error(`[Proxy Error] Message: ${error.message}`);
 
         // Return fallback data instead of error when possible
