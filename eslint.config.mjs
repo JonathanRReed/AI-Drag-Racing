@@ -15,6 +15,7 @@ export default [
       'node_modules/**',
       '.next/**',
       'out/**',
+      'coverage/**',
       '.vercel/**',
       '.wrangler/**',
       'public/**',
