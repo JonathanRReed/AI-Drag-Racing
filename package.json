@@ -8,6 +8,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint . --ext .js,.cjs,.mjs,.jsx,.ts,.tsx",
+    "test": "vitest run",
     "lint:fix": "eslint . --ext .js,.cjs,.mjs,.jsx,.ts,.tsx --fix",
     "build:pages": "npx @cloudflare/next-on-pages@1 && node scripts/patch-routes.js",
     "build:cf": "npx @cloudflare/next-on-pages@1",
@@ -43,7 +44,8 @@
     "eslint-plugin-tailwindcss": "^3.18.3",
     "eslint-plugin-unused-imports": "^4.4.1",
     "sharp": "^0.34.5",
-    "typescript-eslint": "^8.60.1"
+    "typescript-eslint": "^8.60.1",
+    "vitest": "^4.1.9"
   },
   "overrides": {
     "cookie": "^0.7.0",
