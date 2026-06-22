@@ -118,6 +118,132 @@ function jsonResponse(data: ModelResponse, status = 200): Response {
     return new Response(JSON.stringify(data), { status, headers: corsHeaders });
 }
 
+
+async function fetchAnthropicModels(apiKey: string, timeout: number): Promise<string[]> {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), timeout);
+    try {
+        const response = await fetch('https://api.anthropic.com/v1/models', {
+            headers: {
+                'x-api-key': apiKey,
+                'anthropic-version': '2023-06-01',
+            },
+            signal: controller.signal,
+        });
+        clearTimeout(timeoutId);
+        if (!response.ok) {
+            throw new Error(`Anthropic error: ${response.status}`);
+        }
+        const data = await response.json();
+        return data.data?.map((m: { id: string, name?: string }) => m.id) || [];
+    } catch {
+        clearTimeout(timeoutId);
+        console.warn(`[Proxy] Anthropic fetch failed, using fallback`);
+        return STATIC_FALLBACKS.anthropic;
+    }
+}
+
+async function fetchMoonshotModels(apiKey: string, timeout: number): Promise<string[]> {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), timeout);
+    try {
+        const response = await fetch('https://api.moonshot.ai/v1/models', {
+            headers: { 'Authorization': `Bearer ${apiKey}` },
+            signal: controller.signal,
+        });
+        clearTimeout(timeoutId);
+        if (!response.ok) {
+            throw new Error(`Moonshot error: ${response.status}`);
+        }
+        const data = await response.json();
+        const ids = data.data?.map((m: { id: string, name?: string }) => m.id) || [];
+        // Merge with static fallback to ensure key models are always present
+        const merged = new Set([...ids, ...STATIC_FALLBACKS.moonshot]);
+        return Array.from(merged);
+    } catch {
+        clearTimeout(timeoutId);
+        console.warn(`[Proxy] Moonshot fetch failed, using fallback`);
+        return STATIC_FALLBACKS.moonshot;
+    }
+}
+
+async function fetchGroqModels(apiKey: string, timeout: number): Promise<string[]> {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), timeout);
+    try {
+        const response = await fetch('https://api.groq.com/openai/v1/models', {
+            headers: { 'Authorization': `Bearer ${apiKey}` },
+            signal: controller.signal,
+        });
+        clearTimeout(timeoutId);
+        if (!response.ok) {
+            throw new Error(`Groq error: ${response.status}`);
+        }
+        const data = await response.json();
+        const ids = data.data?.map((m: { id: string, name?: string }) => m.id) || [];
+        // Merge with fallback
+        const merged = new Set([...ids, ...STATIC_FALLBACKS.groq]);
+        return Array.from(merged);
+    } catch {
+        clearTimeout(timeoutId);
+        console.warn(`[Proxy] Groq fetch failed, using fallback`);
+        return STATIC_FALLBACKS.groq;
+    }
+}
+
+async function fetchOpenAICompatibleModels(providerId: string, apiKey: string, timeout: number): Promise<string[]> {
+    const urls: Record<string, string> = {
+        openai: 'https://api.openai.com/v1/models',
+        fireworks: 'https://api.fireworks.ai/inference/v1/models',
+        openrouter: 'https://openrouter.ai/api/v1/models',
+        together: 'https://api.together.xyz/v1/models',
+        mistral: 'https://api.mistral.ai/v1/models',
+        cohere: 'https://api.cohere.com/v1/models',
+    };
+
+    const url = urls[providerId];
+    if (!url) {
+        return STATIC_FALLBACKS[providerId] || [];
+    }
+
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), timeout);
+
+    try {
+        const response = await fetch(url, {
+            headers: { 'Authorization': `Bearer ${apiKey}` },
+            signal: controller.signal,
+        });
+        clearTimeout(timeoutId);
+
+        if (!response.ok) {
+            throw new Error(`${providerId} error: ${response.status}`);
+        }
+        const data = await response.json();
+
+        let ids: string[] = [];
+        // Handle various response shapes
+        if (Array.isArray(data)) {
+            ids = data.map((m: { id: string, name?: string }) => m.id);
+        } else if (Array.isArray(data.data)) {
+            ids = data.data.map((m: { id: string, name?: string }) => m.id);
+        } else if (Array.isArray(data.models)) {
+            ids = data.models.map((m: { id: string, name?: string }) => m.name || m.id);
+        }
+
+        // Merge with static fallback if available
+        if (STATIC_FALLBACKS[providerId]) {
+            const merged = new Set([...ids, ...STATIC_FALLBACKS[providerId]]);
+            ids = Array.from(merged);
+        }
+        return ids;
+    } catch {
+        clearTimeout(timeoutId);
+        console.warn(`[Proxy] ${providerId} fetch failed, using fallback if available`);
+        return STATIC_FALLBACKS[providerId] || [];
+    }
+}
+
 export default async function handler(req: Request): Promise<Response> {
     if (req.method === 'OPTIONS') {
         return new Response(null, { status: 200, headers: corsHeaders });
@@ -150,129 +276,17 @@ export default async function handler(req: Request): Promise<Response> {
         let ids: string[] = [];
         const timeout = 8000; // 8 second timeout
 
+
         if (providerId === 'anthropic') {
-            const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), timeout);
-            try {
-                const response = await fetch('https://api.anthropic.com/v1/models', {
-                    headers: {
-                        'x-api-key': apiKey,
-                        'anthropic-version': '2023-06-01',
-                    },
-                    signal: controller.signal,
-                });
-                clearTimeout(timeoutId);
-                if (!response.ok) {
-                    throw new Error(`Anthropic error: ${response.status}`);
-                }
-                const data = await response.json();
-                ids = data.data?.map((m: any) => m.id) || [];
-            } catch (e) {
-                clearTimeout(timeoutId);
-                console.warn(`[Proxy] Anthropic fetch failed, using fallback`);
-                ids = STATIC_FALLBACKS.anthropic;
-            }
-        }
-
-        else if (providerId === 'moonshot') {
-            const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), timeout);
-            try {
-                const response = await fetch('https://api.moonshot.ai/v1/models', {
-                    headers: { 'Authorization': `Bearer ${apiKey}` },
-                    signal: controller.signal,
-                });
-                clearTimeout(timeoutId);
-                if (!response.ok) {
-                    throw new Error(`Moonshot error: ${response.status}`);
-                }
-                const data = await response.json();
-                ids = data.data?.map((m: any) => m.id) || [];
-                // Merge with static fallback to ensure key models are always present
-                const merged = new Set([...ids, ...STATIC_FALLBACKS.moonshot]);
-                ids = Array.from(merged);
-            } catch (e) {
-                clearTimeout(timeoutId);
-                console.warn(`[Proxy] Moonshot fetch failed, using fallback`);
-                ids = STATIC_FALLBACKS.moonshot;
-            }
-        }
-
-        else if (providerId === 'zhipu') {
-            // Zhipu doesn't have a simple list endpoint - use static list
+            ids = await fetchAnthropicModels(apiKey, timeout);
+        } else if (providerId === 'moonshot') {
+            ids = await fetchMoonshotModels(apiKey, timeout);
+        } else if (providerId === 'zhipu') {
             ids = STATIC_FALLBACKS.zhipu;
-        }
-
-        else if (providerId === 'groq') {
-            const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), timeout);
-            try {
-                const response = await fetch('https://api.groq.com/openai/v1/models', {
-                    headers: { 'Authorization': `Bearer ${apiKey}` },
-                    signal: controller.signal,
-                });
-                clearTimeout(timeoutId);
-                if (!response.ok) {
-                    throw new Error(`Groq error: ${response.status}`);
-                }
-                const data = await response.json();
-                ids = data.data?.map((m: any) => m.id) || [];
-                // Merge with fallback
-                const merged = new Set([...ids, ...STATIC_FALLBACKS.groq]);
-                ids = Array.from(merged);
-            } catch (e) {
-                clearTimeout(timeoutId);
-                console.warn(`[Proxy] Groq fetch failed, using fallback`);
-                ids = STATIC_FALLBACKS.groq;
-            }
-        }
-
-        else if (['openai', 'fireworks', 'openrouter', 'together', 'mistral', 'cohere'].includes(providerId)) {
-            // Standard OpenAI-compatible listing
-            const urls: Record<string, string> = {
-                openai: 'https://api.openai.com/v1/models',
-                fireworks: 'https://api.fireworks.ai/inference/v1/models',
-                openrouter: 'https://openrouter.ai/api/v1/models',
-                together: 'https://api.together.xyz/v1/models',
-                mistral: 'https://api.mistral.ai/v1/models',
-                cohere: 'https://api.cohere.com/v1/models',
-            };
-
-            const url = urls[providerId];
-            const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), timeout);
-
-            try {
-                const response = await fetch(url, {
-                    headers: { 'Authorization': `Bearer ${apiKey}` },
-                    signal: controller.signal,
-                });
-                clearTimeout(timeoutId);
-
-                if (!response.ok) {
-                    throw new Error(`${providerId} error: ${response.status}`);
-                }
-                const data = await response.json();
-
-                // Handle various response shapes
-                if (Array.isArray(data)) {
-                    ids = data.map((m: any) => m.id);
-                } else if (Array.isArray(data.data)) {
-                    ids = data.data.map((m: any) => m.id);
-                } else if (Array.isArray(data.models)) {
-                    ids = data.models.map((m: any) => m.name || m.id);
-                }
-
-                // Merge with static fallback if available
-                if (STATIC_FALLBACKS[providerId]) {
-                    const merged = new Set([...ids, ...STATIC_FALLBACKS[providerId]]);
-                    ids = Array.from(merged);
-                }
-            } catch (e) {
-                clearTimeout(timeoutId);
-                console.warn(`[Proxy] ${providerId} fetch failed, using fallback if available`);
-                ids = STATIC_FALLBACKS[providerId] || [];
-            }
+        } else if (providerId === 'groq') {
+            ids = await fetchGroqModels(apiKey, timeout);
+        } else if (['openai', 'fireworks', 'openrouter', 'together', 'mistral', 'cohere'].includes(providerId)) {
+            ids = await fetchOpenAICompatibleModels(providerId, apiKey, timeout);
         }
 
         return jsonResponse({ data: ids });
