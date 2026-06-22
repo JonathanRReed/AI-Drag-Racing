@@ -99,6 +99,22 @@ const STATIC_FALLBACKS: Record<string, string[]> = {
         'o3-mini',
         'gpt-5-preview',
     ],
+    perplexity: [
+        'sonar-reasoning-pro',
+        'sonar-reasoning',
+        'sonar-pro',
+        'sonar',
+    ],
+    xai: [
+        'grok-2-1212',
+        'grok-2-vision-1212',
+        'grok-2',
+        'grok-2-vision',
+    ],
+    deepseek: [
+        'deepseek-chat',
+        'deepseek-reasoner',
+    ]
 };
 
 // Sanitize API key - trim whitespace and remove any accidental quotes
@@ -227,7 +243,7 @@ export default async function handler(req: Request): Promise<Response> {
             }
         }
 
-        else if (['openai', 'fireworks', 'openrouter', 'together', 'mistral', 'cohere'].includes(providerId)) {
+        else if (['openai', 'fireworks', 'openrouter', 'together', 'mistral', 'cohere', 'perplexity', 'xai', 'deepseek'].includes(providerId)) {
             // Standard OpenAI-compatible listing
             const urls: Record<string, string> = {
                 openai: 'https://api.openai.com/v1/models',
@@ -236,6 +252,9 @@ export default async function handler(req: Request): Promise<Response> {
                 together: 'https://api.together.xyz/v1/models',
                 mistral: 'https://api.mistral.ai/v1/models',
                 cohere: 'https://api.cohere.com/v1/models',
+                perplexity: 'https://api.perplexity.ai/models',
+                xai: 'https://api.x.ai/v1/models',
+                deepseek: 'https://api.deepseek.com/models',
             };
 
             const url = urls[providerId];
