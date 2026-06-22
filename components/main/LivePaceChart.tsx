@@ -43,6 +43,108 @@ function compact(n: number): string {
   return String(Math.round(n));
 }
 
+
+function computeChartBounds(ls: PaceLane[], buffers: Record<string, LaneBuffer>, running: boolean, goTime: number, useNorm: boolean) {
+  let maxLastT = 0;
+  let anyData = false;
+  let globalMaxChars = 1;
+  let leaderChars = 1;
+
+  for (const lane of ls) {
+    const b = buffers[lane.id];
+    if (!b) continue;
+    if (b.samples.length) anyData = true;
+    if (b.lastT > maxLastT) maxLastT = b.lastT;
+    if (!b.errored && b.chars > globalMaxChars) globalMaxChars = b.chars;
+    if (!b.errored && b.chars > leaderChars) leaderChars = b.chars;
+  }
+
+  const showFlags = ls.length <= 8;
+  const liveT = running ? performance.now() - goTime : maxLastT;
+  const xMax = Math.max(liveT, maxLastT, 1000) * 1.04;
+  const yDenom = useNorm ? Math.max(leaderChars * 1.08, 1) : Math.max(globalMaxChars * 1.08, 1);
+
+  let leaderId: string | null = null;
+  let leaderMax = -1;
+  for (const lane of ls) {
+    const b = buffers[lane.id];
+    if (b && !b.errored && b.chars > leaderMax) {
+      leaderMax = b.chars;
+      leaderId = lane.id;
+    }
+  }
+
+  return { anyData, xMax, yDenom, leaderId, liveT, showFlags };
+}
+
+
+function updateLaneSVG(
+  lane: PaceLane,
+  b: LaneBuffer | undefined,
+  path: SVGPathElement | null,
+  head: SVGCircleElement | null,
+  flag: SVGTextElement | null,
+  isLeader: boolean,
+  showFlags: boolean,
+  x: (t: number) => number,
+  y: (chars: number) => number
+) {
+  if (!b || !path) return;
+
+  if (b.samples.length === 0) {
+    path.setAttribute('d', '');
+    if (head) head.setAttribute('opacity', '0');
+    if (flag) flag.setAttribute('opacity', '0');
+    return;
+  }
+
+  const pts = decimate(b.samples);
+  let d = '';
+  for (let i = 0; i < pts.length; i++) {
+    const px = x(pts[i].t).toFixed(1);
+    const py = y(pts[i].chars).toFixed(1);
+    d += (i === 0 ? 'M' : 'L') + px + ',' + py + ' ';
+  }
+  path.setAttribute('d', d.trim());
+
+  path.setAttribute('stroke-width', isLeader ? '3' : '2');
+  path.setAttribute('opacity', b.errored ? '0.28' : '1');
+  path.style.filter = isLeader && !b.errored ? `drop-shadow(0 0 6px ${lane.color}aa)` : 'none';
+
+  const last = pts[pts.length - 1];
+  const hx = x(last.t);
+  const hy = y(last.chars);
+
+  if (head) {
+    head.setAttribute('cx', hx.toFixed(1));
+    head.setAttribute('cy', hy.toFixed(1));
+    head.setAttribute('r', b.done ? '4.5' : isLeader ? '4' : '3');
+    head.setAttribute('opacity', b.errored ? '0.3' : '1');
+  }
+
+  if (flag) {
+    if (!showFlags) {
+      flag.setAttribute('opacity', '0');
+    } else {
+      const fy = Math.max(PAD.t + 8, Math.min(hy, PAD.t + PLOT_H - 4));
+      const nearEdge = hx > PAD.l + PLOT_W - 70;
+      flag.setAttribute('text-anchor', nearEdge ? 'end' : 'start');
+      flag.setAttribute('x', (nearEdge ? hx - 7 : hx + 8).toFixed(1));
+      flag.setAttribute('y', (fy + 3.5).toFixed(1));
+      flag.setAttribute('opacity', b.errored ? '0.4' : '1');
+      if (b.errored) {
+        flag.textContent = 'error';
+      } else if (b.done) {
+        flag.textContent =
+          b.finalOutputTokens != null ? `${compact(b.finalOutputTokens)} tok` : `${compact(b.chars)} ch`;
+      } else {
+        const cps = recentCharsPerSec(b);
+        flag.textContent = `${compact(b.chars)} · ${compact(cps)}/s`;
+      }
+    }
+  }
+}
+
 const LivePaceChart: React.FC<LivePaceChartProps> = ({
   lanes,
   buffersRef,
@@ -68,103 +170,35 @@ const LivePaceChart: React.FC<LivePaceChartProps> = ({
   normalizeRef.current = normalize;
 
   useEffect(() => {
-    const draw = (nowReal: number) => {
+        const draw = (nowReal: number) => {
       const buffers = buffersRef.current;
       const ls = lanesRef.current;
 
-      // Determine the time axis extent.
-      let maxLastT = 0;
-      let anyData = false;
-      let globalMaxChars = 1;
-      let leaderChars = 1;
-      for (const lane of ls) {
-        const b = buffers[lane.id];
-        if (!b) continue;
-        if (b.samples.length) anyData = true;
-        if (b.lastT > maxLastT) maxLastT = b.lastT;
-        if (!b.errored && b.chars > globalMaxChars) globalMaxChars = b.chars;
-        if (!b.errored && b.chars > leaderChars) leaderChars = b.chars;
-      }
-      const showFlags = ls.length <= 8; // beyond this, lean on the standings list for identity
-      const liveT = running ? performance.now() - goTimeRef.current : maxLastT;
-      const xMax = Math.max(liveT, maxLastT, 1000) * 1.04;
-      const useNorm = normalizeRef.current;
-      const yDenom = useNorm ? Math.max(leaderChars * 1.08, 1) : Math.max(globalMaxChars * 1.08, 1);
+      const { anyData, xMax, yDenom, leaderId, liveT, showFlags } = computeChartBounds(
+        ls,
+        buffers,
+        running,
+        goTimeRef.current,
+        normalizeRef.current
+      );
 
       const x = (t: number) => PAD.l + (t / xMax) * PLOT_W;
       const y = (chars: number) => PAD.t + PLOT_H - (Math.min(chars, yDenom) / yDenom) * PLOT_H;
 
       if (emptyEl.current) emptyEl.current.style.opacity = anyData ? '0' : '1';
 
-      // Leader (most characters, not errored) gets emphasis.
-      let leaderId: string | null = null;
-      let leaderMax = -1;
       for (const lane of ls) {
-        const b = buffers[lane.id];
-        if (b && !b.errored && b.chars > leaderMax) {
-          leaderMax = b.chars;
-          leaderId = lane.id;
-        }
-      }
-
-      for (const lane of ls) {
-        const b = buffers[lane.id];
-        const path = pathEls.current[lane.id];
-        const head = headEls.current[lane.id];
-        const flag = flagEls.current[lane.id];
-        if (!b || !path) continue;
-
-        if (b.samples.length === 0) {
-          path.setAttribute('d', '');
-          if (head) head.setAttribute('opacity', '0');
-          if (flag) flag.setAttribute('opacity', '0');
-          continue;
-        }
-
-        const pts = decimate(b.samples);
-        let d = '';
-        for (let i = 0; i < pts.length; i++) {
-          const px = x(pts[i].t).toFixed(1);
-          const py = y(pts[i].chars).toFixed(1);
-          d += (i === 0 ? 'M' : 'L') + px + ',' + py + ' ';
-        }
-        path.setAttribute('d', d.trim());
-
-        const isLeader = lane.id === leaderId;
-        path.setAttribute('stroke-width', isLeader ? '3' : '2');
-        path.setAttribute('opacity', b.errored ? '0.28' : '1');
-        path.style.filter = isLeader && !b.errored ? `drop-shadow(0 0 6px ${lane.color}aa)` : 'none';
-
-        const last = pts[pts.length - 1];
-        const hx = x(last.t);
-        const hy = y(last.chars);
-        if (head) {
-          head.setAttribute('cx', hx.toFixed(1));
-          head.setAttribute('cy', hy.toFixed(1));
-          head.setAttribute('r', b.done ? '4.5' : isLeader ? '4' : '3');
-          head.setAttribute('opacity', b.errored ? '0.3' : '1');
-        }
-        if (flag) {
-          if (!showFlags) {
-            flag.setAttribute('opacity', '0');
-          } else {
-            const fy = Math.max(PAD.t + 8, Math.min(hy, PAD.t + PLOT_H - 4));
-            const nearEdge = hx > PAD.l + PLOT_W - 70;
-            flag.setAttribute('text-anchor', nearEdge ? 'end' : 'start');
-            flag.setAttribute('x', (nearEdge ? hx - 7 : hx + 8).toFixed(1));
-            flag.setAttribute('y', (fy + 3.5).toFixed(1));
-            flag.setAttribute('opacity', b.errored ? '0.4' : '1');
-            if (b.errored) {
-              flag.textContent = 'error';
-            } else if (b.done) {
-              flag.textContent =
-                b.finalOutputTokens != null ? `${compact(b.finalOutputTokens)} tok` : `${compact(b.chars)} ch`;
-            } else {
-              const cps = recentCharsPerSec(b);
-              flag.textContent = `${compact(b.chars)} · ${compact(cps)}/s`;
-            }
-          }
-        }
+        updateLaneSVG(
+          lane,
+          buffers[lane.id],
+          pathEls.current[lane.id],
+          headEls.current[lane.id],
+          flagEls.current[lane.id],
+          lane.id === leaderId,
+          showFlags,
+          x,
+          y
+        );
       }
 
       // Sweeping NOW cursor + axis labels.
@@ -180,7 +214,7 @@ const LivePaceChart: React.FC<LivePaceChartProps> = ({
       }
       if (xLabelEl.current) xLabelEl.current.textContent = `${(xMax / 1000).toFixed(1)}s`;
       if (yLabelEl.current) {
-        yLabelEl.current.textContent = useNorm ? '% of most output' : `${compact(yDenom)} chars`;
+        yLabelEl.current.textContent = normalizeRef.current ? '% of most output' : `${compact(yDenom)} chars`;
       }
     };
 

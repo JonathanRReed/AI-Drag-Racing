@@ -7,6 +7,28 @@ type ModelResponse = {
 
 // Comprehensive static fallback lists for when API calls fail
 const STATIC_FALLBACKS: Record<string, string[]> = {
+    perplexity: [
+        'sonar',
+        'sonar-pro',
+        'sonar-reasoning',
+        'sonar-reasoning-pro',
+    ],
+    xai: [
+        'grok-2-latest',
+        'grok-3',
+        'grok-3-mini',
+        'grok-3-reasoning',
+    ],
+    deepseek: [
+        'deepseek-chat',
+        'deepseek-reasoner',
+    ],
+    ai21: [
+        'jamba-1.5-mini',
+        'jamba-1.5-large',
+        'jamba-large-1.7-2025-07',
+        'jamba-mini-2-2026-01',
+    ],
     groq: [
         // Llama 3/3.1/3.3 Series
         'llama-3.3-70b-versatile',
@@ -227,7 +249,7 @@ export default async function handler(req: Request): Promise<Response> {
             }
         }
 
-        else if (['openai', 'fireworks', 'openrouter', 'together', 'mistral', 'cohere'].includes(providerId)) {
+        else if (['openai', 'fireworks', 'openrouter', 'together', 'mistral', 'cohere', 'perplexity', 'xai', 'deepseek', 'ai21'].includes(providerId)) {
             // Standard OpenAI-compatible listing
             const urls: Record<string, string> = {
                 openai: 'https://api.openai.com/v1/models',
@@ -236,6 +258,10 @@ export default async function handler(req: Request): Promise<Response> {
                 together: 'https://api.together.xyz/v1/models',
                 mistral: 'https://api.mistral.ai/v1/models',
                 cohere: 'https://api.cohere.com/v1/models',
+                perplexity: 'https://api.perplexity.ai/models',
+                xai: 'https://api.x.ai/v1/models',
+                deepseek: 'https://api.deepseek.com/models',
+                ai21: 'https://api.ai21.com/studio/v1/models',
             };
 
             const url = urls[providerId];
@@ -284,7 +310,6 @@ export default async function handler(req: Request): Promise<Response> {
         // Return fallback data instead of error when possible
         const fallback = STATIC_FALLBACKS[providerId];
         if (fallback && fallback.length > 0) {
-            console.log(`[Proxy] Returning fallback for ${providerId}`);
             return jsonResponse({ data: fallback });
         }
 
