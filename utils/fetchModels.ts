@@ -370,21 +370,54 @@ export async function performTogetherInference({
 }
 
 // --- Additional provider model fetcher stubs ---
-// TODO: Replace these with real list-models calls once APIs are integrated.
-export async function fetchPerplexityModels(_apiKey: string): Promise<string[]> {
-  return [];
+export async function fetchPerplexityModels(apiKey: string): Promise<string[]> {
+  try {
+    return await fetchViaProxy('perplexity', apiKey);
+  } catch (e) {
+    return [
+      'sonar',
+      'sonar-pro',
+      'sonar-reasoning',
+      'sonar-reasoning-pro'
+    ];
+  }
 }
 
-export async function fetchXaiModels(_apiKey: string): Promise<string[]> {
-  return [];
+export async function fetchXaiModels(apiKey: string): Promise<string[]> {
+  try {
+    return await fetchViaProxy('xai', apiKey);
+  } catch (e) {
+    return [
+      'grok-2-latest',
+      'grok-3',
+      'grok-3-mini',
+      'grok-3-reasoning'
+    ];
+  }
 }
 
-export async function fetchDeepSeekModels(_apiKey: string): Promise<string[]> {
-  return [];
+export async function fetchDeepSeekModels(apiKey: string): Promise<string[]> {
+  try {
+    return await fetchViaProxy('deepseek', apiKey);
+  } catch (e) {
+    return [
+      'deepseek-chat',
+      'deepseek-reasoner'
+    ];
+  }
 }
 
-export async function fetchAI21Models(_apiKey: string): Promise<string[]> {
-  return [];
+export async function fetchAI21Models(apiKey: string): Promise<string[]> {
+  try {
+    return await fetchViaProxy('ai21', apiKey);
+  } catch (e) {
+    return [
+      'jamba-1.5-mini',
+      'jamba-1.5-large',
+      'jamba-large-1.7-2025-07',
+      'jamba-mini-2-2026-01'
+    ];
+  }
 }
 
 // Cerebras model listing - static list since they have fixed models
