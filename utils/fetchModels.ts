@@ -301,19 +301,16 @@ export interface TogetherModel {
 
 // Fetch models from Together AI with typing and error handling
 export async function fetchTogetherModels(apiKey: string): Promise<string[]> {
-  console.log('[TogetherAI] fetchTogetherModels called with apiKey:', apiKey ? '[REDACTED]' : '[EMPTY]');
   try {
     const res = await fetch('https://api.together.xyz/v1/models', {
       headers: { 'Authorization': `Bearer ${apiKey}` }
     });
-    console.log('[TogetherAI] Response status:', res.status);
     if (!res.ok) {
       const errorText = await res.text();
       console.error('[TogetherAI] Model fetch failed:', errorText);
       throw new Error('Together AI model fetch failed: ' + errorText);
     }
     const data = await res.json();
-    console.log('[TogetherAI] Raw model response:', data);
     if (Array.isArray(data)) {
       return data.map((m: TogetherModel) => m.id);
     }
@@ -347,8 +344,6 @@ export async function performTogetherInference({
     url = 'https://api.together.xyz/v1/completions';
     payload = { model, prompt: messages[0]?.content || '' };
   }
-  console.log('[TogetherAI] Inference endpoint:', url);
-  console.log('[TogetherAI] Inference payload:', payload);
   const res = await fetch(url, {
     method: 'POST',
     headers: {
