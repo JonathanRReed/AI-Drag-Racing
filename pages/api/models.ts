@@ -86,6 +86,21 @@ const STATIC_FALLBACKS: Record<string, string[]> = {
         // Code
         'codegeex-4',
     ],
+    perplexity: [
+        'sonar-reasoning-pro',
+        'sonar-reasoning',
+        'sonar-pro',
+        'sonar'
+    ],
+    xai: [
+        'grok-2-latest',
+        'grok-2-vision-latest',
+        'grok-beta'
+    ],
+    deepseek: [
+        'deepseek-chat',
+        'deepseek-reasoner'
+    ],
     openai: [
         'gpt-4o',
         'gpt-4o-mini',
@@ -227,9 +242,12 @@ export default async function handler(req: Request): Promise<Response> {
             }
         }
 
-        else if (['openai', 'fireworks', 'openrouter', 'together', 'mistral', 'cohere'].includes(providerId)) {
+        else if (['openai', 'fireworks', 'openrouter', 'together', 'mistral', 'cohere', 'perplexity', 'xai', 'deepseek'].includes(providerId)) {
             // Standard OpenAI-compatible listing
             const urls: Record<string, string> = {
+                perplexity: 'https://api.perplexity.ai/v1/models',
+                xai: 'https://api.x.ai/v1/models',
+                deepseek: 'https://api.deepseek.com/models',
                 openai: 'https://api.openai.com/v1/models',
                 fireworks: 'https://api.fireworks.ai/inference/v1/models',
                 openrouter: 'https://openrouter.ai/api/v1/models',
