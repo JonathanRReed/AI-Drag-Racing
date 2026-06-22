@@ -13,7 +13,8 @@
     "build:pages": "npx @cloudflare/next-on-pages@1 && node scripts/patch-routes.js",
     "build:cf": "npx @cloudflare/next-on-pages@1",
     "postbuild:cf": "node scripts/patch-routes.js",
-    "deploy:cf": "wrangler pages deploy .vercel/output/static --branch production"
+    "deploy:cf": "wrangler pages deploy .vercel/output/static --branch production",
+    "test": "vitest run"
   },
   "dependencies": {
     "@aws-sdk/client-bedrock": "^3.1061.0",
