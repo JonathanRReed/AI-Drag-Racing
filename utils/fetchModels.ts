@@ -369,18 +369,52 @@ export async function performTogetherInference({
   }
 }
 
-// --- Additional provider model fetcher stubs ---
-// TODO: Replace these with real list-models calls once APIs are integrated.
-export async function fetchPerplexityModels(_apiKey: string): Promise<string[]> {
-  return [];
+// --- Additional provider model fetchers ---
+
+export async function fetchPerplexityModels(apiKey: string): Promise<string[]> {
+  try {
+    return await fetchViaProxy('perplexity', apiKey);
+  } catch (e) {
+    console.warn('[Perplexity] fetchPerplexityModels failed, using fallback:', e);
+    return [
+      'sonar-reasoning-pro',
+      'sonar-reasoning',
+      'sonar-pro',
+      'sonar',
+      'llama-3.1-sonar-large-128k-online',
+      'llama-3.1-sonar-small-128k-online',
+      'llama-3.1-sonar-large-128k-chat',
+      'llama-3.1-sonar-small-128k-chat'
+    ];
+  }
 }
 
-export async function fetchXaiModels(_apiKey: string): Promise<string[]> {
-  return [];
+export async function fetchXaiModels(apiKey: string): Promise<string[]> {
+  try {
+    return await fetchViaProxy('xai', apiKey);
+  } catch (e) {
+    console.warn('[XAI] fetchXaiModels failed, using fallback:', e);
+    return [
+      'grok-2',
+      'grok-2-latest',
+      'grok-2-vision',
+      'grok-2-vision-latest',
+      'grok-beta',
+      'grok-vision-beta'
+    ];
+  }
 }
 
-export async function fetchDeepSeekModels(_apiKey: string): Promise<string[]> {
-  return [];
+export async function fetchDeepSeekModels(apiKey: string): Promise<string[]> {
+  try {
+    return await fetchViaProxy('deepseek', apiKey);
+  } catch (e) {
+    console.warn('[DeepSeek] fetchDeepSeekModels failed, using fallback:', e);
+    return [
+      'deepseek-chat',
+      'deepseek-reasoner'
+    ];
+  }
 }
 
 export async function fetchAI21Models(_apiKey: string): Promise<string[]> {
