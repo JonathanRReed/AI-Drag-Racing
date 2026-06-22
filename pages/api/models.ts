@@ -86,6 +86,23 @@ const STATIC_FALLBACKS: Record<string, string[]> = {
         // Code
         'codegeex-4',
     ],
+    perplexity: [
+        'sonar-reasoning-pro',
+        'sonar-reasoning',
+        'sonar-pro',
+        'sonar',
+    ],
+    xai: [
+        'grok-2',
+        'grok-2-latest',
+        'grok-2-vision',
+        'grok-2-vision-latest',
+        'grok-beta',
+    ],
+    deepseek: [
+        'deepseek-chat',
+        'deepseek-reasoner',
+    ],
     openai: [
         'gpt-4o',
         'gpt-4o-mini',
@@ -227,7 +244,7 @@ export default async function handler(req: Request): Promise<Response> {
             }
         }
 
-        else if (['openai', 'fireworks', 'openrouter', 'together', 'mistral', 'cohere'].includes(providerId)) {
+        else if (['openai', 'fireworks', 'openrouter', 'together', 'mistral', 'cohere', 'perplexity', 'xai', 'deepseek'].includes(providerId)) {
             // Standard OpenAI-compatible listing
             const urls: Record<string, string> = {
                 openai: 'https://api.openai.com/v1/models',
@@ -236,6 +253,9 @@ export default async function handler(req: Request): Promise<Response> {
                 together: 'https://api.together.xyz/v1/models',
                 mistral: 'https://api.mistral.ai/v1/models',
                 cohere: 'https://api.cohere.com/v1/models',
+                perplexity: 'https://api.perplexity.ai/models',
+                xai: 'https://api.x.ai/v1/models',
+                deepseek: 'https://api.deepseek.com/models',
             };
 
             const url = urls[providerId];
