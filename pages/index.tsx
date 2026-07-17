@@ -581,15 +581,14 @@ export default function Home() {
           dangerouslySetInnerHTML={{
             __html: JSON.stringify({
               "@context": "https://schema.org",
-              "@type": "WebApplication",
+              "@type": "WebSite",
+              "@id": "https://ai-dragrace.jonathanrreed.com/#website",
               "name": "AI Drag Racing",
               "description": "Race AI models side by side, compare latency, time to first token, throughput, and output quality in a live browser benchmark by Jonathan R. Reed.",
               "url": "https://ai-dragrace.jonathanrreed.com/",
-              "applicationCategory": "DeveloperApplication",
-              "operatingSystem": "Any",
-              "browserRequirements": "Requires JavaScript",
+              "inLanguage": "en-US",
               "datePublished": "2026-04-21",
-              "dateModified": "2026-06-19",
+              "dateModified": "2026-07-16",
               "author": {
                 "@type": "Person",
                 "name": "Jonathan R. Reed",
@@ -600,18 +599,6 @@ export default function Home() {
                   "https://github.com/JonathanRReed",
                   "https://helloworldfirm.com/"
                 ]
-              },
-              "offers": {
-                "@type": "Offer",
-                "price": "0",
-                "priceCurrency": "USD"
-              },
-              "aggregateRating": {
-                "@type": "AggregateRating",
-                "ratingValue": "5",
-                "bestRating": "5",
-                "worstRating": "1",
-                "ratingCount": "1"
               }
             })
           }}
