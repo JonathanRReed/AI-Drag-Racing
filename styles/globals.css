@@ -585,7 +585,7 @@
     @apply cursor-pointer text-sm font-semibold text-white;
   }
 
-  /* Same look as .race-details-summary, minus the interactive cursor — for static
+  /* Same look as .race-details-summary, minus the interactive cursor, for static
      headings that are not <summary> toggles. */
   .race-details-heading {
     @apply text-sm font-semibold text-white;
