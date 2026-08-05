@@ -71,24 +71,15 @@ export default function Privacy() {
             for the current hosting and infrastructure context.
           </p>
           <p className="mt-4 text-base leading-8 text-zinc-300">
-            Provider API keys stay in browser storage so the app can run directly from your device. Do not paste keys on a
-            shared computer, and clear site data if you want to remove saved credentials. The app does not need your
-            provider account password.
+            Do not paste keys on a shared computer. Clearing site data removes saved provider keys and local settings,
+            and there is no account recovery because there are no accounts. The app never needs your provider account
+            password. If you rotate or revoke a key, do it with the provider and update the local value before the next
+            race.
           </p>
           <p className="mt-4 text-base leading-8 text-zinc-300">
-            Race prompts can contain sensitive information if you paste it in. Treat each race as a request to the selected
-            provider, and avoid confidential client data, medical records, financial details, or private employer material
-            unless your own provider agreement allows that use.
-          </p>
-          <p className="mt-4 text-base leading-8 text-zinc-300">
-            Clearing site data in your browser removes saved provider keys and local settings for this site. The app does
-            not provide account recovery because it does not create accounts. If you rotate or revoke a provider key, do it
-            directly with that provider and update the local value before running another race.
-          </p>
-          <p className="mt-4 text-base leading-8 text-zinc-300">
-            Race results are displayed in the browser so you can compare output quality beside latency. Avoid using the
-            tool for regulated or confidential prompts unless your own provider policies, data processing terms, and
-            internal rules permit that workflow.
+            Treat each race as a request to the selected provider. Keep confidential client data, medical records,
+            financial details, private employer material, and anything regulated out of the prompt unless your own
+            provider agreement and internal rules allow that use.
           </p>
           <p className="mt-6 text-sm text-zinc-500">
             Last updated <time dateTime="2026-06-19">June 19, 2026</time>.

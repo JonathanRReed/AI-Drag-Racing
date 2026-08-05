@@ -76,10 +76,6 @@ export default function About() {
             Speed metrics sit next to the response itself, because a fast model is useless if the answer comes back
             incomplete, terse, or badly formatted. Compare the time, then read what each model actually wrote.
           </p>
-          <p className="mt-4 text-base leading-8 text-zinc-300">
-            AI Drag Racing keeps that comparison small on purpose: one prompt, a set of model lanes, timing numbers, and
-            the responses you can review directly. It is a quick field check before deeper evaluation work.
-          </p>
           <p className="mt-6 text-sm text-zinc-500">
             Last updated <time dateTime="2026-06-19">June 19, 2026</time>.
           </p>

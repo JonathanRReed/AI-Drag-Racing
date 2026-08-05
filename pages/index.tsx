@@ -652,11 +652,6 @@ export default function Home() {
               <h1 className="race-hero-title">
                 AI Drag Racing
               </h1>
-              <p className="sr-only">
-                AI Drag Racing compares large language model latency, time to first token, streaming throughput, provider
-                errors, prompt handling, and repeat-run consistency in a live browser benchmark for practical model
-                evaluation.
-              </p>
               <p className="race-hero-lead">
                 A live benchmark experiment by{' '}
                 <span className="text-zinc-200">Jonathan R. Reed</span> that races AI models side by side so you can watch latency in real time.
@@ -680,24 +675,14 @@ export default function Home() {
               how long the full answer takes. Tokens per second is useful for longer generations because a model can
               start quickly but still stream slowly after the first token appears. The live pace chart plots
               characters streamed against a shared client clock, so the curve shows what your browser actually
-              received; chunk boundaries and edge-network timing vary by provider. Token counts are estimated from
-              output length (about four characters per token) except where a provider reports exact usage, so treat
-              them as approximate.
+              received; chunk boundaries and edge-network timing vary by provider.
             </p>
             <p>
               A race measures one moment and nothing beyond it. Network route, provider load, regional availability,
-              selected model, prompt length, reasoning settings, and output length all move the numbers. For a fair
-              comparison, pick comparable models, reuse the same prompt, run more than one race, and read the timing
-              next to the answer the model actually gave you.
-            </p>
-            <p>
-              The app is built for practical evaluation work: which model feels fastest for coding prompts, support
-              drafts, summarization, structured extraction, or agent steps. It also catches provider errors, slow
-              starts, rate-limit behavior, and models that only look fast because they wrote less.
-            </p>
-            <p>
-              Repeated runs matter. A single race can show a spike, but a few consistent runs reveal whether the delay
-              comes from the provider, the model, the prompt shape, or the current network path.
+              selected model, prompt length, reasoning settings, and output length all move the numbers. A single race
+              can show a spike; a few consistent runs tell you whether the delay comes from the provider, the model,
+              the prompt shape, or your current network path. Read the timing next to the answer the model actually
+              gave you, since a model can look fast because it wrote less.
             </p>
           </div>
         </details>

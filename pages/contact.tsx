@@ -63,20 +63,15 @@ export default function Contact() {
             Reed's main contact page.
           </p>
           <p className="mt-4 text-base leading-8 text-zinc-300">
-            Useful reports include the browser, provider, selected model, prompt length, race settings, and whether the
-            issue affected API keys, streaming, timing, output display, charts, navigation, or mobile layout. If a provider
-            changed its API behavior, include the error message without sharing secrets.
+            Useful reports include the browser, provider, selected model, prompt length, and race settings, plus where
+            it broke: before the request started, during streaming, after the final token, or while drawing the result
+            chart. That is what separates a provider-routing bug from a UI-state one. If a provider changed its API
+            behavior, include the error message without sharing secrets.
           </p>
           <p className="mt-4 text-base leading-8 text-zinc-300">
             For feature feedback, describe the model comparison you were trying to make and what evidence was missing.
-            The project is intentionally focused on live latency and output comparison, so clear workflow examples are
-            more useful than broad requests for another dashboard.
-          </p>
-          <p className="mt-4 text-base leading-8 text-zinc-300">
-            Timing reports are most useful when they separate provider behavior from interface behavior. Note whether the
-            race failed before the request started, during streaming, after the final token, or while drawing the result
-            chart. That makes it easier to tell whether the fix belongs in provider routing, browser storage, UI state, or
-            result formatting.
+            This site is focused on live latency and output comparison, so a concrete workflow lands better than a
+            request for another dashboard.
           </p>
           <p className="mt-4 text-base leading-8 text-zinc-300">
             Do not send provider API keys, private prompts, client data, or screenshots that expose secrets. A short
