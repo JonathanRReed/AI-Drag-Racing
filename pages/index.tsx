@@ -173,7 +173,7 @@ const DEMO_LANES: { providerId: string; modelId: string; ttft: number; cps: numb
   { providerId: 'anthropic', modelId: 'claude-haiku · demo', ttft: 640, cps: 320, total: 1600 },
 ];
 const DEMO_SAMPLE =
-  "Here's the quick read on inference speed. Three things matter: how fast the first token arrives, how steadily the model streams after that, and how much it ultimately produces. A model can launch quickly yet stream slowly, or start late and then sprint to the line. Watching them race side by side makes those trade-offs obvious in a way a single number never could. ";
+  "Here's the quick read on inference speed. What matters is how fast the first token arrives, how steadily the model streams after that, and how much it produces before it stops. A model can launch quickly and then crawl, or start late and sprint to the line. Racing them side by side shows that trade-off. One averaged number hides it. ";
 const DEMO_LONG = DEMO_SAMPLE.repeat(10);
 
 // --- Main Component ---
@@ -662,9 +662,9 @@ export default function Home() {
                 <span className="text-zinc-200">Jonathan R. Reed</span> that races AI models side by side so you can watch latency in real time.
               </p>
               <p className="race-hero-body">
-                Use the same prompt and comparable settings when you want a fair read. The useful signal is not only who
-                finishes first, but which model starts quickly, streams steadily, handles the task cleanly, and avoids
-                provider errors during a real browser session.
+                Use the same prompt and comparable settings when you want a fair read. Who crosses the line first is the
+                easy number. The rest of it matters more: how quickly a model starts, whether it holds that rate once it
+                does, and whether the provider errors out partway through a real browser session.
               </p>
             </div>
           </div>
@@ -679,22 +679,21 @@ export default function Home() {
               session. Time to first token shows how quickly a provider starts responding. Total response time shows
               how long the full answer takes. Tokens per second is useful for longer generations because a model can
               start quickly but still stream slowly after the first token appears. The live pace chart plots
-              characters streamed against a shared client clock, so the curve faithfully reflects what your browser
+              characters streamed against a shared client clock, so the curve shows what your browser actually
               received; chunk boundaries and edge-network timing vary by provider. Token counts are estimated from
               output length (about four characters per token) except where a provider reports exact usage, so treat
               them as approximate.
             </p>
             <p>
-              Treat every run as a live measurement, not a permanent leaderboard. Network route, provider load,
-              regional availability, selected model, prompt length, reasoning settings, and output length all affect
-              results. For a fair comparison, select comparable models, reuse the same prompt, run more than one race,
-              and compare both the timing metrics and the actual answer quality.
+              A race measures one moment and nothing beyond it. Network route, provider load, regional availability,
+              selected model, prompt length, reasoning settings, and output length all move the numbers. For a fair
+              comparison, pick comparable models, reuse the same prompt, run more than one race, and read the timing
+              next to the answer the model actually gave you.
             </p>
             <p>
-              The app is built for practical evaluation work: checking which model feels fastest for coding prompts,
-              support drafts, writing tasks, summarization, structured extraction, and agent workflows. It is also a
-              useful way to spot provider errors, slow starts, rate-limit behavior, and models that look fast only
-              because they produce shorter answers.
+              The app is built for practical evaluation work: which model feels fastest for coding prompts, support
+              drafts, summarization, structured extraction, or agent steps. It also catches provider errors, slow
+              starts, rate-limit behavior, and models that only look fast because they wrote less.
             </p>
             <p>
               Repeated runs matter. A single race can show a spike, but a few consistent runs reveal whether the delay
@@ -703,7 +702,7 @@ export default function Home() {
           </div>
         </details>
         <section className="race-details" aria-labelledby="methodology-heading">
-          <h2 id="methodology-heading" className="race-details-summary">
+          <h2 id="methodology-heading" className="race-details-heading">
             Methodology
           </h2>
           <div className="race-details-copy">
@@ -780,7 +779,7 @@ export default function Home() {
                   onClick={handleRunDemo}
                   className="race-tool-button hidden sm:inline-flex"
                   disabled={state.raceState === 'racing' || state.raceState === 'countingDown'}
-                  title="Run a simulated test race — no API key needed"
+                  title="Run a simulated test race, no API key needed"
                 >
                   <span className="inline-flex items-center gap-1">
                     <svg viewBox="0 0 24 24" className="h-3 w-3" fill="none" stroke="currentColor" strokeWidth="2">

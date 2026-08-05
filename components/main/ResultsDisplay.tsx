@@ -26,7 +26,7 @@ interface ResultsDisplayProps {
 }
 
 const STEPS = [
-  { n: 1, text: 'Open the Racers panel — the sidebar on the left, or tap Racers on mobile.' },
+  { n: 1, text: 'Open the Racers panel: the sidebar on the left, or tap Racers on mobile.' },
   { n: 2, text: 'Paste an API key for any provider (stored only in your browser).' },
   { n: 3, text: 'Pick one or more models to enter the race.' },
   { n: 4, text: 'Hit Start Race and watch them stream head-to-head.' },
@@ -67,7 +67,7 @@ const ResultsDisplay: React.FC<ResultsDisplayProps> = ({ results, hideFailed = f
                 </svg>
                 Watch a demo race
               </button>
-              <span className="text-[11px] text-[var(--text-subtle)]">Simulated — no API key, just to see how it looks</span>
+              <span className="text-[11px] text-[var(--text-subtle)]">Simulated, no API key. Just to see how it looks.</span>
             </div>
           )}
         </div>

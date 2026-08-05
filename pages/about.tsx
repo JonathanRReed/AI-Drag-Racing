@@ -64,8 +64,8 @@ export default function About() {
             hands-on checks when model speed matters as much as answer quality.
           </p>
           <p className="mt-4 text-base leading-8 text-zinc-300">
-            The tool is meant for practical testing, not a universal leaderboard. Your prompt, provider keys, network,
-            selected model, and provider load all affect the result, so each run is best read as a live experiment.
+            Nothing here is a universal leaderboard. Your prompt, provider keys, network, selected model, and provider
+            load all move the result, so read each run as one live experiment.
           </p>
           <p className="mt-4 text-base leading-8 text-zinc-300">
             Use it when you need to choose between models for a concrete workflow: support drafts, coding help,
@@ -73,9 +73,8 @@ export default function About() {
             same prompt across several providers makes timing differences easier to see before you commit to deeper evals.
           </p>
           <p className="mt-4 text-base leading-8 text-zinc-300">
-            The page reports speed metrics beside the response itself because a fast model is not useful if the answer is
-            incomplete, terse, or formatted poorly. The best read is both mechanical and editorial: compare the time, then
-            inspect what each model actually produced.
+            Speed metrics sit next to the response itself, because a fast model is useless if the answer comes back
+            incomplete, terse, or badly formatted. Compare the time, then read what each model actually wrote.
           </p>
           <p className="mt-4 text-base leading-8 text-zinc-300">
             AI Drag Racing keeps that comparison small on purpose: one prompt, a set of model lanes, timing numbers, and

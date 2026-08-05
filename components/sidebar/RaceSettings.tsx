@@ -55,7 +55,7 @@ const RACE_MODES: { id: RaceMode; label: string; icon: React.ReactNode; descript
         <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" strokeLinecap="round" strokeLinejoin="round" />
       </svg>
     ),
-    description: 'Race to completion - first to finish wins',
+    description: 'First model to finish wins',
   },
   {
     id: 'token_limit',
@@ -88,7 +88,7 @@ const RACE_MODES: { id: RaceMode; label: string; icon: React.ReactNode; descript
         <path d="M8 12h8M12 8v8" strokeLinecap="round" />
       </svg>
     ),
-    description: 'No limits - complete freedom',
+    description: 'No limits; every model runs to completion',
   },
 ];
 

@@ -249,7 +249,7 @@ const WinnerPodium: React.FC<WinnerPodiumProps> = ({ results, mode, reducedMotio
 
       <p className="mt-3 text-center text-[11px] text-[var(--text-muted)]">
         Ranked by measured timing. Token counts are estimated from output length unless a provider reports exact usage.
-        Switch the metric above — every race is a live measurement, not a fixed ranking.
+        Switch the metric above. Each race measures one moment, so run it again before you trust the order.
       </p>
     </GlassCard>
   );
