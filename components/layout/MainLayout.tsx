@@ -92,7 +92,11 @@ const MainLayout: React.FC<MainLayoutProps> = ({ sidebar, children }) => {
             <div className="app-footer-inner">
               {/* Identity line */}
               <p className="app-footer-meta heading-tight">
-                Built by <span className="app-footer-name">Jonathan R. Reed</span> AI and cybersecurity developer, red team specialist.
+                Built by{' '}
+                <a href="https://jonathanrreed.com/" rel="noopener noreferrer" className="app-footer-name">
+                  Jonathan R. Reed
+                </a>
+                .
               </p>
 
               {/* Links row */}

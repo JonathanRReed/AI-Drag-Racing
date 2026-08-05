@@ -43,7 +43,6 @@ export default function Contact() {
                 sameAs: [
                   'https://jonathanrreed.com/',
                   'https://github.com/JonathanRReed',
-                  'https://helloworldfirm.com/',
                 ],
               },
             }),

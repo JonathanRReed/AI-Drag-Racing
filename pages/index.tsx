@@ -596,8 +596,7 @@ export default function Home() {
                 "url": "https://jonathanrreed.com",
                 "sameAs": [
                   "https://jonathanrreed.com/",
-                  "https://github.com/JonathanRReed",
-                  "https://helloworldfirm.com/"
+                  "https://github.com/JonathanRReed"
                 ]
               }
             })
