@@ -30,9 +30,12 @@
 # ---------------------------------------------------------------------------
 
 # === DEFAULT: everything may crawl; search + AI grounding granted, training refused
+# /api/ is closed to every group below: those routes are credential-backed
+# provider proxies with no indexable content.
 User-agent: *
 Content-Signal: search=yes, ai-input=yes, ai-train=no, use=reference
 Allow: /
+Disallow: /api/
 Disallow: /cgi-bin/
 Disallow: /wp-admin/
 Disallow: /admin/
@@ -59,6 +62,7 @@ Disallow: /*?q=
 User-agent: OAI-SearchBot
 Content-Signal: search=yes, ai-input=yes, ai-train=no, use=reference
 Allow: /
+Disallow: /api/
 Disallow: /cgi-bin/
 Disallow: /wp-admin/
 Disallow: /admin/
@@ -76,6 +80,7 @@ Disallow: /*?q=
 User-agent: Claude-SearchBot
 Content-Signal: search=yes, ai-input=yes, ai-train=no, use=reference
 Allow: /
+Disallow: /api/
 Disallow: /cgi-bin/
 Disallow: /wp-admin/
 Disallow: /admin/
@@ -93,6 +98,7 @@ Disallow: /*?q=
 User-agent: PerplexityBot
 Content-Signal: search=yes, ai-input=yes, ai-train=no, use=reference
 Allow: /
+Disallow: /api/
 Disallow: /cgi-bin/
 Disallow: /wp-admin/
 Disallow: /admin/
@@ -110,6 +116,7 @@ Disallow: /*?q=
 User-agent: meta-webindexer
 Content-Signal: search=yes, ai-input=yes, ai-train=no, use=reference
 Allow: /
+Disallow: /api/
 Disallow: /cgi-bin/
 Disallow: /wp-admin/
 Disallow: /admin/
@@ -127,6 +134,7 @@ Disallow: /*?q=
 User-agent: Amzn-SearchBot
 Content-Signal: search=yes, ai-input=yes, ai-train=no, use=reference
 Allow: /
+Disallow: /api/
 Disallow: /cgi-bin/
 Disallow: /wp-admin/
 Disallow: /admin/
@@ -148,6 +156,7 @@ Disallow: /*?q=
 User-agent: ChatGPT-User
 Content-Signal: search=yes, ai-input=yes, ai-train=no, use=reference
 Allow: /
+Disallow: /api/
 Disallow: /cgi-bin/
 Disallow: /wp-admin/
 Disallow: /admin/
@@ -164,6 +173,7 @@ Disallow: /*?q=
 User-agent: Claude-User
 Content-Signal: search=yes, ai-input=yes, ai-train=no, use=reference
 Allow: /
+Disallow: /api/
 Disallow: /cgi-bin/
 Disallow: /wp-admin/
 Disallow: /admin/
@@ -180,6 +190,7 @@ Disallow: /*?q=
 User-agent: Perplexity-User
 Content-Signal: search=yes, ai-input=yes, ai-train=no, use=reference
 Allow: /
+Disallow: /api/
 Disallow: /cgi-bin/
 Disallow: /wp-admin/
 Disallow: /admin/
@@ -196,6 +207,7 @@ Disallow: /*?q=
 User-agent: Amzn-User
 Content-Signal: search=yes, ai-input=yes, ai-train=no, use=reference
 Allow: /
+Disallow: /api/
 Disallow: /cgi-bin/
 Disallow: /wp-admin/
 Disallow: /admin/
