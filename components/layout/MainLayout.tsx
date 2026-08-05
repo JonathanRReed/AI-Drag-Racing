@@ -101,6 +101,10 @@ const MainLayout: React.FC<MainLayoutProps> = ({ sidebar, children }) => {
                   About
                 </a>
                 <span className="app-footer-separator">•</span>
+                <a href="/methodology" className="app-footer-link">
+                  Methodology
+                </a>
+                <span className="app-footer-separator">•</span>
                 <a href="/contact" className="app-footer-link">
                   Contact
                 </a>

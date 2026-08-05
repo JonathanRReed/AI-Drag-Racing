@@ -702,6 +702,36 @@ export default function Home() {
             </p>
           </div>
         </details>
+        <section className="race-details" aria-labelledby="methodology-heading">
+          <h2 id="methodology-heading" className="race-details-summary">
+            Methodology
+          </h2>
+          <div className="race-details-copy">
+            <p>
+              Each race sends one streaming request per model. Your prompt goes out as a single user message with no
+              system prompt and no conversation history. The timer runs inside a Cloudflare Pages Function at the edge,
+              so the reported numbers cover the edge to provider leg rather than your browser’s trip to Cloudflare.
+              Default sampling is temperature 0.7, max tokens 2048, and top p 1.0, and whatever you set applies to every
+              lane in that race.
+            </p>
+            <p>
+              Sample size is one run per model per race. Nothing is repeated, averaged, or stored, and token counts are
+              estimated at about four characters per token for every provider except Google Gemini, which reports usage
+              directly. There is no fixed benchmark hardware and no recorded provider region, because the code never
+              captures either one.
+            </p>
+            <p>
+              <a
+                href="/methodology"
+                className="font-semibold text-red-400 underline decoration-red-400/40 underline-offset-4 hover:text-red-300"
+              >
+                Read the full methodology
+              </a>{' '}
+              for how time to first token, total time, and tokens per second are calculated, which race modes use a
+              different clock, & which listed providers cannot actually race.
+            </p>
+          </div>
+        </section>
         <div className="space-y-4">
           {/* Tabs + actions toolbar (sticky on md+, static on mobile) */}
           <div className="race-toolbar-wrap">
