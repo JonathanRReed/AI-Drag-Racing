@@ -35,7 +35,7 @@ export default function Contact() {
                 'Contact Jonathan R. Reed about AI Drag Racing, a browser benchmark for LLM latency, throughput, and model comparison.',
               url: 'https://ai-dragrace.jonathanrreed.com/contact',
               datePublished: '2026-04-21',
-              dateModified: '2026-06-19',
+              dateModified: '2026-08-04',
               author: {
                 '@type': 'Person',
                 name: 'Jonathan R. Reed',

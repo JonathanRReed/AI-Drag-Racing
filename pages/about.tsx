@@ -35,7 +35,7 @@ export default function About() {
                 'AI Drag Racing is a live browser benchmark by Jonathan R. Reed for comparing LLM latency, throughput, and output behavior side by side.',
               url: 'https://ai-dragrace.jonathanrreed.com/about',
               datePublished: '2026-04-21',
-              dateModified: '2026-06-19',
+              dateModified: '2026-08-04',
               author: {
                 '@type': 'Person',
                 name: 'Jonathan R. Reed',

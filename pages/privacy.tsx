@@ -35,7 +35,7 @@ export default function Privacy() {
                 'AI Drag Racing stores provider keys in your browser local storage and sends prompts only to the provider APIs you choose for a race.',
               url: 'https://ai-dragrace.jonathanrreed.com/privacy',
               datePublished: '2026-04-21',
-              dateModified: '2026-06-19',
+              dateModified: '2026-08-04',
               author: {
                 '@type': 'Person',
                 name: 'Jonathan R. Reed',
