@@ -577,6 +577,18 @@
     @apply max-w-2xl text-sm leading-relaxed text-zinc-500;
   }
 
+  .race-hero-facts {
+    @apply mt-3 grid max-w-2xl gap-x-6 gap-y-1.5 text-xs leading-relaxed sm:grid-cols-2;
+  }
+
+  .race-hero-facts dt {
+    @apply text-[0.65rem] font-semibold uppercase tracking-[0.18em] text-zinc-500;
+  }
+
+  .race-hero-facts dd {
+    @apply text-zinc-300;
+  }
+
   .race-details {
     @apply mb-6 rounded-2xl border border-white/10 bg-zinc-950/45 p-5 text-sm leading-7 text-zinc-300;
   }

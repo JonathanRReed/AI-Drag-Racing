@@ -12,7 +12,7 @@ import CountdownOverlay from '../components/main/CountdownOverlay';
 import RaceSettings, { RaceConfig } from '../components/sidebar/RaceSettings';
 import { LaneBuffer, createLaneBuffer, pushChunk } from '../utils/raceBuffers';
 import { getProviderColor } from '../utils/providerColors';
-import { getProviderById } from '../utils/providers';
+import { getProviderById, PROVIDERS, RACEABLE_PROVIDERS } from '../utils/providers';
 import type { PaceLane } from '../components/main/LivePaceChart';
 
 const ResultsDisplay = dynamic(() => import('../components/main/ResultsDisplay'), { ssr: false });
@@ -652,9 +652,38 @@ export default function Home() {
                 AI Drag Racing
               </h1>
               <p className="race-hero-lead">
-                A live benchmark experiment by{' '}
-                <span className="text-zinc-200">Jonathan R. Reed</span> that races AI models side by side so you can watch latency in real time.
+                AI Drag Racing is a live latency benchmark by{' '}
+                <span className="text-zinc-200">Jonathan R. Reed</span>. It sends the same prompt to several AI models
+                at once, in your browser, and times each one as it streams back.
               </p>
+              <dl className="race-hero-facts" aria-label="What a race measures">
+                <div>
+                  <dt>Providers</dt>
+                  <dd>
+                    {PROVIDERS.length} listed, {RACEABLE_PROVIDERS.length} can race
+                  </dd>
+                </div>
+                <div>
+                  <dt>Timed per lane</dt>
+                  <dd>Time to first token, total response time, tokens per second</dd>
+                </div>
+                <div>
+                  <dt>Sample size</dt>
+                  <dd>1 run per model per race, nothing stored</dd>
+                </div>
+                <div>
+                  <dt>Defaults</dt>
+                  <dd>
+                    temperature {initialState.raceConfig.modelSettings.temperature}, max tokens{' '}
+                    {initialState.raceConfig.modelSettings.maxTokens}, top p{' '}
+                    {initialState.raceConfig.modelSettings.topP.toFixed(1)}
+                  </dd>
+                </div>
+                <div>
+                  <dt>Clock</dt>
+                  <dd>Cloudflare edge function, edge to provider leg only</dd>
+                </div>
+              </dl>
               <p className="race-hero-body">
                 Use the same prompt and comparable settings when you want a fair read. Who crosses the line first is the
                 easy number. The rest of it matters more: how quickly a model starts, whether it holds that rate once it

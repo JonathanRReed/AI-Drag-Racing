@@ -146,3 +146,33 @@ export const PROVIDERS: ProviderConfig[] = [
 export function getProviderById(id: string): ProviderConfig | undefined {
   return PROVIDERS.find(p => p.id === id);
 }
+
+/**
+ * Providers the edge completions route actually registers a service for.
+ *
+ * Every entry in PROVIDERS can list models, but only these can run a lane:
+ * the rest return "provider not found" the moment a race starts. The list is
+ * the side-effect import block at the top of
+ * pages/api/providers/[providerId]/completions.ts, and
+ * utils/__tests__/raceableProviders.test.ts reads that file to keep the two in
+ * step. Kept here so the homepage and the methodology page can state the count
+ * instead of hardcoding it.
+ */
+export const RACEABLE_PROVIDER_IDS = [
+  'openai',
+  'groq',
+  'anthropic',
+  'google',
+  'cohere',
+  'mistral',
+  'together',
+  'fireworks',
+  'openrouter',
+  'cerebras',
+  'moonshot',
+  'zhipu',
+] as const;
+
+export const RACEABLE_PROVIDERS: ProviderConfig[] = PROVIDERS.filter(p =>
+  (RACEABLE_PROVIDER_IDS as readonly string[]).includes(p.id),
+);
