@@ -35,7 +35,7 @@ export default function Subprocessors() {
                 'Subprocessor disclosure for AI Drag Racing, including hosting, provider API routing, and browser-local credential handling.',
               url: 'https://ai-dragrace.jonathanrreed.com/subprocessors',
               datePublished: '2026-06-19',
-              dateModified: '2026-06-19',
+              dateModified: '2026-08-04',
               author: {
                 '@type': 'Person',
                 name: 'Jonathan R. Reed',
@@ -81,7 +81,7 @@ export default function Subprocessors() {
             </a>.
           </p>
           <p className="mt-6 text-sm text-zinc-500">
-            Last updated <time dateTime="2026-06-19">June 19, 2026</time>.
+            Last updated <time dateTime="2026-08-04">August 4, 2026</time>.
           </p>
         </article>
       </main>
