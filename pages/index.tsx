@@ -653,8 +653,9 @@ export default function Home() {
               </h1>
               <p className="race-hero-lead">
                 AI Drag Racing is a live latency benchmark by{' '}
-                <span className="text-zinc-200">Jonathan R. Reed</span>. It sends the same prompt to several AI models
-                at once, in your browser, and times each one as it streams back.
+                <span className="text-zinc-200">Jonathan R. Reed</span>. You start a race from your browser. It sends
+                the same prompt to several AI models at once, and a Cloudflare edge function times each one as it
+                streams back.
               </p>
               <dl className="race-hero-facts" aria-label="What a race measures">
                 <div>
