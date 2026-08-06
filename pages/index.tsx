@@ -588,7 +588,7 @@ export default function Home() {
               "url": "https://ai-dragrace.jonathanrreed.com/",
               "inLanguage": "en-US",
               "datePublished": "2026-04-21",
-              "dateModified": "2026-07-16",
+              "dateModified": "2026-08-06",
               "author": {
                 "@type": "Person",
                 "name": "Jonathan R. Reed",
