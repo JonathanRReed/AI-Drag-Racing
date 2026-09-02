@@ -22,15 +22,16 @@ export default function SharedRaceView({ record }: { record: RaceShareRecord }) 
         <span>{record.payload.prompt.characters} prompt characters</span>
         <span>{record.payload.environment.edgeRegion ? `Cloudflare ${record.payload.environment.edgeRegion}` : 'Edge region unavailable'}</span>
       </div>
-      <div className="finish-table-wrap">
+      <div className="finish-table-wrap" role="region" aria-label="Race timing measurements, scroll horizontally for all columns" tabIndex={0}>
         <table className="finish-table">
+          <caption>TTFT means time to first token. Browser timings include your connection; edge timings measure the provider route.</caption>
           <thead>
-            <tr><th>Lane</th><th>Browser TTFT</th><th>Edge TTFT</th><th>Browser total</th><th>Output tokens</th></tr>
+            <tr><th scope="col">Lane</th><th scope="col">Browser TTFT</th><th scope="col">Edge TTFT</th><th scope="col">Browser total</th><th scope="col">Output tokens</th></tr>
           </thead>
           <tbody>
             {lanes.map((lane, index) => (
               <tr key={`${lane.providerId}:${lane.modelId}:${index}`}>
-                <th><span>{lane.status === 'failed' ? 'Failed' : index + 1}</span><strong>{lane.modelId}</strong><small>{lane.providerId}</small></th>
+                <th scope="row"><span>{lane.status === 'failed' ? 'Failed' : `Lane ${index + 1}`}</span><strong>{lane.modelId}</strong><small>{lane.providerId}</small></th>
                 <td>{ms(lane.browser.ttftMs)}</td>
                 <td>{ms(lane.edge.ttftMs)}</td>
                 <td>{ms(lane.browser.totalMs)}</td>

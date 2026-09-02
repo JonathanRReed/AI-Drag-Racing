@@ -1051,6 +1051,45 @@
   @apply text-zinc-100;
 }
 
+.shared-race .finish-table-wrap {
+  @apply max-w-full overflow-x-auto overscroll-x-contain focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-lime-300;
+}
+
+.shared-race .finish-table {
+  @apply w-full min-w-[720px] border-collapse text-left text-sm tabular-nums;
+}
+
+.shared-race .finish-table caption {
+  @apply py-4 text-left text-sm text-zinc-400;
+}
+
+.shared-race .finish-table th,
+.shared-race .finish-table td {
+  @apply border-b border-white/10 px-4 py-3 align-top;
+}
+
+.shared-race .finish-table thead th {
+  @apply font-mono text-xs font-normal text-zinc-400;
+}
+
+.shared-race .finish-table tbody th {
+  @apply min-w-48 max-w-72 font-normal;
+  overflow-wrap: anywhere;
+}
+
+.shared-race .finish-table tbody th > * {
+  @apply block;
+}
+
+.shared-race .finish-table tbody th strong {
+  @apply my-1 text-base font-semibold text-zinc-100;
+}
+
+.shared-race .finish-table tbody th span,
+.shared-race .finish-table tbody th small {
+  @apply font-mono text-xs text-zinc-400;
+}
+
 .shared-race footer {
   @apply mt-6 flex flex-col gap-2 border-t border-white/10 pt-5 sm:flex-row;
 }
