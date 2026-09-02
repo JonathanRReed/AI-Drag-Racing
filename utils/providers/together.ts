@@ -8,31 +8,7 @@ import {
 } from '../providerService';
 import { fetchTogetherModels } from '../fetchModels';
 import { finalTokenTotal, approxTokensFromText } from '../tokens';
-
-async function* streamSSE(response: Response): AsyncGenerator<any, void, unknown> {
-  const reader = response.body?.getReader();
-  if (!reader) throw new Error('No response body');
-  const decoder = new TextDecoder('utf-8');
-  let buffer = '';
-  while (true) {
-    const { done, value } = await reader.read();
-    if (done) break;
-    buffer += decoder.decode(value, { stream: true });
-    const parts = buffer.split('\n\n');
-    buffer = parts.pop() || '';
-    for (const part of parts) {
-      if (part.startsWith('data: ')) {
-        const data = part.substring(6).trim();
-        if (data === '[DONE]') return;
-        try {
-          yield JSON.parse(data);
-        } catch (e) {
-          // ignore malformed lines
-        }
-      }
-    }
-  }
-}
+import { parseSseJson } from '../sse';
 
 const togetherService: ProviderService = {
   providerId: 'together',
@@ -76,7 +52,7 @@ const togetherService: ProviderService = {
       throw new Error(`Together API error: ${response.status} ${errorBody}`);
     }
 
-    for await (const chunk of streamSSE(response)) {
+    for await (const chunk of parseSseJson<any>(response, 'Together')) {
       const content = chunk.choices?.[0]?.delta?.content;
       if (content) {
         if (!firstTokenTime) firstTokenTime = Date.now();

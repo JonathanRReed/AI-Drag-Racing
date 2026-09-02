@@ -1,6 +1,6 @@
 export const config = { runtime: 'edge' };
 
-import { corsHeadersForRequest } from '../../utils/requestSecurity';
+import { corsHeadersForRequest, readJsonBodyWithLimit } from '../../utils/requestSecurity';
 
 type ModelResponse = {
     data: string[];
@@ -127,7 +127,7 @@ const STATIC_FALLBACKS: Record<string, string[]> = {
 
 // Sanitize API key - trim whitespace and remove any accidental quotes
 function sanitizeApiKey(key: string): string {
-    if (!key) return '';
+    if (typeof key !== 'string' || !key) return '';
     return key.trim().replace(/^["']|["']$/g, '');
 }
 
@@ -154,14 +154,19 @@ export default async function handler(req: Request): Promise<Response> {
         return jsonResponse({ data: [], error: 'Method not allowed' }, corsHeaders, 405);
     }
 
-    let body: any;
-    try {
-        body = await req.json();
-    } catch {
-        return jsonResponse({ data: [], error: 'Invalid JSON body' }, corsHeaders, 400);
+    const parsedBody = await readJsonBodyWithLimit(req, 16_384);
+    if (!parsedBody.ok) return jsonResponse({ data: [], error: parsedBody.error }, corsHeaders, parsedBody.status);
+    if (!parsedBody.value || typeof parsedBody.value !== 'object') {
+        return jsonResponse({ data: [], error: 'Request body must be an object' }, corsHeaders, 400);
     }
 
-    const { providerId, apiKey: rawApiKey } = body;
+    const { providerId, apiKey: rawApiKey } = parsedBody.value as Record<string, unknown>;
+    if (typeof providerId !== 'string' || !providerId || providerId.length > 80) {
+        return jsonResponse({ data: [], error: 'Valid provider ID required' }, corsHeaders, 400);
+    }
+    if (typeof rawApiKey !== 'string' || rawApiKey.length > 4096) {
+        return jsonResponse({ data: [], error: 'Valid API key required' }, corsHeaders, 400);
+    }
     const apiKey = sanitizeApiKey(rawApiKey);
 
     if (!apiKey) {

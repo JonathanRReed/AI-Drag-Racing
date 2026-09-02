@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "license": "SEE LICENSE IN LICENSE",
   "private": true,
+  "packageManager": "bun@1.4.0",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
@@ -10,8 +11,8 @@
     "lint": "eslint . --ext .js,.cjs,.mjs,.jsx,.ts,.tsx",
     "lint:fix": "eslint . --ext .js,.cjs,.mjs,.jsx,.ts,.tsx --fix",
     "test": "vitest run",
-    "build:pages": "npx @cloudflare/next-on-pages@1 && node scripts/patch-routes.js",
-    "build:cf": "npx @cloudflare/next-on-pages@1",
+    "build:pages": "bunx @cloudflare/next-on-pages@1 && node scripts/patch-routes.js",
+    "build:cf": "bunx @cloudflare/next-on-pages@1",
     "postbuild:cf": "node scripts/patch-routes.js",
     "deploy:cf": "wrangler pages deploy .vercel/output/static --branch production"
   },

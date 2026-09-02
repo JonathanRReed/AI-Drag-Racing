@@ -28,4 +28,6 @@ pnpm-debug.log*
 
 # Vercel
 .vercel
+.wrangler/
+*.tsbuildinfo
 coverage/

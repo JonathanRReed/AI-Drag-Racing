@@ -7,7 +7,6 @@ interface PromptInputProps {
   onSubmit: () => void;
   isLoading: boolean;
   disabled?: boolean;
-  onReset?: () => void;
 }
 
 const PromptInput: React.FC<PromptInputProps> = ({
@@ -16,7 +15,6 @@ const PromptInput: React.FC<PromptInputProps> = ({
   onSubmit,
   isLoading,
   disabled,
-  onReset,
 }) => {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -71,29 +69,7 @@ const PromptInput: React.FC<PromptInputProps> = ({
         dir="auto"
       />
       <div className="mt-2 flex items-center justify-between gap-2">
-        <span className="hidden text-[10px] text-zinc-600 lg:block">Enter to race, Shift+Enter for a new line</span>
-        <div className="ml-auto flex items-center gap-2">
-          {onReset && (
-            <button
-              type="button"
-              onClick={onReset}
-              title={isLoading ? 'Cannot reset while racing' : 'Reset race'}
-              className="btn-secondary text-xs"
-              disabled={isLoading}
-            >
-              Reset
-            </button>
-          )}
-          <button
-            type="button"
-            onClick={onSubmit}
-            disabled={!canSubmit}
-            title={!prompt.trim() ? 'Enter a prompt to start' : disabled ? 'No racers selected' : isLoading ? 'Race in progress' : 'Start race'}
-            className="btn btn-primary text-sm"
-          >
-            {isLoading ? 'Racing…' : 'Start race'}
-          </button>
-        </div>
+        <span className="text-[10px] text-zinc-600">Enter starts the race when racers are ready. Shift+Enter adds a line.</span>
       </div>
     </GlassCard>
   );

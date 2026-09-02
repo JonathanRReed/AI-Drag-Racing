@@ -7,38 +7,7 @@ import {
   ModelSettings,
 } from '../providerService';
 import { finalTokenTotal, approxTokensFromText } from '../tokens';
-
-// A helper to parse the SSE stream from OpenAI
-async function* streamOpenAIResponse(
-  response: Response
-): AsyncGenerator<any, void, unknown> {
-  const reader = response.body?.getReader();
-  if (!reader) {
-    throw new Error('No response body');
-  }
-  const decoder = new TextDecoder('utf-8');
-  while (true) {
-    const { done, value } = await reader.read();
-    if (done) {
-      break;
-    }
-    const chunk = decoder.decode(value, { stream: true });
-    const lines = chunk.split('\n\n');
-    for (const line of lines) {
-      if (line.startsWith('data: ')) {
-        const data = line.substring(6);
-        if (data.trim() === '[DONE]') {
-          return;
-        }
-        try {
-          yield JSON.parse(data);
-        } catch (e) {
-          console.error('Error parsing OpenAI stream data:', e);
-        }
-      }
-    }
-  }
-}
+import { parseSseJson } from '../sse';
 
 const openAIService: ProviderService = {
   providerId: 'openai',
@@ -101,7 +70,7 @@ const openAIService: ProviderService = {
       throw new Error(`OpenAI API error: ${response.status} ${errorBody}`);
     }
 
-    for await (const chunk of streamOpenAIResponse(response)) {
+    for await (const chunk of parseSseJson<any>(response, 'OpenAI')) {
       const content = chunk.choices[0]?.delta?.content;
       if (content) {
         if (!firstTokenTime) {

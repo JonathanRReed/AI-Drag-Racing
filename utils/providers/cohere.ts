@@ -7,32 +7,7 @@ import {
   ModelSettings,
 } from '../providerService';
 import { finalTokenTotal, approxTokensFromText } from '../tokens';
-
-// Cohere v2 streams SSE events with types like content-delta, message-end
-async function* streamCohereResponse(
-  response: Response
-): AsyncGenerator<any, void, unknown> {
-  const reader = response.body?.getReader();
-  if (!reader) throw new Error('No response body');
-  const decoder = new TextDecoder('utf-8');
-  let buffer = '';
-  while (true) {
-    const { done, value } = await reader.read();
-    if (done) break;
-    buffer += decoder.decode(value, { stream: true });
-    const parts = buffer.split('\n\n');
-    buffer = parts.pop() || '';
-    for (const part of parts) {
-      if (!part.startsWith('data:')) continue;
-      const data = part.slice(5).trim();
-      if (!data || data === '[DONE]') continue;
-      try {
-        const parsed = JSON.parse(data);
-        yield parsed;
-      } catch {}
-    }
-  }
-}
+import { parseSseJson } from '../sse';
 
 const cohereService: ProviderService = {
   providerId: 'cohere',
@@ -86,7 +61,7 @@ const cohereService: ProviderService = {
       throw new Error(`Cohere API error: ${response.status} ${errorBody}`);
     }
 
-    for await (const evt of streamCohereResponse(response)) {
+    for await (const evt of parseSseJson<any>(response, 'Cohere')) {
       // v2 emits { type: 'content-delta', delta: { message: { content: { text }}}}
       const type = evt?.type;
       if (type === 'content-delta') {

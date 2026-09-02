@@ -5,6 +5,7 @@ import {
     ModelSettings,
 } from '../providerService';
 import { finalTokenTotal, approxTokensFromText } from '../tokens';
+import { parseSseJson } from '../sse';
 
 // Zhipu AI / GLM models - comprehensive list (Dec 2025)
 export const ZHIPU_MODELS = [
@@ -32,38 +33,6 @@ export const ZHIPU_MODELS = [
     // Embedding Models
     'embedding-3',
 ];
-
-// Helper to parse SSE stream (same as OpenAI pattern)
-async function* streamOpenAIResponse(
-    response: Response
-): AsyncGenerator<any, void, unknown> {
-    const reader = response.body?.getReader();
-    if (!reader) {
-        throw new Error('No response body');
-    }
-    const decoder = new TextDecoder('utf-8');
-    while (true) {
-        const { done, value } = await reader.read();
-        if (done) {
-            break;
-        }
-        const chunk = decoder.decode(value, { stream: true });
-        const lines = chunk.split('\n\n');
-        for (const line of lines) {
-            if (line.startsWith('data: ')) {
-                const data = line.substring(6);
-                if (data.trim() === '[DONE]') {
-                    return;
-                }
-                try {
-                    yield JSON.parse(data);
-                } catch (e) {
-                    console.error('Error parsing Zhipu stream data:', e);
-                }
-            }
-        }
-    }
-}
 
 const zhipuService: ProviderService = {
     providerId: 'zhipu',
@@ -113,7 +82,7 @@ const zhipuService: ProviderService = {
             throw new Error(`Zhipu API error: ${response.status} ${errorBody}`);
         }
 
-        for await (const chunk of streamOpenAIResponse(response)) {
+        for await (const chunk of parseSseJson<any>(response, 'Zhipu')) {
             const content = chunk.choices[0]?.delta?.content;
             if (content) {
                 if (!firstTokenTime) {

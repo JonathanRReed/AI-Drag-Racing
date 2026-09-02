@@ -113,7 +113,10 @@ describe('streamCompletion', () => {
       }
 
       expect(results).toEqual([validResponse1, validResponse2]);
-      expect(consoleErrorSpy).toHaveBeenCalledWith('Error parsing JSON from stream:', 'INVALID JSON');
+      expect(consoleErrorSpy).toHaveBeenCalledWith(
+        'Error parsing AI Drag Racing stream data:',
+        expect.any(SyntaxError),
+      );
 
       consoleErrorSpy.mockRestore();
   });

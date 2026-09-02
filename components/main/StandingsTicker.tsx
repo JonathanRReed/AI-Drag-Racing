@@ -144,7 +144,7 @@ const StandingsTicker: React.FC<StandingsTickerProps> = ({
                 aria-hidden
               />
               <span className="flex min-w-0 flex-1 flex-col leading-tight">
-                <span className="flex items-center gap-1.5 truncate text-sm text-[var(--text)]">
+                <span className="flex items-start gap-1.5 break-words text-sm text-[var(--text)]">
                   {r.label}
                   {r.done && !r.errored && (
                     <svg viewBox="0 0 24 24" className="h-3 w-3 shrink-0 text-[var(--text-muted)]" fill="currentColor" aria-label="finished">
@@ -152,7 +152,7 @@ const StandingsTicker: React.FC<StandingsTickerProps> = ({
                     </svg>
                   )}
                 </span>
-                <span className="truncate text-[11px] text-[var(--text-muted)]" title={r.sublabel}>
+                <span className="break-all text-[11px] text-[var(--text-muted)]" title={r.sublabel}>
                   {r.sublabel}
                 </span>
               </span>

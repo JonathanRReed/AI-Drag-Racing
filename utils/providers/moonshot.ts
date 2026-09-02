@@ -5,6 +5,7 @@ import {
     ModelSettings,
 } from '../providerService';
 import { finalTokenTotal, approxTokensFromText } from '../tokens';
+import { parseSseJson } from '../sse';
 
 // Moonshot AI / Kimi models - comprehensive list (Dec 2025)
 export const MOONSHOT_MODELS = [
@@ -22,38 +23,6 @@ export const MOONSHOT_MODELS = [
     // Moonshot V1 Auto (Auto-select context)
     'moonshot-v1-auto',
 ];
-
-// Helper to parse SSE stream (same as OpenAI pattern)
-async function* streamOpenAIResponse(
-    response: Response
-): AsyncGenerator<any, void, unknown> {
-    const reader = response.body?.getReader();
-    if (!reader) {
-        throw new Error('No response body');
-    }
-    const decoder = new TextDecoder('utf-8');
-    while (true) {
-        const { done, value } = await reader.read();
-        if (done) {
-            break;
-        }
-        const chunk = decoder.decode(value, { stream: true });
-        const lines = chunk.split('\n\n');
-        for (const line of lines) {
-            if (line.startsWith('data: ')) {
-                const data = line.substring(6);
-                if (data.trim() === '[DONE]') {
-                    return;
-                }
-                try {
-                    yield JSON.parse(data);
-                } catch (e) {
-                    console.error('Error parsing Moonshot stream data:', e);
-                }
-            }
-        }
-    }
-}
 
 const moonshotService: ProviderService = {
     providerId: 'moonshot',
@@ -117,7 +86,7 @@ const moonshotService: ProviderService = {
             throw new Error(`Moonshot API error: ${response.status} ${errorBody}`);
         }
 
-        for await (const chunk of streamOpenAIResponse(response)) {
+        for await (const chunk of parseSseJson<any>(response, 'Moonshot')) {
             const content = chunk.choices[0]?.delta?.content;
             if (content) {
                 if (!firstTokenTime) {

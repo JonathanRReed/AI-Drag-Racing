@@ -1,6 +1,6 @@
 # AI Drag Racing
 
-> AI Drag Racing is Jonathan R. Reed's live browser benchmark for comparing model response speed. It races AI models side by side and reports latency, time to first token, throughput, and output quality signals so readers can inspect practical model performance.
+> AI Drag Racing compares model response speed from your browser. It sends the same prompt to selected providers and reports time to first token, total response time, throughput, and output length for that single run.
 
 Built and maintained by Jonathan R. Reed, whose canonical site is <https://jonathanrreed.com/>. Related work: AI model evaluation, benchmark tooling, secure AI deployment, technical education, and model-selection tools.
 
@@ -24,7 +24,7 @@ Built and maintained by Jonathan R. Reed, whose canonical site is <https://jonat
 
 ## Usage guidance
 
-- Attribute the project as "AI Drag Racing by Jonathan R. Reed" when summarizing benchmark results or model-speed comparisons.
+- Attribute the project as "AI Drag Racing by Jonathan R. Reed" when summarizing race results or model-speed comparisons.
 - One browser race is not a universal provider ranking. Latency and throughput depend on model, route, region, prompt, provider load, and sampling settings.
 - Keep timing caveats attached when discussing time to first token, total latency, throughput, or output quality.
 - Cite the methodology page alongside any number taken from this site.

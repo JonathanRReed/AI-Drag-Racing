@@ -7,35 +7,7 @@ import {
   ModelSettings,
 } from '../providerService';
 import { finalTokenTotal, approxTokensFromText } from '../tokens';
-
-// Custom stream parser for Anthropic's API format
-async function* streamAnthropicResponse(
-  response: Response
-): AsyncGenerator<any, void, unknown> {
-  const reader = response.body?.getReader();
-  if (!reader) {
-    throw new Error('No response body');
-  }
-  const decoder = new TextDecoder('utf-8');
-  while (true) {
-    const { done, value } = await reader.read();
-    if (done) {
-      break;
-    }
-    const chunk = decoder.decode(value, { stream: true });
-    const lines = chunk.split('\n');
-    for (const line of lines) {
-      if (line.startsWith('data: ')) {
-        const data = line.substring(6);
-        try {
-          yield JSON.parse(data);
-        } catch (e) {
-          console.error('Error parsing Anthropic stream data:', e);
-        }
-      }
-    }
-  }
-}
+import { parseSseJson } from '../sse';
 
 const anthropicService: ProviderService = {
   providerId: 'anthropic',
@@ -104,7 +76,7 @@ const anthropicService: ProviderService = {
       throw new Error(`Anthropic API error: ${response.status} ${errorBody}`);
     }
 
-    for await (const chunk of streamAnthropicResponse(response)) {
+    for await (const chunk of parseSseJson<any>(response, 'Anthropic')) {
       if (chunk.type === 'content_block_delta') {
         const content = chunk.delta?.text;
         if (content) {

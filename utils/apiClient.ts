@@ -1,5 +1,6 @@
 // utils/apiClient.ts
 import { CompletionResult } from './providerService';
+import { parseSseJson } from './sse';
 
 export interface ModelSettings {
   temperature: number;
@@ -32,35 +33,5 @@ export async function* streamCompletion(
     throw new Error(`API Error (${response.status}): ${errorText || 'Failed to connect'}`);
   }
 
-  const reader = response.body.getReader();
-  const decoder = new TextDecoder();
-  let buffer = '';
-
-  while (true) {
-    const { done, value } = await reader.read();
-    if (done) {
-      break;
-    }
-
-    // Append the new chunk to the buffer
-    buffer += decoder.decode(value, { stream: true });
-
-    // SSE messages are separated by double newlines
-    const parts = buffer.split('\n\n');
-
-    // The last part might be incomplete, so we keep it in the buffer
-    buffer = parts.pop() || '';
-
-    for (const part of parts) {
-      if (part.startsWith('data: ')) {
-        const dataString = part.substring(6);
-        try {
-          const parsedData = JSON.parse(dataString) as CompletionResult;
-          yield parsedData;
-        } catch (e) {
-          console.error('Error parsing JSON from stream:', dataString);
-        }
-      }
-    }
-  }
+  yield* parseSseJson<CompletionResult>(response, 'AI Drag Racing');
 }

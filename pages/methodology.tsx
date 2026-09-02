@@ -112,6 +112,11 @@ export default function Methodology() {
             behavior worth seeing.
           </p>
           <p className="mt-4 text-base leading-8 text-zinc-300">
+            Provider keys stay in session storage for the current browser tab. A race sends the key and prompt through
+            the site&apos;s Cloudflare route to the selected provider. Neither is written to a race record, but the provider
+            may retain request data under its own policy and account terms.
+          </p>
+          <p className="mt-4 text-base leading-8 text-zinc-300">
             Default sampling is temperature 0.7, max tokens 2048, and top p 1.0. All three are adjustable in Race
             Settings (temperature 0 to 2, max tokens 100 to 4096, top p 0 to 1), and whatever you pick is sent to every
             model in that race, so the lanes stay comparable to each other.
@@ -150,7 +155,7 @@ export default function Methodology() {
           <p className="mt-4 text-base leading-8 text-zinc-300">
             <span className="font-semibold text-white">The live pace chart</span> plots characters received, not tokens,
             against a browser clock that starts from one shared Go instant for every lane. It is the one view that
-            includes your own network path, which is why its curve can disagree slightly with the leaderboard.
+            includes your own network path, which is why its curve can disagree slightly with the timing table.
           </p>
 
           <h2 className="mt-10 text-2xl font-semibold tracking-tight text-white">Sample size</h2>

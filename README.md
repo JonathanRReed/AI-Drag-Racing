@@ -106,7 +106,7 @@ On the left sidebar:
   - Paste your API key.
   - Save.
 
-Keys are stored in `localStorage` in your browser and used only to call your own backend endpoints (e.g. `/api/providers/{providerId}/completions`).
+Keys are stored in tab-scoped `sessionStorage`, sent through the app's Cloudflare edge route only when you run or configure that provider, and cleared when the tab closes. Current builds also remove legacy key values left in `localStorage` by older versions.
 
 You control which providers you enable; no keys are hard‑coded in the repo.
 

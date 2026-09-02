@@ -115,7 +115,7 @@ const Leaderboard: React.FC<LeaderboardProps> = ({ results }) => {
         </div>
         <div>
           <h2 className="text-lg font-semibold text-white">Race Results</h2>
-          <p className="text-xs text-[var(--text-muted)]">{finished.length} models finished</p>
+          <p className="text-xs text-[var(--text-muted)]">This race only · {finished.length} models finished</p>
         </div>
       </div>
 
@@ -140,7 +140,7 @@ const Leaderboard: React.FC<LeaderboardProps> = ({ results }) => {
                   />
                   <div className="flex flex-col">
                     <span className="text-[var(--text)] font-medium">{r.providerName}</span>
-                    <span className="text-[var(--text-muted)] text-xs truncate max-w-[120px]" title={r.modelName}>
+                    <span className="max-w-[12rem] break-all text-xs text-[var(--text-muted)]" title={r.modelName}>
                       {r.modelName}
                     </span>
                   </div>
@@ -173,7 +173,7 @@ const Leaderboard: React.FC<LeaderboardProps> = ({ results }) => {
                   />
                   <div className="flex flex-col">
                     <span className="text-[var(--text)] font-medium">{r.providerName}</span>
-                    <span className="text-[var(--text-muted)] text-xs truncate max-w-[120px]" title={r.modelName}>
+                    <span className="max-w-[12rem] break-all text-xs text-[var(--text-muted)]" title={r.modelName}>
                       {r.modelName}
                     </span>
                   </div>

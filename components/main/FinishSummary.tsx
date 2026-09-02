@@ -49,8 +49,8 @@ export default function FinishSummary({ results }: { results: ResultState[] }) {
           <thead>
             <tr>
               <th scope="col">Lane</th>
-              <th scope="col">Browser TTFT</th>
-              <th scope="col">Edge TTFT</th>
+              <th scope="col">Browser first token</th>
+              <th scope="col">Edge first token</th>
               <th scope="col">Browser total</th>
               <th scope="col">Output tokens</th>
             </tr>
@@ -69,10 +69,10 @@ export default function FinishSummary({ results }: { results: ResultState[] }) {
                       <small>{result.providerName}</small>
                     </div>
                   </th>
-                  <td>{formatMs(result.browserTiming?.ttftMs)}</td>
-                  <td>{formatMs(edgeTtft)}</td>
-                  <td>{formatMs(result.browserTiming?.totalMs ?? edgeDuration(result))}</td>
-                  <td>{result.metrics?.outputTokens ?? 'Estimated unavailable'}</td>
+                  <td data-label="Browser first token">{formatMs(result.browserTiming?.ttftMs)}</td>
+                  <td data-label="Edge first token">{formatMs(edgeTtft)}</td>
+                  <td data-label="Browser total">{formatMs(result.browserTiming?.totalMs ?? edgeDuration(result))}</td>
+                  <td data-label="Output tokens">{result.metrics?.outputTokens ?? 'Estimate unavailable'}</td>
                 </tr>
               );
             })}

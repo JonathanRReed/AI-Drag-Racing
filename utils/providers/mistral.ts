@@ -7,33 +7,7 @@ import {
   ModelSettings,
 } from '../providerService';
 import { finalTokenTotal, approxTokensFromText } from '../tokens';
-
-async function* streamOpenAIStyleResponse(
-  response: Response
-): AsyncGenerator<any, void, unknown> {
-  const reader = response.body?.getReader();
-  if (!reader) throw new Error('No response body');
-  const decoder = new TextDecoder('utf-8');
-  let buffer = '';
-  while (true) {
-    const { done, value } = await reader.read();
-    if (done) break;
-    buffer += decoder.decode(value, { stream: true });
-    const parts = buffer.split('\n\n');
-    buffer = parts.pop() || '';
-    for (const part of parts) {
-      if (part.startsWith('data: ')) {
-        const data = part.substring(6);
-        if (data.trim() === '[DONE]') return;
-        try {
-          yield JSON.parse(data);
-        } catch (e) {
-          // ignore malformed chunks
-        }
-      }
-    }
-  }
-}
+import { parseSseJson } from '../sse';
 
 const mistralService: ProviderService = {
   providerId: 'mistral',
@@ -83,7 +57,7 @@ const mistralService: ProviderService = {
       throw new Error(`Mistral API error: ${response.status} ${errorBody}`);
     }
 
-    for await (const chunk of streamOpenAIStyleResponse(response)) {
+    for await (const chunk of parseSseJson<any>(response, 'Mistral')) {
       const content = chunk.choices?.[0]?.delta?.content;
       if (content) {
         if (!firstTokenTime) firstTokenTime = Date.now();

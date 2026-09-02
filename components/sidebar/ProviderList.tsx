@@ -187,13 +187,6 @@ const ProviderList: React.FC<ProviderListProps> = ({
   suggestedModel,
   suggestedProvider,
 }) => {
-  // Show both the beginning and end of long model IDs to avoid hiding key differences
-  const formatModelLabel = React.useCallback((id: string, head = 18, tail = 14) => {
-    if (!id) return id;
-    if (id.length <= head + tail + 3) return id;
-    return `${id.slice(0, head)}…${id.slice(-tail)}`;
-  }, []);
-
   const [modalOpenFor, setModalOpenFor] = useState<ProviderConfig | null>(null);
   const [modelsByProvider, setModelsByProvider] = useState<Record<string, string[]>>({});
   const [savedFlash, setSavedFlash] = useState<Record<string, boolean>>({});
@@ -218,8 +211,8 @@ const ProviderList: React.FC<ProviderListProps> = ({
         type: 'SET_API_KEY',
         payload: { providerId: modalOpenFor.id, apiKey }
       });
-      // Also save to localStorage for persistence
-      localStorage.setItem(`${modalOpenFor.id}_api_key`, apiKey);
+      // Keys last only for this tab. They are never written to persistent storage.
+      sessionStorage.setItem(`${modalOpenFor.id}_api_key`, apiKey);
       // Fetch models after saving key
       void loadModelsForProvider(modalOpenFor.id, apiKey);
       // Flash Saved ✓
@@ -229,7 +222,8 @@ const ProviderList: React.FC<ProviderListProps> = ({
   };
 
   const handleClearKey = (providerId: string) => {
-    // Clear persisted values
+    // Clear the tab-scoped key and non-secret local preferences.
+    sessionStorage.removeItem(`${providerId}_api_key`);
     localStorage.removeItem(`${providerId}_api_key`);
     localStorage.removeItem(`${providerId}_models`);
     localStorage.removeItem(`${providerId}_selected_models`);
@@ -242,10 +236,12 @@ const ProviderList: React.FC<ProviderListProps> = ({
     localStorage.setItem(`${providerId}_enabled`, 'false');
   };
 
-  // On component mount, load keys from localStorage
+  // On mount, load keys for this tab and remove any key left by older builds.
   React.useEffect(() => {
     PROVIDERS.forEach(p => {
-      const savedKey = localStorage.getItem(`${p.id}_api_key`);
+      const legacyKey = localStorage.getItem(`${p.id}_api_key`);
+      if (legacyKey) localStorage.removeItem(`${p.id}_api_key`);
+      const savedKey = sessionStorage.getItem(`${p.id}_api_key`);
       if (savedKey) {
         dispatch({ type: 'SET_API_KEY', payload: { providerId: p.id, apiKey: savedKey } });
       }
@@ -389,7 +385,7 @@ const ProviderList: React.FC<ProviderListProps> = ({
                             onChange={(e) => handleToggleModel(provider.id, m, e.target.checked)}
                           />
                           <IconImg slugs={slugs} alt="brand" width={14} height={14} className="w-3.5 h-3.5 rounded-sm opacity-80" />
-                          <span className="truncate" title={m}>{formatModelLabel(m)}</span>
+                          <span className="min-w-0 break-all leading-5" title={m}>{m}</span>
                         </label>
                       );
                     });
@@ -407,7 +403,7 @@ const ProviderList: React.FC<ProviderListProps> = ({
                     Enable for race
                   </label>
                   {savedFlash[provider.id] && (
-                    <span className="text-green-400 text-xs">Saved ✓</span>
+                    <span className="text-green-400 text-xs">Saved for this tab</span>
                   )}
                 </div>
               </div>

@@ -7,21 +7,21 @@ export default function About() {
         <title>About AI Drag Racing | Jonathan R. Reed</title>
         <meta
           name="description"
-          content="AI Drag Racing is a live browser benchmark by Jonathan R. Reed for comparing LLM latency, throughput, and output behavior side by side."
+          content="AI Drag Racing is a single-run browser comparison by Jonathan R. Reed for measuring LLM latency, throughput, and output behavior side by side."
         />
         <link rel="canonical" href="https://ai-dragrace.jonathanrreed.com/about" />
         <meta property="og:type" content="website" />
         <meta property="og:title" content="About AI Drag Racing | Jonathan R. Reed" />
         <meta
           property="og:description"
-          content="AI Drag Racing is a live browser benchmark by Jonathan R. Reed for comparing LLM latency, throughput, and output behavior side by side."
+          content="AI Drag Racing is a single-run browser comparison by Jonathan R. Reed for measuring LLM latency, throughput, and output behavior side by side."
         />
         <meta property="og:image" content="https://ai-dragrace.jonathanrreed.com/Favicon/icon-512.png" />
         <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:title" content="About AI Drag Racing | Jonathan R. Reed" />
         <meta
           name="twitter:description"
-          content="AI Drag Racing is a live browser benchmark by Jonathan R. Reed for comparing LLM latency, throughput, and output behavior side by side."
+          content="AI Drag Racing is a single-run browser comparison by Jonathan R. Reed for measuring LLM latency, throughput, and output behavior side by side."
         />
         <meta name="twitter:image" content="https://ai-dragrace.jonathanrreed.com/Favicon/icon-512.png" />
         <script
@@ -32,7 +32,7 @@ export default function About() {
               '@type': 'AboutPage',
               name: 'About AI Drag Racing',
               description:
-                'AI Drag Racing is a live browser benchmark by Jonathan R. Reed for comparing LLM latency, throughput, and output behavior side by side.',
+                'AI Drag Racing is a single-run browser comparison by Jonathan R. Reed for measuring LLM latency, throughput, and output behavior side by side.',
               url: 'https://ai-dragrace.jonathanrreed.com/about',
               datePublished: '2026-04-21',
               dateModified: '2026-08-04',
@@ -63,8 +63,8 @@ export default function About() {
             hands-on checks when model speed matters as much as answer quality.
           </p>
           <p className="mt-4 text-base leading-8 text-zinc-300">
-            Nothing here is a universal leaderboard. Your prompt, provider keys, network, selected model, and provider
-            load all move the result, so read each run as one live experiment.
+            Nothing here is a global ranking. Your prompt, provider keys, network, selected model, and provider load
+            all move the result, so read each run as one live observation.
           </p>
           <p className="mt-4 text-base leading-8 text-zinc-300">
             Use it when you need to choose between models for a concrete workflow: support drafts, coding help,

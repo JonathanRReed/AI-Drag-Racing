@@ -30,7 +30,6 @@ import {
 } from '../utils/raceReceipts';
 
 const ResultsDisplay = dynamic(() => import('../components/main/ResultsDisplay'), { ssr: false });
-const Leaderboard = dynamic(() => import('../components/main/Leaderboard'), { ssr: false });
 const ComparisonCharts = dynamic(() => import('../components/ComparisonCharts'), { ssr: false });
 const LivePaceChart = dynamic(() => import('../components/main/LivePaceChart'), { ssr: false });
 const DragStrip = dynamic(() => import('../components/main/DragStrip'), { ssr: false });
@@ -672,8 +671,8 @@ export default function Home() {
   return (
     <>
       <Head>
-        <title>AI Drag Racing | LLM Speed Test</title>
-        <meta name="description" content="Race AI models side by side, compare latency, time to first token, throughput, and output quality in a live browser benchmark by Jonathan R. Reed." />
+        <title>AI Drag Racing | Compare AI Speed From Your Browser</title>
+        <meta name="description" content="Run the same prompt through selected AI models and compare the speed your browser experiences. Each result is one route-specific observation, not a global ranking." />
 
         {/* Canonical URL */}
         <link rel="canonical" href="https://ai-dragrace.jonathanrreed.com/" />
@@ -684,13 +683,13 @@ export default function Home() {
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <meta name="theme-color" content="#07090D" />
         <meta property="og:type" content="website" />
-        <meta property="og:title" content="AI Drag Racing | LLM Speed Test" />
-        <meta property="og:description" content="Race AI models side by side, compare latency, time to first token, throughput, and output quality in a live browser benchmark by Jonathan R. Reed." />
+        <meta property="og:title" content="AI Drag Racing | Compare AI Speed From Your Browser" />
+        <meta property="og:description" content="Run the same prompt through selected AI models and compare the speed your browser experiences. Each result is one route-specific observation, not a global ranking." />
         <meta property="og:url" content="https://ai-dragrace.jonathanrreed.com/" />
         <meta property="og:image" content="https://ai-dragrace.jonathanrreed.com/Favicon/icon-512.png" />
         <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:title" content="AI Drag Racing | LLM Speed Test" />
-        <meta name="twitter:description" content="Race AI models side by side, compare latency, time to first token, throughput, and output quality in a live browser benchmark by Jonathan R. Reed." />
+        <meta name="twitter:title" content="AI Drag Racing | Compare AI Speed From Your Browser" />
+        <meta name="twitter:description" content="Run the same prompt through selected AI models and compare the speed your browser experiences. Each result is one route-specific observation, not a global ranking." />
         <meta name="twitter:image" content="https://ai-dragrace.jonathanrreed.com/Favicon/icon-512.png" />
 
         {/* JSON-LD Structured Data */}
@@ -702,7 +701,7 @@ export default function Home() {
               "@type": "WebSite",
               "@id": "https://ai-dragrace.jonathanrreed.com/#website",
               "name": "AI Drag Racing",
-              "description": "Race AI models side by side, compare latency, time to first token, throughput, and output quality in a live browser benchmark by Jonathan R. Reed.",
+              "description": "Run the same prompt through selected AI models and compare the speed your browser experiences. Each result is one route-specific observation, not a global ranking.",
               "url": "https://ai-dragrace.jonathanrreed.com/",
               "inLanguage": "en-US",
               "datePublished": "2026-04-21",
@@ -732,7 +731,6 @@ export default function Home() {
               onPromptChange={(p) => dispatch({ type: 'SET_PROMPT', payload: p })}
               onSubmit={handleRunComparison}
               isLoading={state.isLoading || state.raceState === 'countingDown'}
-              onReset={handleReset}
               disabled={
                 !state.selectedPairs.some(
                   (p) => state.enabledProviders[p.providerId] !== false && !!state.apiKeys[p.providerId] && !!p.modelId
@@ -799,7 +797,7 @@ export default function Home() {
         }
       >
         <div className="pit-status" aria-label="Race privacy and timing status">
-          <span><strong>Private by default</strong> API keys never enter receipts</span>
+          <span><strong>Private by default</strong> keys last only for this tab</span>
           <span><strong>Two clocks</strong> browser experience and edge timing</span>
           <span><strong>30-day local history</strong> delete or export anytime</span>
         </div>
@@ -815,9 +813,27 @@ export default function Home() {
                 AI Drag Racing
               </h1>
               <p className="race-hero-lead">
-                Race the models and provider routes you actually use, from the browser and location where you use
-                them. Quick Race gives you an immediate answer. Experiment Lab exposes the settings and evidence.
+                Run the same prompt through selected AI models and see the speed your browser actually experiences.
+                Results are specific to this route, location, prompt, and moment.
               </p>
+              <div className="race-hero-actions">
+                <button
+                  type="button"
+                  className="race-hero-action-primary"
+                  onClick={handleRunDemo}
+                  disabled={state.raceState === 'racing' || state.raceState === 'countingDown'}
+                >
+                  Run a demo race
+                </button>
+                <button
+                  type="button"
+                  className="race-hero-action-secondary"
+                  onClick={() => window.dispatchEvent(new Event('ai-drag-racing:open-racers'))}
+                >
+                  Set up a live race
+                </button>
+                <span>Demo timings are simulated and never saved.</span>
+              </div>
               <dl className="race-hero-facts" aria-label="What a race measures">
                 <div>
                   <dt>Providers</dt>
@@ -907,48 +923,39 @@ export default function Home() {
                     START RACE
                   </span>
                 </button>
-                <button
-                  onClick={handleReset}
-                  title={(state.isLoading || state.raceState === "countingDown") ? "Cannot reset while racing" : "Reset race"}
-                  className="race-reset-button press-scale"
-                  disabled={state.isLoading || state.raceState === 'countingDown'}
-                >
-                  Reset
-                </button>
-                <button
-                  onClick={handleRunDemo}
-                  className="race-tool-button hidden sm:inline-flex"
-                  disabled={state.raceState === 'racing' || state.raceState === 'countingDown'}
-                  title="Run a simulated test race, no API key needed"
-                >
-                  <span className="inline-flex items-center gap-1">
-                    <svg viewBox="0 0 24 24" className="h-3 w-3" fill="none" stroke="currentColor" strokeWidth="2">
-                      <path d="M9 3h6M10 3v6l-5.5 9.2A2 2 0 0 0 6.2 21h11.6a2 2 0 0 0 1.7-2.8L14 9V3" strokeLinecap="round" strokeLinejoin="round" />
-                    </svg>
-                    Demo
-                  </span>
-                </button>
-                <button
-                  onClick={() => setHideFailed((v) => !v)}
-                  className="race-tool-button"
-                  disabled={activeTab !== 'results' || state.results.length === 0}
-                >
-                  {hideFailed ? 'Show failed' : 'Hide failed'}
-                </button>
-                <button
-                  onClick={() => setForce((f) => ({ version: f.version + 1, collapsed: true }))}
-                  className="race-tool-button"
-                  disabled={activeTab !== 'results' || state.results.length === 0}
-                >
-                  Collapse all
-                </button>
-                <button
-                  onClick={() => setForce((f) => ({ version: f.version + 1, collapsed: false }))}
-                  className="race-tool-button"
-                  disabled={activeTab !== 'results' || state.results.length === 0}
-                >
-                  Expand all
-                </button>
+                {state.results.length > 0 && (
+                  <>
+                    <button
+                      onClick={handleReset}
+                      title={(state.isLoading || state.raceState === "countingDown") ? "Cannot reset while racing" : "Reset race"}
+                      className="race-reset-button press-scale"
+                      disabled={state.isLoading || state.raceState === 'countingDown'}
+                    >
+                      Reset
+                    </button>
+                    <button
+                      onClick={() => setHideFailed((v) => !v)}
+                      className="race-tool-button"
+                      disabled={activeTab !== 'results'}
+                    >
+                      {hideFailed ? 'Show failed' : 'Hide failed'}
+                    </button>
+                    <button
+                      onClick={() => setForce((f) => ({ version: f.version + 1, collapsed: true }))}
+                      className="race-tool-button"
+                      disabled={activeTab !== 'results'}
+                    >
+                      Collapse all
+                    </button>
+                    <button
+                      onClick={() => setForce((f) => ({ version: f.version + 1, collapsed: false }))}
+                      className="race-tool-button"
+                      disabled={activeTab !== 'results'}
+                    >
+                      Expand all
+                    </button>
+                  </>
+                )}
               </div>
             </div>
           </div>
@@ -1053,7 +1060,6 @@ export default function Home() {
               )}
               {state.raceState === 'finished' && <FinishSummary results={state.results} />}
               <ResultsDisplay results={state.results} hideFailed={hideFailed} force={force} compact={showStage} onDemo={handleRunDemo} />
-              {state.results.length > 0 && <Leaderboard results={state.results} />}
               <RaceHistory
                 receipts={history}
                 onDelete={(id) => setHistory(deleteRaceReceipt(window.localStorage, id))}

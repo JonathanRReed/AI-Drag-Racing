@@ -34,7 +34,7 @@ AI Drag Racing measures the path that generic leaderboards cannot: this user, fr
 ## Capabilities and Constraints
 
 - The complete core product remains free. New work must not introduce required paid infrastructure or automatic spending of the owner's provider credits.
-- Real races use visitor-supplied provider keys. Keys must never be persisted, logged, echoed, or included in receipts.
+- Real races use visitor-supplied provider keys. Keys remain in tab-scoped session storage and must never be persisted, logged, echoed, or included in race records.
 - Private runs must not persist prompts, generated output, keys, IP addresses, or precise location on the server.
 - Local history supports immediate deletion and export, and automatically expires after 30 days.
 - Users may create unlisted share links containing normalized metrics only. Share records expire after 30 days.

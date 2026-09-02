@@ -19,6 +19,12 @@ const MainLayout: React.FC<MainLayoutProps> = ({ sidebar, children }) => {
     return () => document.removeEventListener('keydown', onKey);
   }, [mobileOpen]);
 
+  React.useEffect(() => {
+    const openRacers = () => setMobileOpen(true);
+    window.addEventListener('ai-drag-racing:open-racers', openRacers);
+    return () => window.removeEventListener('ai-drag-racing:open-racers', openRacers);
+  }, []);
+
   return (
     <div className="app-shell dot-grid-fade">
       {/* Removed global header glow to prevent top-wide gradient leak */}

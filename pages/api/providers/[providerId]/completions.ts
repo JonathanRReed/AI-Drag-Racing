@@ -6,6 +6,7 @@ import { getProviderService } from '../../../../utils/providerService';
 import {
   boundedNumber,
   corsHeadersForRequest,
+  readJsonBodyWithLimit,
   validateRaceRequestBody,
 } from '../../../../utils/requestSecurity';
 // Side-effect imports to register provider services (exclude Bedrock for Edge)
@@ -53,17 +54,15 @@ export default async function handler(req: Request): Promise<Response> {
     });
   }
 
-  let body: any = null;
-  try {
-    body = await req.json();
-  } catch {
-    return new Response(JSON.stringify({ error: 'Invalid JSON body' }), {
-      status: 400,
-      headers: { 'Content-Type': 'application/json' },
+  const parsedBody = await readJsonBodyWithLimit(req, 131_072);
+  if (!parsedBody.ok) {
+    return new Response(JSON.stringify({ error: parsedBody.error }), {
+      status: parsedBody.status,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   }
 
-  const validation = validateRaceRequestBody(body);
+  const validation = validateRaceRequestBody(parsedBody.value);
   if (!validation.ok) {
     return new Response(JSON.stringify({ error: validation.error }), {
       status: 400,

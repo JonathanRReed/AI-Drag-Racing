@@ -58,21 +58,26 @@ export default function Subprocessors() {
             Subprocessor disclosure for AI Drag Racing.
           </h1>
           <p className="mt-5 text-base leading-8 text-zinc-300">
-            AI Drag Racing is hosted on Cloudflare Pages. Cloudflare may process routine request metadata, such as IP
-            address, user agent, request time, and security signals, to deliver and protect the site.
+            AI Drag Racing is hosted on Cloudflare Pages. For live races, Cloudflare receives the provider API key,
+            prompt, selected model, and settings as request content at the app&apos;s edge route before forwarding them to
+            the chosen provider. Cloudflare may also process IP address, user agent, request time, and security signals.
+            The app does not intentionally store prompt text or provider keys in race receipts, but Cloudflare&apos;s own
+            platform logging and retention controls may apply to traffic crossing its infrastructure.
           </p>
           <p className="mt-4 text-base leading-8 text-zinc-300">
-            The app uses a bring-your-own-key workflow. Provider API keys are stored in your browser, and race prompts
-            are sent only to the model providers you choose for that run.
+            The app uses a bring-your-own-key workflow. Provider API keys are stored in session storage for the current
+            browser tab. Race prompts are forwarded only to the providers you choose for that run.
           </p>
           <p className="mt-4 text-base leading-8 text-zinc-300">
             When you select an external provider, that provider may process the prompt, model settings, streamed output,
             usage metadata, and account-level billing information according to your own provider account terms.
           </p>
           <p className="mt-4 text-base leading-8 text-zinc-300">
-            AI Drag Racing does not run user accounts, shared workspaces, or hosted race history. If hosted accounts,
-            payments, analytics, or team features are added later, this disclosure should be updated before those services
-            receive production traffic.
+            Optional 30-day result links use Supabase. When you choose Share 30 days, Supabase stores a sanitized receipt
+            containing provider and model IDs, timing, token counts, settings, prompt length, coarse environment details,
+            and lane status. It does not receive prompt text, response text, API keys, IP addresses, or precise location
+            from the share payload. Anyone with the unlisted link can read it until it expires, and the current site cannot
+            revoke the hosted copy early. Supabase is not used for accounts, shared workspaces, or automatic hosted race history.
           </p>
           <p className="mt-4 text-base leading-8 text-zinc-300">
             For subprocessor or data-handling questions, use the{' '}
@@ -81,7 +86,7 @@ export default function Subprocessors() {
             </a>.
           </p>
           <p className="mt-6 text-sm text-zinc-500">
-            Last updated <time dateTime="2026-08-04">August 4, 2026</time>.
+            Last updated <time dateTime="2026-09-02">September 2, 2026</time>.
           </p>
         </article>
       </main>

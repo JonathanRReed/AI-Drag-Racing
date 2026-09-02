@@ -32,7 +32,7 @@ const ApiKeyModal: React.FC<ApiKeyModalProps> = ({
           Enter API Key for {providerName}
         </h2>
         <p className="text-gray-400 mb-4 text-sm">
-          Your API key is stored in your browser (localStorage). For each request, it is sent to our server-side Edge Function only to proxy the call to the provider and is never persisted server-side.
+          Your API key is kept only for this browser tab. Closing the tab clears it. For each race, the key is sent to the server-side provider proxy and is never stored in a race record.
         </p>
         <label htmlFor="apiKey" className="block text-xs uppercase tracking-wide text-gray-400 mb-1">
           API Key

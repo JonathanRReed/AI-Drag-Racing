@@ -226,7 +226,7 @@ const WinnerPodium: React.FC<WinnerPodiumProps> = ({ results, mode, reducedMotio
             <span className="text-[10px] font-bold uppercase tracking-widest text-cyan-300">Pole</span>
             <span className="min-w-0 flex-1 truncate text-sm text-[var(--text)]">
               {displayName(pole.r.providerName)}{' '}
-              <span className="text-[var(--text-muted)]">— {pole.r.modelName}</span>
+              <span className="text-[var(--text-muted)]">· {pole.r.modelName}</span>
             </span>
             <span className="shrink-0 font-mono text-sm font-semibold tabular-nums text-cyan-300">
               {fmt('ttft', pole.v)}
@@ -238,7 +238,7 @@ const WinnerPodium: React.FC<WinnerPodiumProps> = ({ results, mode, reducedMotio
             <span className="text-[10px] font-bold uppercase tracking-widest text-amber-300">Fastest Lap</span>
             <span className="min-w-0 flex-1 truncate text-sm text-[var(--text)]">
               {displayName(fastestLap.r.providerName)}{' '}
-              <span className="text-[var(--text-muted)]">— {fastestLap.r.modelName}</span>
+              <span className="text-[var(--text-muted)]">· {fastestLap.r.modelName}</span>
             </span>
             <span className="shrink-0 font-mono text-sm font-semibold tabular-nums text-amber-300">
               {fastestLap.v.toFixed(1)} tok/s
