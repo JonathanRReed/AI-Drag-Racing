@@ -8,6 +8,7 @@ import {
   isRaceableProviderId,
 } from '../../utils/providers';
 import { fetchModels } from '../../utils/fetchModels';
+import { providerSlugs } from '../../utils/providerIcons';
 import ApiKeyModal from './ApiKeyModal';
 
 // Icons
@@ -23,46 +24,6 @@ interface ProviderListItemProps {
 
 // Build CDN URLs (monochrome only)
 const ICON_SVG = (slug: string) => `https://unpkg.com/@lobehub/icons-static-svg@latest/icons/${slug}.svg`;
-
-// Slug fallbacks for certain providers with multiple variants in Lobe Icons
-function providerSlugs(providerId: string): string[] {
-  switch (providerId) {
-    case 'google':
-      // Simple Icons uses 'googlegemini' for Gemini
-      return ['googlegemini', 'gemini', 'google'];
-    case 'azure':
-      // Try common Azure variants, prioritize openai-specific if present
-      return ['azure-openai', 'azure', 'azure-ai', 'azureai', 'microsoftazure'];
-    case 'together':
-      return ['togetherai', 'together', 'together-ai'];
-    case 'fireworks':
-      return ['fireworksai', 'fireworks'];
-    case 'openrouter':
-      return ['openrouter'];
-    case 'ai21':
-      return ['ai21'];
-    case 'deepseek':
-      return ['deepseek'];
-    case 'cohere':
-      return ['cohere'];
-    case 'mistral':
-      return ['mistral'];
-    case 'bedrock':
-      // Map to AWS brand for color
-      return ['amazonaws', 'aws', 'bedrock'];
-    case 'xai':
-      // xAI doesn't exist — fallback to 'x' brand
-      return ['x', 'xai'];
-    case 'cerebras':
-      return ['cerebras'];
-    case 'moonshot':
-      return ['moonshot', 'kimi'];
-    case 'zhipu':
-      return ['zhipu', 'chatglm', 'glm'];
-    default:
-      return [providerId];
-  }
-}
 
 // Generic icon component that attempts multiple sources in order
 const IconImg: React.FC<{
