@@ -1,1 +1,2 @@
 /favicon.ico /Favicon/favicon.ico 200
+/share/* /share/[id] 200

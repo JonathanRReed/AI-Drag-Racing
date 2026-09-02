@@ -7,6 +7,7 @@ const ms = (value: number | null): string => {
 
 export default function SharedRaceView({ record }: { record: RaceShareRecord }) {
   const lanes = [...record.payload.lanes].sort((a, b) =>
+    Number(a.status === 'failed') - Number(b.status === 'failed') ||
     (a.browser.totalMs ?? Number.POSITIVE_INFINITY) - (b.browser.totalMs ?? Number.POSITIVE_INFINITY));
 
   return (
@@ -28,8 +29,8 @@ export default function SharedRaceView({ record }: { record: RaceShareRecord }) 
           </thead>
           <tbody>
             {lanes.map((lane, index) => (
-              <tr key={`${lane.providerId}:${lane.modelId}`}>
-                <th><span>{index + 1}</span><strong>{lane.modelId}</strong><small>{lane.providerId}</small></th>
+              <tr key={`${lane.providerId}:${lane.modelId}:${index}`}>
+                <th><span>{lane.status === 'failed' ? 'Failed' : index + 1}</span><strong>{lane.modelId}</strong><small>{lane.providerId}</small></th>
                 <td>{ms(lane.browser.ttftMs)}</td>
                 <td>{ms(lane.edge.ttftMs)}</td>
                 <td>{ms(lane.browser.totalMs)}</td>
@@ -40,7 +41,7 @@ export default function SharedRaceView({ record }: { record: RaceShareRecord }) 
         </table>
       </div>
       <footer>
-        <a href="/">Run these models from your browser</a>
+        <a href="/">Start your own race</a>
         <a href="https://aistats.jonathanrreed.com">Inspect model evidence in AI Stats</a>
       </footer>
     </article>

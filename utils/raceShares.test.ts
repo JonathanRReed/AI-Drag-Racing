@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildRaceSharePayload, RACE_SHARE_SCHEMA } from './raceShares';
+import { buildRaceSharePayload, createRaceShare, isRaceSharePayload, RACE_SHARE_SCHEMA } from './raceShares';
 import type { RaceReceipt } from './raceReceipts';
 
 const receipt: RaceReceipt = {
@@ -39,5 +39,19 @@ describe('race share payload', () => {
     expect(serialized).not.toContain('fingerprint');
     expect(payload.prompt).toEqual({ characters: 42 });
     expect(payload.lanes).toHaveLength(1);
+    expect(isRaceSharePayload(payload)).toBe(true);
+  });
+  it('rejects malformed remote metrics before rendering', () => {
+    const payload = buildRaceSharePayload(receipt);
+    for (const invalid of [null, {}, { ...payload, lanes: [] }, { ...payload, environment: null },
+      { ...payload, prompt: { characters: -1 } }, { ...payload, createdAt: 'invalid' },
+      { ...payload, lanes: [{ ...payload.lanes[0], browser: null }] },
+      { ...payload, lanes: [{ ...payload.lanes[0], outputTokens: '100' }] },
+      { ...payload, lanes: [{ ...payload.lanes[0], tokenSource: 'demo' }] }]) {
+      expect(isRaceSharePayload(invalid)).toBe(false);
+    }
+  });
+  it('never uploads demo data', async () => {
+    await expect(createRaceShare({ ...receipt, isDemo: true })).rejects.toThrow('Example races');
   });
 });
