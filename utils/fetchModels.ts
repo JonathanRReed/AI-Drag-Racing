@@ -301,27 +301,7 @@ export interface TogetherModel {
 
 // Fetch models from Together AI with typing and error handling
 export async function fetchTogetherModels(apiKey: string): Promise<string[]> {
-  try {
-    const res = await fetch('https://api.together.xyz/v1/models', {
-      headers: { 'Authorization': `Bearer ${apiKey}` }
-    });
-    if (!res.ok) {
-      const errorText = await res.text();
-      console.error('[TogetherAI] Model fetch failed:', errorText);
-      throw new Error('Together AI model fetch failed: ' + errorText);
-    }
-    const data = await res.json();
-    if (Array.isArray(data)) {
-      return data.map((m: TogetherModel) => m.id);
-    }
-    if (Array.isArray((data as any)?.data)) {
-      return (data as any).data.map((m: TogetherModel) => m.id);
-    }
-    throw new Error('Malformed Together AI model response');
-  } catch (err) {
-    console.error('[TogetherAI] fetchTogetherModels error:', err);
-    throw err;
-  }
+  return fetchViaProxy('together', apiKey);
 }
 
 // Perform inference using Together AI /chat/completions endpoint

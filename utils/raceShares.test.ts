@@ -54,4 +54,40 @@ describe('race share payload', () => {
   it('never uploads demo data', async () => {
     await expect(createRaceShare({ ...receipt, isDemo: true })).rejects.toThrow('Example races');
   });
+  it('rejects every missing required field and nested extras', () => {
+    const payload = buildRaceSharePayload(receipt);
+    for (const key of Object.keys(payload)) {
+      const invalid = { ...payload } as Record<string, unknown>;
+      delete invalid[key];
+      expect(isRaceSharePayload(invalid)).toBe(false);
+    }
+    for (const key of ['prompt', 'environment', 'settings'] as const) {
+      expect(isRaceSharePayload({ ...payload, [key]: { ...payload[key], secret: 'must-not-upload' } })).toBe(false);
+    }
+    for (const key of ['browser', 'edge'] as const) {
+      expect(isRaceSharePayload({ ...payload, lanes: [{ ...payload.lanes[0], [key]: { ...payload.lanes[0][key], secret: 'must-not-upload' } }] })).toBe(false);
+    }
+    expect(isRaceSharePayload({ ...payload, lanes: [{ ...payload.lanes[0], extra: true }] })).toBe(false);
+  });
+  it('builds an explicit projection instead of copying runtime extras', () => {
+    const extended = structuredClone(receipt) as RaceReceipt & { extra: string };
+    Object.assign(extended.environment, { secret: 'must-not-upload' });
+    Object.assign(extended.settings, { secret: 'must-not-upload' });
+    Object.assign(extended.lanes[0], { secret: 'must-not-upload' });
+    Object.assign(extended.lanes[0].browser, { secret: 'must-not-upload' });
+    const payload = buildRaceSharePayload(extended);
+    expect(JSON.stringify(payload)).not.toContain('must-not-upload');
+    expect(isRaceSharePayload(payload)).toBe(true);
+  });
+  it('keeps unknown measurements nullable and rejects invalid settings', () => {
+    const payload = buildRaceSharePayload(receipt);
+    const nullable = { ...payload, lanes: [{ ...payload.lanes[0], browser: { ttftMs: null, totalMs: null }, inputTokens: null }] };
+    expect(isRaceSharePayload(nullable)).toBe(true);
+    for (const settings of [{ temperature: 3 }, { topP: 2 }, { maxTokens: -1 }, { repetitions: 0 }, { concurrency: 0 }]) {
+      expect(isRaceSharePayload({ ...payload, settings: { ...payload.settings, ...settings } })).toBe(false);
+    }
+  });
+  it('rejects an invalid local receipt before calling the backend', async () => {
+    await expect(createRaceShare({ ...receipt, lanes: [] })).rejects.toThrow('Invalid race receipt');
+  });
 });
