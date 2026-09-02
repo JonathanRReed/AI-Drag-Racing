@@ -8,13 +8,15 @@
 // Finished lanes keep their final value and gain a finish flag.
 
 import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
-import { LaneBuffer, recentCharsPerSec } from '../../utils/raceBuffers';
+import { LaneBuffer } from '../../utils/raceBuffers';
 import { PaceLane } from './LivePaceChart';
+import type { RaceMode } from '../sidebar/RaceSettings';
 
 interface StandingsTickerProps {
   lanes: PaceLane[];
   buffersRef: React.MutableRefObject<Record<string, LaneBuffer>>;
   running: boolean;
+  mode: RaceMode;
   reducedMotion?: boolean;
 }
 
@@ -24,7 +26,7 @@ interface Row {
   sublabel: string;
   color: string;
   chars: number;
-  cps: number;
+  elapsedMs: number;
   done: boolean;
   errored: boolean;
   finalOutputTokens: number | null;
@@ -36,7 +38,12 @@ function compact(n: number): string {
   return String(Math.round(n));
 }
 
-function buildRows(lanes: PaceLane[], buffers: Record<string, LaneBuffer>): Row[] {
+function buildRows(
+  lanes: PaceLane[],
+  buffers: Record<string, LaneBuffer>,
+  running: boolean,
+  mode: RaceMode,
+): Row[] {
   const rows: Row[] = lanes.map((lane) => {
     const b = buffers[lane.id];
     return {
@@ -45,7 +52,7 @@ function buildRows(lanes: PaceLane[], buffers: Record<string, LaneBuffer>): Row[
       sublabel: lane.sublabel,
       color: lane.color,
       chars: b?.chars ?? 0,
-      cps: b && !b.done ? recentCharsPerSec(b) : 0,
+      elapsedMs: b?.lastT ?? 0,
       done: b?.done ?? false,
       errored: b?.errored ?? false,
       finalOutputTokens: b?.finalOutputTokens ?? null,
@@ -53,6 +60,10 @@ function buildRows(lanes: PaceLane[], buffers: Record<string, LaneBuffer>): Row[
   });
   rows.sort((a, b) => {
     if (a.errored !== b.errored) return a.errored ? 1 : -1; // errors sink
+    if (!running && mode !== 'time_limit') {
+      if (a.done !== b.done) return a.done ? -1 : 1;
+      if (a.done && b.done) return a.elapsedMs - b.elapsedMs;
+    }
     return b.chars - a.chars;
   });
   return rows;
@@ -62,20 +73,21 @@ const StandingsTicker: React.FC<StandingsTickerProps> = ({
   lanes,
   buffersRef,
   running,
+  mode,
   reducedMotion = false,
 }) => {
-  const [rows, setRows] = useState<Row[]>(() => buildRows(lanes, buffersRef.current));
+  const [rows, setRows] = useState<Row[]>(() => buildRows(lanes, buffersRef.current, running, mode));
   const rowRefs = useRef<Map<string, HTMLLIElement>>(new Map());
   const prevTops = useRef<Map<string, number>>(new Map());
 
   // Sample the buffers on an interval (cheap, ~7/sec) while the race runs.
   useEffect(() => {
-    setRows(buildRows(lanes, buffersRef.current));
+    setRows(buildRows(lanes, buffersRef.current, running, mode));
     if (!running) return;
-    const tick = () => setRows(buildRows(lanes, buffersRef.current));
+    const tick = () => setRows(buildRows(lanes, buffersRef.current, running, mode));
     const id = window.setInterval(tick, 150);
     return () => window.clearInterval(id);
-  }, [running, lanes, buffersRef]);
+  }, [running, lanes, buffersRef, mode]);
 
   // FLIP: animate rows sliding to their new ranked positions.
   useLayoutEffect(() => {
@@ -101,6 +113,8 @@ const StandingsTicker: React.FC<StandingsTickerProps> = ({
   }, [rows, reducedMotion]);
 
   const leaderChars = rows.find((r) => !r.errored)?.chars ?? 0;
+  const leaderElapsed = rows.find((r) => !r.errored && r.done)?.elapsedMs ?? 0;
+  const rankByFinish = !running && mode !== 'time_limit';
 
   return (
     <div aria-live="off">
@@ -146,12 +160,22 @@ const StandingsTicker: React.FC<StandingsTickerProps> = ({
                 <span className="font-speed block text-[15px] text-[var(--text)]">
                   {r.errored
                     ? 'DNF'
-                    : r.done && r.finalOutputTokens != null
+                    : rankByFinish && r.done
+                      ? `${(r.elapsedMs / 1000).toFixed(2)} s`
+                      : r.done && r.finalOutputTokens != null
                       ? `${compact(r.finalOutputTokens)} tok`
                       : `${compact(r.chars)} ch`}
                 </span>
                 <span className="block font-mono text-[10px] tabular-nums text-[var(--text-muted)]">
-                  {r.errored ? '' : pos === 1 ? 'most output' : `-${compact(gap)} ch`}
+                  {r.errored
+                    ? ''
+                    : rankByFinish && r.done
+                      ? pos === 1
+                        ? 'fastest finish'
+                        : `+${((r.elapsedMs - leaderElapsed) / 1000).toFixed(2)} s`
+                      : pos === 1
+                        ? 'most output'
+                        : `-${compact(gap)} ch`}
                 </span>
               </span>
             </li>

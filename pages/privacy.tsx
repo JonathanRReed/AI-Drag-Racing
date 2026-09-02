@@ -35,7 +35,7 @@ export default function Privacy() {
                 'AI Drag Racing stores provider keys in your browser local storage and sends prompts only to the provider APIs you choose for a race.',
               url: 'https://ai-dragrace.jonathanrreed.com/privacy',
               datePublished: '2026-04-21',
-              dateModified: '2026-08-04',
+              dateModified: '2026-09-01',
               author: {
                 '@type': 'Person',
                 name: 'Jonathan R. Reed',
@@ -70,6 +70,12 @@ export default function Privacy() {
             for the current hosting and infrastructure context.
           </p>
           <p className="mt-4 text-base leading-8 text-zinc-300">
+            After a live race, the app saves a sanitized receipt in this browser for up to 30 days. It contains model
+            and provider IDs, settings, timing, token counts, prompt length, a one-way prompt fingerprint, and a coarse
+            Cloudflare colo code when available. It does not save prompt text, response text, API keys, IP address, or
+            precise location in the receipt. You can export or delete local receipts from the race page.
+          </p>
+          <p className="mt-4 text-base leading-8 text-zinc-300">
             Do not paste keys on a shared computer. Clearing site data removes saved provider keys and local settings,
             and there is no account recovery because there are no accounts. The app never needs your provider account
             password. If you rotate or revoke a key, do it with the provider and update the local value before the next
@@ -81,7 +87,7 @@ export default function Privacy() {
             provider agreement and internal rules allow that use.
           </p>
           <p className="mt-6 text-sm text-zinc-500">
-            Last updated <time dateTime="2026-06-19">June 19, 2026</time>.
+            Last updated <time dateTime="2026-09-01">September 1, 2026</time>.
           </p>
         </article>
       </main>

@@ -1,5 +1,4 @@
-// components/main/PromptInput.tsx
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef } from 'react';
 import GlassCard from '../layout/GlassCard';
 
 interface PromptInputProps {
@@ -19,113 +18,66 @@ const PromptInput: React.FC<PromptInputProps> = ({
   disabled,
   onReset,
 }) => {
-  const inputRef = useRef<HTMLInputElement>(null);
-  const popRef = useRef<HTMLDivElement>(null);
-  const taRef = useRef<HTMLTextAreaElement>(null);
-  const [expanded, setExpanded] = useState(false);
-  const isLoadingRef = useRef(isLoading);
-
-  // Keep freshest loading state and collapse overlay when a run starts
-  useEffect(() => {
-    isLoadingRef.current = isLoading;
-    if (isLoading) setExpanded(false);
-  }, [isLoading]);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      // Cmd/Ctrl + L focuses the prompt like a browser URL bar
-      if ((e.metaKey || e.ctrlKey) && (e.key === 'l' || e.key === 'L')) {
-        e.preventDefault();
-        inputRef.current?.focus();
-        inputRef.current?.select();
-        if (!isLoadingRef.current) {
-          setExpanded(true);
-          requestAnimationFrame(() => {
-            taRef.current?.focus();
-            taRef.current?.select();
-          });
-        }
+    const element = textareaRef.current;
+    if (!element) return;
+    element.style.height = 'auto';
+    element.style.height = `${Math.min(element.scrollHeight, 120)}px`;
+  }, [prompt]);
+
+  useEffect(() => {
+    const handleShortcut = (event: KeyboardEvent) => {
+      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'l') {
+        event.preventDefault();
+        textareaRef.current?.focus();
+        textareaRef.current?.select();
       }
     };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
+    window.addEventListener('keydown', handleShortcut);
+    return () => window.removeEventListener('keydown', handleShortcut);
   }, []);
 
-  // Auto-resize textarea height to content when expanded
-  useEffect(() => {
-    if (!expanded || !taRef.current) return;
-    const el = taRef.current;
-    const resize = () => {
-      el.style.height = 'auto';
-      el.style.height = Math.min(el.scrollHeight, window.innerHeight * 0.4) + 'px';
-    };
-    resize();
-    const onInput = () => resize();
-    el.addEventListener('input', onInput);
-    return () => el.removeEventListener('input', onInput);
-  }, [expanded, prompt]);
-
-  // Click-outside to close popover
-  useEffect(() => {
-    if (!expanded) return;
-    const onDown = (e: MouseEvent) => {
-      const target = e.target as Node;
-      if (popRef.current && !popRef.current.contains(target) && inputRef.current && !inputRef.current.contains(target)) {
-        setExpanded(false);
-      }
-    };
-    document.addEventListener('mousedown', onDown);
-    return () => document.removeEventListener('mousedown', onDown);
-  }, [expanded]);
+  const canSubmit = !disabled && !isLoading && prompt.trim().length > 0;
 
   return (
-    <>
-    <GlassCard className="p-3 relative">
-      <div className="flex flex-col gap-2 md:flex-row md:items-center">
-        <label htmlFor="prompt-input" className="sr-only">Prompt</label>
-        <input
-          id="prompt-input"
-          type="text"
-          value={prompt}
-          onChange={(e) => onPromptChange(e.target.value)}
-          onFocus={(e) => {
-            e.currentTarget.select();
-            if (!isLoadingRef.current) {
-              setExpanded(true);
-              requestAnimationFrame(() => {
-                taRef.current?.focus();
-                taRef.current?.select();
-              });
-            }
-          }}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter' || ((e.metaKey || e.ctrlKey) && e.key === 'Enter')) {
-              e.preventDefault();
-              if (!disabled && !isLoading && prompt) onSubmit();
-            }
-          }}
-          ref={inputRef}
-          className={`input-glass w-full md:flex-1 md:min-w-0 whitespace-nowrap overflow-x-auto scrollbar-none`}
-          placeholder="Write a prompt... Press Enter to start"
-          aria-label="Enter prompt"
-          spellCheck={false}
-          autoCapitalize="off"
-          autoComplete="off"
-          autoCorrect="off"
-          data-form-type="other"
-          data-lpignore="true"
-          data-1p-ignore="true"
-          inputMode="text"
-          enterKeyHint="go"
-          dir="auto"
-          title={prompt}
-        />
-        <div className="flex items-center gap-2 md:self-stretch md:items-stretch md:ml-auto">
+    <GlassCard className="prompt-card p-3" hover={false} spotlight={false}>
+      <label htmlFor="prompt-input" className="mb-2 block text-[10px] font-semibold uppercase tracking-[0.18em] text-zinc-500">
+        Prompt
+      </label>
+      <textarea
+        id="prompt-input"
+        ref={textareaRef}
+        value={prompt}
+        onChange={(event) => onPromptChange(event.target.value)}
+        onKeyDown={(event) => {
+          if (event.key === 'Enter' && !event.shiftKey) {
+            event.preventDefault();
+            if (canSubmit) onSubmit();
+          }
+        }}
+        className="input-glass min-h-12 max-h-[120px] w-full resize-none overflow-y-auto text-sm leading-5 scrollbar-none"
+        placeholder="Write a prompt. Shift+Enter adds a line."
+        aria-label="Enter prompt"
+        spellCheck={false}
+        autoCapitalize="off"
+        autoComplete="off"
+        autoCorrect="off"
+        data-form-type="other"
+        data-lpignore="true"
+        data-1p-ignore="true"
+        enterKeyHint="go"
+        dir="auto"
+      />
+      <div className="mt-2 flex items-center justify-between gap-2">
+        <span className="hidden text-[10px] text-zinc-600 lg:block">Enter to race, Shift+Enter for a new line</span>
+        <div className="ml-auto flex items-center gap-2">
           {onReset && (
             <button
               type="button"
               onClick={onReset}
-              title={isLoading ? "Cannot reset while racing" : "Reset prompt"}
+              title={isLoading ? 'Cannot reset while racing' : 'Reset race'}
               className="btn-secondary text-xs"
               disabled={isLoading}
             >
@@ -133,98 +85,18 @@ const PromptInput: React.FC<PromptInputProps> = ({
             </button>
           )}
           <button
+            type="button"
             onClick={onSubmit}
-            disabled={!!disabled || isLoading || !prompt}
-            title={(!prompt) ? "Enter a prompt to start" : disabled ? "No racers selected" : isLoading ? "Race in progress" : "Start Race"}
-            className="btn btn-primary text-sm group relative overflow-hidden"
+            disabled={!canSubmit}
+            title={!prompt.trim() ? 'Enter a prompt to start' : disabled ? 'No racers selected' : isLoading ? 'Race in progress' : 'Start race'}
+            className="btn btn-primary text-sm"
           >
-            {isLoading ? (
-              <>
-                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                Racing...
-              </>
-            ) : (
-              <>
-                <svg viewBox="0 0 24 24" className="w-4 h-4 text-cyan-300 group-hover:translate-x-0.5 transition-transform" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M5 12h14M12 5l7 7-7 7" strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
-                Start Race
-              </>
-            )}
+            {isLoading ? 'Racing…' : 'Start race'}
           </button>
         </div>
       </div>
-      {/* Readable popover (multi-line) directly under the bar; no layout shift */}
-      {expanded && !isLoadingRef.current && (
-        <div ref={popRef} className="absolute left-0 right-0 top-full mt-2 z-30">
-          <div className="glass-card p-2 ring-1 ring-white/10">
-            <textarea
-              ref={taRef}
-              value={prompt}
-              onChange={(e) => onPromptChange(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Escape') {
-                  e.preventDefault();
-                  setExpanded(false);
-                  inputRef.current?.focus();
-                  return;
-                }
-                if (e.key === 'Enter' || ((e.metaKey || e.ctrlKey) && e.key === 'Enter')) {
-                  e.preventDefault();
-                  if (!disabled && !isLoadingRef.current && prompt) {
-                    onSubmit();
-                    setExpanded(false);
-                  }
-                }
-              }}
-              className="w-full resize-none bg-transparent text-[15px] leading-[1.35] text-white placeholder-[rgba(230,231,235,0.64)] outline-none scrollbar-none min-h-[44px] max-h-[40vh] px-2 py-1"
-              placeholder="Write a prompt..."
-              spellCheck={false}
-              autoCapitalize="off"
-              autoComplete="off"
-              autoCorrect="off"
-              data-form-type="other"
-              data-lpignore="true"
-              data-1p-ignore="true"
-              dir="auto"
-            />
-            <div className="mt-2 flex items-center justify-end gap-2">
-              <button
-                type="button"
-                className="btn-ghost text-xs"
-                onClick={() => {
-                  setExpanded(false);
-                  inputRef.current?.focus();
-                }}
-              >
-                Close
-              </button>
-              <button
-                type="button"
-                disabled={!!disabled || isLoadingRef.current || !prompt}
-                title={(!prompt) ? "Enter a prompt to start" : disabled ? "No racers selected" : isLoadingRef.current ? "Race in progress" : "Start Race"}
-                className="btn btn-primary text-xs"
-                onClick={() => {
-                  if (!disabled && !isLoadingRef.current && prompt) {
-                    onSubmit();
-                    setExpanded(false);
-                  }
-                }}
-              >
-                <svg viewBox="0 0 24 24" className="w-3.5 h-3.5 text-cyan-300" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M5 12h14M12 5l7 7-7 7" strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
-                Start Race
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </GlassCard>
-    {/* Inline mode only - no overlay */}
-    </>
   );
 };
 
 export default PromptInput;
-

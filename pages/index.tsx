@@ -1,6 +1,7 @@
 import React, { useReducer, useCallback, useState, useRef, useEffect, useMemo } from 'react';
 import Head from 'next/head';
 import dynamic from 'next/dynamic';
+import { useRouter } from 'next/router';
 import MainLayout from '../components/layout/MainLayout';
 import ProviderList from '../components/sidebar/ProviderList';
 import PromptInput from '../components/main/PromptInput';
@@ -12,8 +13,21 @@ import CountdownOverlay from '../components/main/CountdownOverlay';
 import RaceSettings, { RaceConfig } from '../components/sidebar/RaceSettings';
 import { LaneBuffer, createLaneBuffer, pushChunk } from '../utils/raceBuffers';
 import { getProviderColor } from '../utils/providerColors';
-import { getProviderById, PROVIDERS, RACEABLE_PROVIDERS } from '../utils/providers';
+import { getProviderById, RACEABLE_PROVIDERS } from '../utils/providers';
 import type { PaceLane } from '../components/main/LivePaceChart';
+import FinishSummary from '../components/main/FinishSummary';
+import RaceHistory from '../components/main/RaceHistory';
+import {
+  clearRaceHistory,
+  createRaceReceipt,
+  deleteRaceReceipt,
+  loadRaceHistory,
+  saveRaceReceipt,
+  type BrowserTiming,
+  type RaceExperience,
+  type RaceReceipt,
+  type ReceiptLaneInput,
+} from '../utils/raceReceipts';
 
 const ResultsDisplay = dynamic(() => import('../components/main/ResultsDisplay'), { ssr: false });
 const Leaderboard = dynamic(() => import('../components/main/Leaderboard'), { ssr: false });
@@ -21,7 +35,6 @@ const ComparisonCharts = dynamic(() => import('../components/ComparisonCharts'),
 const LivePaceChart = dynamic(() => import('../components/main/LivePaceChart'), { ssr: false });
 const DragStrip = dynamic(() => import('../components/main/DragStrip'), { ssr: false });
 const StandingsTicker = dynamic(() => import('../components/main/StandingsTicker'), { ssr: false });
-const WinnerPodium = dynamic(() => import('../components/main/WinnerPodium'), { ssr: false });
 
 // --- State Management using useReducer ---
 
@@ -45,7 +58,8 @@ type AppAction =
   | { type: 'START_COMPARISON'; payload: { providersToTest: { providerId: string; modelId: string }[] } }
   | { type: 'RECEIVE_CHUNK'; payload: { resultId: string; chunk: string } }
   | { type: 'COMMIT_TEXT'; payload: Record<string, string> }
-  | { type: 'FINISH_STREAM'; payload: { resultId: string; metrics: CompletionMetrics } }
+  | { type: 'FINISH_STREAM'; payload: { resultId: string; metrics: CompletionMetrics; browserTiming: BrowserTiming } }
+  | { type: 'SET_META'; payload: { resultId: string; edgeRegion: string | null } }
   | { type: 'SET_ERROR'; payload: { resultId: string; error: string } }
   | { type: 'FINISH_COMPARISON' }
   | { type: 'SET_RACE_STATE'; payload: AppState['raceState'] }
@@ -105,6 +119,8 @@ function appReducer(state: AppState, action: AppAction): AppState {
           metrics: null,
           isLoading: true,
           error: null,
+          browserTiming: null,
+          edgeRegion: null,
         })),
       };
     case 'RECEIVE_CHUNK':
@@ -131,9 +147,21 @@ function appReducer(state: AppState, action: AppAction): AppState {
         ...state,
         results: state.results.map(r =>
           r.id === action.payload.resultId
-            ? { ...r, isLoading: false, metrics: action.payload.metrics }
+            ? {
+                ...r,
+                isLoading: false,
+                metrics: action.payload.metrics,
+                browserTiming: action.payload.browserTiming,
+              }
             : r
         ),
+      };
+    case 'SET_META':
+      return {
+        ...state,
+        results: state.results.map(r => (
+          r.id === action.payload.resultId ? { ...r, edgeRegion: action.payload.edgeRegion } : r
+        )),
       };
     case 'SET_ERROR':
       return {
@@ -179,6 +207,7 @@ const DEMO_LONG = DEMO_SAMPLE.repeat(10);
 // --- Main Component ---
 
 export default function Home() {
+  const router = useRouter();
   const [state, dispatch] = useReducer(appReducer, initialState);
   const [activeTab, setActiveTab] = useState<'results' | 'charts'>('results');
   const [hideFailed, setHideFailed] = useState(false);
@@ -195,6 +224,16 @@ export default function Home() {
   const [normalize, setNormalize] = useState(false);
   const [announcement, setAnnouncement] = useState('');
   const [raceView, setRaceView] = useState<'strip' | 'telemetry'>('strip');
+  const [experience, setExperience] = useState<RaceExperience>('quick');
+  const [history, setHistory] = useState<RaceReceipt[]>([]);
+  const receiptLanesRef = useRef<Record<string, ReceiptLaneInput>>({});
+  const edgeRegionRef = useRef<string | null>(null);
+  const suggestedModel = typeof router.query.model === 'string' ? router.query.model.trim() : '';
+  const suggestedProvider = typeof router.query.provider === 'string' ? router.query.provider.trim() : '';
+
+  useEffect(() => {
+    setHistory(loadRaceHistory(window.localStorage));
+  }, []);
 
   // Cleanup on unmount: clear the flush timer and cancel any in-flight streams.
   useEffect(() => {
@@ -221,6 +260,8 @@ export default function Home() {
     }
     laneBuffersRef.current = {};
     pendingTextRef.current = {};
+    receiptLanesRef.current = {};
+    edgeRegionRef.current = null;
     setAnnouncement('');
     dispatch({ type: 'RESET_RACE' });
   }, []);
@@ -271,6 +312,8 @@ export default function Home() {
     }
     laneBuffersRef.current = initialBuffers;
     pendingTextRef.current = {};
+    receiptLanesRef.current = {};
+    edgeRegionRef.current = null;
     dispatch({ type: 'START_COMPARISON', payload: { providersToTest } });
 
     // Throttled committer: streamed text lands in refs on the hot path and is flushed to
@@ -359,6 +402,11 @@ export default function Home() {
               // we never break before consuming the final metrics event.
               if (mode === 'token_limit' && tokenLimit && tokenCount >= tokenLimit) break;
               if (mode === 'time_limit' && timeLimit && (Date.now() - raceStartTime) / 1000 >= timeLimit) break;
+            } else if (result.type === 'meta') {
+              edgeRegionRef.current = result.data.edgeRegion;
+              dispatch({ type: 'SET_META', payload: { resultId, edgeRegion: result.data.edgeRegion } });
+            } else if (result.type === 'error') {
+              throw new Error(result.message || 'Provider stream failed');
             } else if (result.type === 'metrics') {
               const buf = laneBuffersRef.current[resultId];
               if (buf) {
@@ -366,8 +414,19 @@ export default function Home() {
                 buf.finalOutputTokens =
                   typeof result.data.outputTokens === 'number' ? result.data.outputTokens : null;
               }
+              const browserTiming = {
+                ttftMs: buf?.firstTokenT != null ? Math.round(buf.firstTokenT) : null,
+                totalMs: Math.round(performance.now() - goTimeRef.current),
+              };
+              receiptLanesRef.current[resultId] = {
+                providerId: p.providerId,
+                modelId: p.modelId,
+                metrics: result.data,
+                browser: browserTiming,
+                error: null,
+              };
               flushLane(resultId);
-              dispatch({ type: 'FINISH_STREAM', payload: { resultId, metrics: result.data } });
+              dispatch({ type: 'FINISH_STREAM', payload: { resultId, metrics: result.data, browserTiming } });
               setAnnouncement(`${getProviderById(p.providerId)?.displayName || p.providerId} finished.`);
               sawMetrics = true;
             }
@@ -381,20 +440,33 @@ export default function Home() {
               const buf = laneBuffersRef.current[resultId];
               if (buf) buf.done = true;
               flushLane(resultId);
+              const metrics: CompletionMetrics = {
+                startTime: raceStartTime,
+                firstTokenTime:
+                  buf && buf.firstTokenT != null ? raceStartTime + Math.round(buf.firstTokenT) : undefined,
+                finishTime,
+                tokenCount,
+                outputTokens: tokenCount,
+                tokenCountSource: 'stream-events',
+                timingSource: 'browser-synthetic',
+              };
+              const browserTiming = {
+                ttftMs: buf?.firstTokenT != null ? Math.round(buf.firstTokenT) : null,
+                totalMs: Math.round(performance.now() - goTimeRef.current),
+              };
+              receiptLanesRef.current[resultId] = {
+                providerId: p.providerId,
+                modelId: p.modelId,
+                metrics,
+                browser: browserTiming,
+                error: null,
+              };
               dispatch({
                 type: 'FINISH_STREAM',
                 payload: {
                   resultId,
-                  metrics: {
-                    startTime: raceStartTime,
-                    // Real client-observed first token — or omit entirely if the model never
-                    // streamed one, so it can't win Pole with a fake 0ms TTFT.
-                    firstTokenTime:
-                      buf && buf.firstTokenT != null ? raceStartTime + Math.round(buf.firstTokenT) : undefined,
-                    finishTime,
-                    tokenCount,
-                    outputTokens: tokenCount,
-                  },
+                  metrics,
+                  browserTiming,
                 },
               });
               setAnnouncement(`${getProviderById(p.providerId)?.displayName || p.providerId} finished.`);
@@ -409,6 +481,16 @@ export default function Home() {
           const buf = laneBuffersRef.current[resultId];
           if (buf) { buf.errored = true; buf.done = true; }
           flushLane(resultId);
+          receiptLanesRef.current[resultId] = {
+            providerId: p.providerId,
+            modelId: p.modelId,
+            metrics: null,
+            browser: {
+              ttftMs: buf?.firstTokenT != null ? Math.round(buf.firstTokenT) : null,
+              totalMs: Math.round(performance.now() - goTimeRef.current),
+            },
+            error: e instanceof Error ? e.message : 'Provider stream failed',
+          };
           dispatch({ type: 'SET_ERROR', payload: { resultId, error: e.message } });
         }
       })
@@ -420,9 +502,38 @@ export default function Home() {
       pendingTextRef.current = {};
       dispatch({ type: 'COMMIT_TEXT', payload: remaining });
     }
-    setAnnouncement('Race finished. The Winner’s Circle is ready below the pace chart.');
+    setAnnouncement('Race finished. The timing receipt is ready below the track.');
+    const receipt = await createRaceReceipt({
+      experience,
+      mode,
+      prompt: state.prompt,
+      edgeRegion: edgeRegionRef.current,
+      userAgentFamily: navigator.userAgent.includes('Firefox')
+        ? 'Firefox'
+        : navigator.userAgent.includes('Safari') && !navigator.userAgent.includes('Chrome')
+          ? 'Safari'
+          : 'Chromium',
+      settings: {
+        temperature: modelSettings.temperature,
+        maxTokens: modelSettings.maxTokens,
+        topP: modelSettings.topP,
+        repetitions: 1,
+        concurrency: 1,
+      },
+      lanes: providersToTest.map((pair) => {
+        const id = `${pair.providerId}-${pair.modelId}`;
+        return receiptLanesRef.current[id] ?? {
+          providerId: pair.providerId,
+          modelId: pair.modelId,
+          metrics: null,
+          browser: { ttftMs: null, totalMs: null },
+          error: 'No receipt data was produced',
+        };
+      }),
+    });
+    setHistory(saveRaceReceipt(window.localStorage, receipt));
     dispatch({ type: 'FINISH_COMPARISON' });
-  }, [state.prompt, state.apiKeys, state.selectedPairs, state.enabledProviders, state.raceConfig]);
+  }, [experience, state.prompt, state.apiKeys, state.selectedPairs, state.enabledProviders, state.raceConfig]);
 
   // Simulated test race — no API keys, no network. Drives the exact same render path
   // (buffers, countdown, podium) with synthetic streams so the visualization can be tried.
@@ -516,16 +627,23 @@ export default function Home() {
             buf.finalOutputTokens = Math.round(d.total / 4);
           }
           flushLane(resultId);
+          const metrics: CompletionMetrics = {
+            startTime: raceStartTime,
+            firstTokenTime: raceStartTime + d.ttft,
+            finishTime,
+            tokenCount: Math.round(d.total / 4),
+            outputTokens: Math.round(d.total / 4),
+            tokenCountSource: 'estimated',
+            timingSource: 'demo',
+          };
           dispatch({
             type: 'FINISH_STREAM',
             payload: {
               resultId,
-              metrics: {
-                startTime: raceStartTime,
-                firstTokenTime: raceStartTime + d.ttft,
-                finishTime,
-                tokenCount: Math.round(d.total / 4),
-                outputTokens: Math.round(d.total / 4),
+              metrics,
+              browserTiming: {
+                ttftMs: d.ttft,
+                totalMs: Math.round(performance.now() - goTimeRef.current),
               },
             },
           });
@@ -547,7 +665,7 @@ export default function Home() {
       pendingTextRef.current = {};
       dispatch({ type: 'COMMIT_TEXT', payload: remaining });
     }
-    setAnnouncement('Demo race finished. The Winner’s Circle is ready below.');
+    setAnnouncement('Demo race finished. The timing receipt is ready below.');
     dispatch({ type: 'FINISH_COMPARISON' });
   }, [state.raceState]);
 
@@ -588,7 +706,7 @@ export default function Home() {
               "url": "https://ai-dragrace.jonathanrreed.com/",
               "inLanguage": "en-US",
               "datePublished": "2026-04-21",
-              "dateModified": "2026-08-06",
+              "dateModified": "2026-09-01",
               "author": {
                 "@type": "Person",
                 "name": "Jonathan R. Reed",
@@ -621,27 +739,72 @@ export default function Home() {
                 ) || state.raceState === 'countingDown' || state.raceState === 'racing'
               }
             />
-            {/* Race Settings */}
-            <RaceSettings
-              config={state.raceConfig}
-              onChange={(config) => dispatch({ type: 'SET_RACE_CONFIG', payload: config })}
-              selectedPairs={state.selectedPairs}
-            />
+            <div className="experience-switch" role="group" aria-label="Race experience">
+              <button
+                type="button"
+                className={experience === 'quick' ? 'is-active' : ''}
+                aria-pressed={experience === 'quick'}
+                onClick={() => setExperience('quick')}
+              >
+                <strong>Quick Race</strong>
+                <span>One live comparison</span>
+              </button>
+              <button
+                type="button"
+                className={experience === 'lab' ? 'is-active' : ''}
+                aria-pressed={experience === 'lab'}
+                onClick={() => setExperience('lab')}
+              >
+                <strong>Experiment Lab</strong>
+                <span>Controlled settings</span>
+              </button>
+            </div>
+            {experience === 'lab' ? (
+              <RaceSettings
+                config={state.raceConfig}
+                onChange={(config) => dispatch({ type: 'SET_RACE_CONFIG', payload: config })}
+                selectedPairs={state.selectedPairs}
+              />
+            ) : (
+              <div className="quick-race-note">
+                Quick Race uses the same settings in every lane: temperature {state.raceConfig.modelSettings.temperature.toFixed(1)},
+                {' '}max {state.raceConfig.modelSettings.maxTokens} tokens, top p {state.raceConfig.modelSettings.topP.toFixed(1)}.
+              </div>
+            )}
+            {suggestedModel && (
+              <div className="race-model-handoff" role="status">
+                <span>From AI Stats</span>
+                <strong>{suggestedModel}</strong>
+                <p>
+                  Add the matching provider key. The model search is prefilled when the provider route is known.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => void router.replace('/', undefined, { shallow: true })}
+                >
+                  Clear
+                </button>
+              </div>
+            )}
             <GlassCard className="p-3 w-full max-w-full flex-1 min-h-0 overflow-hidden">
               <ProviderList
                 apiKeys={state.apiKeys}
                 dispatch={dispatch}
                 selectedPairs={state.selectedPairs}
+                suggestedModel={suggestedModel}
+                suggestedProvider={suggestedProvider}
               />
             </GlassCard>
           </div>
         }
       >
-        {/* Hero intro copy */}
+        <div className="pit-status" aria-label="Race privacy and timing status">
+          <span><strong>Private by default</strong> API keys never enter receipts</span>
+          <span><strong>Two clocks</strong> browser experience and edge timing</span>
+          <span><strong>30-day local history</strong> delete or export anytime</span>
+        </div>
         <div className="race-hero-wrap">
           <div className="race-hero">
-            {/* Top red accent line */}
-            <div className="race-hero-accent" />
             <div className="race-hero-icon">
               <svg viewBox="0 0 24 24" className="race-hero-svg" fill="none" stroke="currentColor" strokeWidth="2">
                 <path d="M12 4v4M12 16v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M4 12h4M16 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" strokeLinecap="round" strokeLinejoin="round" />
@@ -652,16 +815,14 @@ export default function Home() {
                 AI Drag Racing
               </h1>
               <p className="race-hero-lead">
-                AI Drag Racing is a live latency benchmark by{' '}
-                <span className="text-zinc-200">Jonathan R. Reed</span>. You start a race from your browser. It sends
-                the same prompt to several AI models at once, and a Cloudflare edge function times each one as it
-                streams back.
+                Race the models and provider routes you actually use, from the browser and location where you use
+                them. Quick Race gives you an immediate answer. Experiment Lab exposes the settings and evidence.
               </p>
               <dl className="race-hero-facts" aria-label="What a race measures">
                 <div>
                   <dt>Providers</dt>
                   <dd>
-                    {PROVIDERS.length} listed, {RACEABLE_PROVIDERS.length} can race
+                    {RACEABLE_PROVIDERS.length} race-ready providers
                   </dd>
                 </div>
                 <div>
@@ -669,8 +830,8 @@ export default function Home() {
                   <dd>Time to first token, total response time, tokens per second</dd>
                 </div>
                 <div>
-                  <dt>Sample size</dt>
-                  <dd>1 run per model per race, nothing stored</dd>
+                  <dt>Result scope</dt>
+                  <dd>One observation from your browser, not a global ranking</dd>
                 </div>
                 <div>
                   <dt>Defaults</dt>
@@ -681,15 +842,10 @@ export default function Home() {
                   </dd>
                 </div>
                 <div>
-                  <dt>Clock</dt>
-                  <dd>Cloudflare edge function, edge to provider leg only</dd>
+                  <dt>Clocks</dt>
+                  <dd>Browser to result plus Cloudflare edge to provider</dd>
                 </div>
               </dl>
-              <p className="race-hero-body">
-                Use the same prompt and comparable settings when you want a fair read. Who crosses the line first is the
-                easy number. The rest of it matters more: how quickly a model starts, whether it holds that rate once it
-                does, and whether the provider errors out partway through a real browser session.
-              </p>
             </div>
           </div>
         </div>
@@ -715,36 +871,6 @@ export default function Home() {
             </p>
           </div>
         </details>
-        <section className="race-details" aria-labelledby="methodology-heading">
-          <h2 id="methodology-heading" className="race-details-heading">
-            Methodology
-          </h2>
-          <div className="race-details-copy">
-            <p>
-              Each race sends one streaming request per model. Your prompt goes out as a single user message with no
-              system prompt and no conversation history. The timer runs inside a Cloudflare Pages Function at the edge,
-              so the reported numbers cover the edge to provider leg rather than your browser’s trip to Cloudflare.
-              Default sampling is temperature 0.7, max tokens 2048, and top p 1.0, and whatever you set applies to every
-              lane in that race.
-            </p>
-            <p>
-              Sample size is one run per model per race. Nothing is repeated, averaged, or stored, and token counts are
-              estimated at about four characters per token for every provider except Google Gemini, which reports usage
-              directly. There is no fixed benchmark hardware and no recorded provider region, because the code never
-              captures either one.
-            </p>
-            <p>
-              <a
-                href="/methodology"
-                className="font-semibold text-red-400 underline decoration-red-400/40 underline-offset-4 hover:text-red-300"
-              >
-                Read the full methodology
-              </a>{' '}
-              for how time to first token, total time, and tokens per second are calculated, which race modes use a
-              different clock, & which listed providers cannot actually race.
-            </p>
-          </div>
-        </section>
         <div className="space-y-4">
           {/* Tabs + actions toolbar (sticky on md+, static on mobile) */}
           <div className="race-toolbar-wrap">
@@ -845,7 +971,7 @@ export default function Home() {
                             aria-pressed={raceView === 'strip'}
                             className={`px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider transition ${raceView === 'strip' ? 'bg-white/[0.12] text-white' : 'bg-white/[0.03] text-[var(--text-muted)] hover:bg-white/[0.08]'}`}
                           >
-                            <span aria-hidden>🏁 </span>Strip
+                            Track
                           </button>
                           <button
                             type="button"
@@ -919,16 +1045,23 @@ export default function Home() {
                       lanes={paceLanes}
                       buffersRef={laneBuffersRef}
                       running={state.raceState === 'racing'}
+                      mode={state.raceConfig.mode}
                       reducedMotion={reducedMotion}
                     />
                   </GlassCard>
                 </div>
               )}
-              {state.raceState === 'finished' && (
-                <WinnerPodium results={state.results} mode={state.raceConfig.mode} reducedMotion={reducedMotion} />
-              )}
+              {state.raceState === 'finished' && <FinishSummary results={state.results} />}
               <ResultsDisplay results={state.results} hideFailed={hideFailed} force={force} compact={showStage} onDemo={handleRunDemo} />
               {state.results.length > 0 && <Leaderboard results={state.results} />}
+              <RaceHistory
+                receipts={history}
+                onDelete={(id) => setHistory(deleteRaceReceipt(window.localStorage, id))}
+                onClear={() => {
+                  clearRaceHistory(window.localStorage);
+                  setHistory([]);
+                }}
+              />
             </>
           )}
           {activeTab === 'charts' && state.results.length > 0 && (

@@ -210,9 +210,8 @@ const DragStrip: React.FC<DragStripProps> = ({ lanes, buffersRef, running, reduc
                 style={{ color: lane.color, opacity: 0, width: 0 }}
               />
               <Dragster color={lane.color} />
-              {/* leader crown */}
-              <span className="leader-crown absolute -top-1 right-1 text-[11px]" aria-hidden>
-                👑
+              <span className="leader-crown absolute -top-1 right-1 font-mono text-[9px] font-bold" aria-hidden>
+                LEAD
               </span>
             </div>
           </div>

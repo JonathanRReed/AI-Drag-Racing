@@ -3,6 +3,11 @@
 export const config = { runtime: 'edge' };
 
 import { getProviderService } from '../../../../utils/providerService';
+import {
+  boundedNumber,
+  corsHeadersForRequest,
+  validateRaceRequestBody,
+} from '../../../../utils/requestSecurity';
 // Side-effect imports to register provider services (exclude Bedrock for Edge)
 import '../../../../utils/providers/openai';
 import '../../../../utils/providers/groq';
@@ -18,10 +23,22 @@ import '../../../../utils/providers/moonshot';
 import '../../../../utils/providers/zhipu';
 
 export default async function handler(req: Request): Promise<Response> {
+  const corsHeaders = corsHeadersForRequest(req);
+  if (!corsHeaders) {
+    return new Response(JSON.stringify({ error: 'Origin not allowed' }), {
+      status: 403,
+      headers: { 'Content-Type': 'application/json', 'Vary': 'Origin' },
+    });
+  }
+
+  if (req.method === 'OPTIONS') {
+    return new Response(null, { status: 204, headers: corsHeaders });
+  }
+
   if (req.method !== 'POST') {
     return new Response(JSON.stringify({ error: 'Method not allowed' }), {
       status: 405,
-      headers: { 'Content-Type': 'application/json' },
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   }
 
@@ -32,7 +49,7 @@ export default async function handler(req: Request): Promise<Response> {
   if (!providerId) {
     return new Response(JSON.stringify({ error: 'Invalid provider ID' }), {
       status: 400,
-      headers: { 'Content-Type': 'application/json' },
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   }
 
@@ -46,21 +63,23 @@ export default async function handler(req: Request): Promise<Response> {
     });
   }
 
-  const { prompt, model, apiKey, settings } = body || {};
-
-  if (!prompt || !model || !apiKey) {
-    return new Response(JSON.stringify({ error: 'Missing prompt, model, or apiKey' }), {
+  const validation = validateRaceRequestBody(body);
+  if (!validation.ok) {
+    return new Response(JSON.stringify({ error: validation.error }), {
       status: 400,
-      headers: { 'Content-Type': 'application/json' },
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   }
+  const { prompt, model, apiKey, settings } = validation.value;
 
   // Extract model settings with defaults
   const modelSettings = {
-    temperature: settings?.temperature ?? 0.7,
-    maxTokens: settings?.maxTokens ?? 2048,
-    topP: settings?.topP ?? 1.0,
-    reasoningEffort: settings?.reasoningEffort, // Pass through for o1/o3/GPT-5/Kimi K2/GLM thinking models
+    temperature: boundedNumber(settings.temperature, 0.7, 0, 2),
+    maxTokens: Math.round(boundedNumber(settings.maxTokens, 2048, 1, 32768)),
+    topP: boundedNumber(settings.topP, 1, 0, 1),
+    reasoningEffort: ['low', 'medium', 'high'].includes(String(settings.reasoningEffort))
+      ? settings.reasoningEffort as 'low' | 'medium' | 'high'
+      : undefined,
   };
 
   const providerService = getProviderService(providerId);
@@ -68,7 +87,7 @@ export default async function handler(req: Request): Promise<Response> {
   if (!providerService) {
     return new Response(JSON.stringify({ error: `Provider '${providerId}' not found` }), {
       status: 404,
-      headers: { 'Content-Type': 'application/json' },
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   }
 
@@ -94,10 +113,26 @@ export default async function handler(req: Request): Promise<Response> {
 
   (async () => {
     try {
+      const edgeRegion = (req as Request & { cf?: { colo?: string } }).cf?.colo ?? null;
+      await writeEvent({
+        type: 'meta',
+        data: { edgeRegion, requestStartedAt: new Date().toISOString() },
+      });
       const generator = providerService.generate(prompt, model, apiKey, signal, modelSettings);
       for await (const result of generator) {
         if (aborted) break;
-        await writeEvent(result);
+        if (result.type === 'metrics') {
+          await writeEvent({
+            ...result,
+            data: {
+              ...result.data,
+              tokenCountSource: result.data.tokenCountSource ?? 'estimated',
+              timingSource: result.data.timingSource ?? 'edge-measured',
+            },
+          });
+        } else {
+          await writeEvent(result);
+        }
       }
     } catch (error) {
       // Emit error to client unless already aborted
@@ -117,6 +152,7 @@ export default async function handler(req: Request): Promise<Response> {
       'Cache-Control': 'no-store, no-transform',
       'Connection': 'keep-alive',
       'X-Accel-Buffering': 'no',
+      ...corsHeaders,
     },
   });
 }

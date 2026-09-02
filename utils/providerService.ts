@@ -8,6 +8,8 @@ export interface CompletionMetrics {
   tokenCount: number; // total tokens (input + output)
   inputTokens?: number; // optional: input token estimate or provider-reported
   outputTokens?: number; // optional: output token estimate or provider-reported
+  tokenCountSource?: 'provider-reported' | 'estimated' | 'stream-events';
+  timingSource?: 'edge-measured' | 'browser-synthetic' | 'demo';
 }
 
 // Defines the output of our streaming generator.
@@ -18,6 +20,15 @@ export type CompletionResult = {
 } | {
   type: 'metrics';
   data: CompletionMetrics;
+} | {
+  type: 'meta';
+  data: {
+    edgeRegion: string | null;
+    requestStartedAt: string;
+  };
+} | {
+  type: 'error';
+  message: string;
 };
 
 // Model settings that can be passed to providers

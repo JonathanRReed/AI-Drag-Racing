@@ -69,10 +69,9 @@ export default function Methodology() {
 
           <p className="mt-5 text-base leading-8 text-zinc-300">
             Every number on this site comes out of one code path, so it is worth saying exactly what that path does
-            before anyone quotes a result. The short version: each race is a single live request per model, timed at a
-            Cloudflare edge worker, with token counts that are usually estimated rather than reported. That is good
-            enough to tell you which model starts fast on your route today. It is not a controlled lab benchmark, and I
-            would rather say so here than have someone cite it as one.
+            before anyone quotes a result. The short version: each Quick Race is a single live request per model with
+            one clock in your browser and another at the Cloudflare edge. Token counts are usually estimated rather
+            than provider-reported. That is useful evidence about your route today, not a global model ranking.
           </p>
 
           <h2 className="mt-10 text-2xl font-semibold tracking-tight text-white">Where the clock actually runs</h2>
@@ -86,9 +85,9 @@ export default function Methodology() {
             request, and stops when the provider’s stream closes.
           </p>
           <p className="mt-4 text-base leading-8 text-zinc-300">
-            So the reported timings describe the edge worker to provider leg. The trip from your browser to Cloudflare
-            is not counted. Your own connection still affects what you watch on screen, and it does show up in the live
-            pace chart, but it does not inflate the reported time to first token.
+            The finish receipt keeps both clocks separate. Browser TTFT and browser total include your connection to
+            Cloudflare. Edge TTFT and edge total describe the worker-to-provider leg. The app does not blend them into
+            one ambiguous latency number.
           </p>
 
           <h2 className="mt-10 text-2xl font-semibold tracking-tight text-white">
@@ -96,16 +95,13 @@ export default function Methodology() {
           </h2>
           <p className="mt-4 text-base leading-8 text-zinc-300">
             There is no benchmark machine. The timing code runs in a Cloudflare V8 isolate at whichever data center
-            Cloudflare routes your request to, and nothing in the codebase records which one. No CPU model, no data
-            center, no country. I cannot publish hardware specs because the code never captures them, and making a
-            number up would be worse than admitting the gap.
+            Cloudflare routes your request to. The app records the coarse Cloudflare colo code returned by the runtime,
+            not an IP address, precise location, CPU model, or browser hardware profile.
           </p>
           <p className="mt-4 text-base leading-8 text-zinc-300">
-            Provider region is the same story. No region parameter is sent to OpenAI, Groq, Anthropic, Google, Cohere,
-            Mistral, Together, Fireworks, OpenRouter, Cerebras, Moonshot, or Z.AI, and none of their streaming responses
-            tell the app where the request was served. AWS Bedrock is the only place a region appears in the code at
-            all, because it gets parsed out of the AWS credential string you paste in, and Bedrock is not wired into the
-            racing endpoint anyway.
+            Provider region is still unknown. No region parameter is sent to OpenAI, Groq, Anthropic, Google, Cohere,
+            Mistral, Together, Fireworks, OpenRouter, Cerebras, Moonshot, or Z.AI, and their streaming responses do not
+            identify the serving region. A Cloudflare colo describes the edge hop, not the provider data center.
           </p>
 
           <h2 className="mt-10 text-2xl font-semibold tracking-tight text-white">What gets sent</h2>
@@ -162,9 +158,9 @@ export default function Methodology() {
             One run per model per race. n = 1.
           </p>
           <p className="mt-4 text-base leading-8 text-zinc-300">
-            No warm-up request, no repeats, no median across trials, no outlier removal. Every lane fires at the same
-            moment from a single shared start, which keeps the starting line fair but also means the lanes share your
-            connection and hit the provider APIs simultaneously.
+            There is no warm-up request, automatic repeat, median across trials, or outlier removal. Every lane fires
+            at the same moment from a single shared start. Experiment Lab exposes the settings, but each run is still a
+            single observation. Repeat it yourself before treating an ordering as stable.
           </p>
           <p className="mt-4 text-base leading-8 text-zinc-300">
             A single race tells you very little about a provider. It tells you what happened once, on one route, under
@@ -189,14 +185,15 @@ export default function Methodology() {
           <h2 className="mt-10 text-2xl font-semibold tracking-tight text-white">What the code does not do</h2>
           <ul className="mt-4 space-y-3 text-base leading-8 text-zinc-300">
             <li>
-              <span className="font-semibold text-white">No results are stored.</span> Nothing is written to a database
-              or a file, on my side or yours. Results live in browser memory and disappear on refresh, so there is no
-              historical archive yet and no versioned leaderboard to link to.
+              <span className="font-semibold text-white">No server-side race archive.</span> Sanitized receipts are kept
+              only in this browser for up to 30 days. They include model and provider IDs, settings, coarse edge colo,
+              timing, token counts, prompt length, and a prompt fingerprint. They do not include the prompt text,
+              response text, API keys, IP address, or precise location. You can export or delete them at any time.
             </li>
             <li>
               <span className="font-semibold text-white">No model version pinning.</span> The model list comes from each
               provider’s live models endpoint at the moment you open the app. Many of those IDs are aliases, and
-              providers move them onto new weights without changing the string. A race from today & a race from last
+              providers move them onto new weights without changing the string. A race from today and a race from last
               month can carry the same label and not be the same model.
             </li>
             <li>
@@ -207,11 +204,9 @@ export default function Methodology() {
               <span className="font-semibold text-white">No cost math in the race view.</span> Speed only.
             </li>
             <li>
-              <span className="font-semibold text-white">Six listed providers cannot race.</span> Azure OpenAI, AWS
-              Bedrock, Perplexity, xAI, DeepSeek, and AI21 appear in the sidebar, but the completions endpoint only
-              registers OpenAI, Groq, Anthropic, Google, Cohere, Mistral, Together, Fireworks, OpenRouter, Cerebras,
-              Moonshot, and Z.AI. The rest return a provider not found error. Model listing works for several of them;
-              racing does not.
+              <span className="font-semibold text-white">No hidden provider fallbacks.</span> The lineup only lists
+              providers wired to the live completion route. A failed route stays failed instead of silently switching
+              to another provider or model.
             </li>
           </ul>
 
@@ -249,7 +244,7 @@ export default function Methodology() {
 
           <p className="mt-8 text-sm text-zinc-500">
             This page describes the code as it stands on{' '}
-            <time dateTime="2026-08-04">August 4, 2026</time>. If the measurement path changes, this page changes with
+            <time dateTime="2026-09-01">September 1, 2026</time>. If the measurement path changes, this page changes with
             it.
           </p>
           <p className="mt-4 text-sm text-zinc-500">

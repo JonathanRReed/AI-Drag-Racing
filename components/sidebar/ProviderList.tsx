@@ -1,6 +1,12 @@
 // components/sidebar/ProviderList.tsx
 import React, { useState, useMemo } from 'react';
-import { PROVIDERS, ProviderConfig } from '../../utils/providers';
+import {
+  PROVIDERS,
+  RACEABLE_PROVIDER_IDS,
+  RACEABLE_PROVIDERS,
+  ProviderConfig,
+  isRaceableProviderId,
+} from '../../utils/providers';
 import { fetchModels } from '../../utils/fetchModels';
 import ApiKeyModal from './ApiKeyModal';
 
@@ -132,6 +138,8 @@ interface ProviderListProps {
   dispatch: React.Dispatch<any>; // Using 'any' for simplicity, could be typed with AppAction
   // Selected provider-model pairs from parent for controlled multi-select UI
   selectedPairs: { providerId: string; modelId: string }[];
+  suggestedModel?: string;
+  suggestedProvider?: string;
 }
 
 const ICON = (slug: string) => `https://unpkg.com/@lobehub/icons-static-svg@latest/icons/${slug}.svg`;
@@ -172,7 +180,13 @@ function brandSlugsForModel(providerId: string, modelId: string): string[] | und
   return undefined;
 }
 
-const ProviderList: React.FC<ProviderListProps> = ({ apiKeys, dispatch, selectedPairs }) => {
+const ProviderList: React.FC<ProviderListProps> = ({
+  apiKeys,
+  dispatch,
+  selectedPairs,
+  suggestedModel,
+  suggestedProvider,
+}) => {
   // Show both the beginning and end of long model IDs to avoid hiding key differences
   const formatModelLabel = React.useCallback((id: string, head = 18, tail = 14) => {
     if (!id) return id;
@@ -186,11 +200,17 @@ const ProviderList: React.FC<ProviderListProps> = ({ apiKeys, dispatch, selected
   const [enabledByProvider, setEnabledByProvider] = useState<Record<string, boolean>>({});
   const [modelQuery, setModelQuery] = useState<Record<string, string>>({});
 
+  React.useEffect(() => {
+    if (!suggestedModel || !suggestedProvider || !isRaceableProviderId(suggestedProvider)) return;
+    setModelQuery((previous) => (
+      previous[suggestedProvider]
+        ? previous
+        : { ...previous, [suggestedProvider]: suggestedModel }
+    ));
+  }, [suggestedModel, suggestedProvider]);
+
   // Providers that are wired up server-side for streaming right now
-  const SUPPORTED_FOR_STREAM = useMemo(() => new Set([
-    'openai', 'groq', 'anthropic', 'google', 'cohere', 'mistral',
-    'together', 'fireworks', 'openrouter', 'moonshot', 'zhipu'
-  ]), []);
+  const SUPPORTED_FOR_STREAM = useMemo(() => new Set<string>(RACEABLE_PROVIDER_IDS), []);
 
   const handleSaveApiKey = (apiKey: string) => {
     if (modalOpenFor) {
@@ -324,7 +344,7 @@ const ProviderList: React.FC<ProviderListProps> = ({ apiKeys, dispatch, selected
         </div>
       </div>
       <ul className="provider-list">
-        {PROVIDERS.map((provider) => (
+        {RACEABLE_PROVIDERS.map((provider) => (
           <li key={provider.id} className="space-y-1">
             <ProviderListItem
               provider={provider}

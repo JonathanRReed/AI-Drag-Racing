@@ -144,13 +144,13 @@ const RaceLane: React.FC<RaceLaneProps> = ({
       {/* Racing lane track card */}
       <GlassCard className={`relative overflow-hidden transition-all duration-300 ${expanded ? "p-4" : "p-3"} bg-zinc-950/80`}>
         {/* Track markings: Start Line & Finish Line */}
-        <div className="absolute top-0 bottom-0 left-12 w-2 border-l-4 border-dashed border-white/20 pointer-events-none" />
+        <div className="absolute top-0 bottom-0 left-12 w-1 border-l-2 border-dashed border-white/20 pointer-events-none" />
         <div className="absolute top-0 bottom-0 right-4 w-4 bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI4IiBoZWlnaHQ9IjgiPgo8cmVjdCB3aWR0aD0iNCIgaGVpZ2h0PSI0IiBmaWxsPSIjZmZmIi8+CjxyZWN0IHg9IjQiIHk9IjQiIHdpZHRoPSI0IiBoZWlnaHQ9IjQiIGZpbGw9IiNmZmYiLz4KPC9zdmc+')] opacity-20 pointer-events-none" />
 
-        {/* Lane Color Edge Glow */}
+        {/* Lane color marker */}
         <div
-          className="absolute top-0 left-0 bottom-0 w-1 opacity-80"
-          style={{ background: `linear-gradient(180deg, ${laneColor}, ${laneColor}00)` }}
+          className="absolute left-3 top-3 h-2 w-2 rounded-full"
+          style={{ backgroundColor: laneColor }}
         />
 
         <div className="flex items-start gap-4 pt-1 relative z-10">

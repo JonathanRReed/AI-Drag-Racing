@@ -136,7 +136,7 @@ const WinnerPodium: React.FC<WinnerPodiumProps> = ({ results, mode, reducedMotio
       <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-3">
           <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-amber-300/25 to-amber-600/15 ring-1 ring-amber-400/30">
-            <svg viewBox="0 0 24 24" className={`h-5 w-5 text-amber-300 ${reducedMotion ? '' : 'animate-trophy-bounce'}`} fill="currentColor">
+            <svg viewBox="0 0 24 24" className="h-5 w-5 text-amber-300" fill="currentColor">
               <path d="M5 4h14v3a5 5 0 0 1-4 4.9V14l2 4H7l2-4v-2.1A5 5 0 0 1 5 7V4zm-3 1h2v2a3 3 0 0 1-2-2zm18 0a3 3 0 0 1-2 2V5h2z" />
             </svg>
           </div>

@@ -4,6 +4,7 @@ import RaceLane from './RaceLane';
 import GlassCard from '../layout/GlassCard';
 import { CompletionMetrics } from '../../utils/providerService';
 import { getProviderColor } from '../../utils/providerColors';
+import type { BrowserTiming } from '../../utils/raceReceipts';
 
 export interface ResultState {
   id: string; // A unique ID for this result, e.g., providerId-modelName
@@ -13,6 +14,8 @@ export interface ResultState {
   metrics: CompletionMetrics | null;
   isLoading: boolean;
   error: string | null;
+  browserTiming: BrowserTiming | null;
+  edgeRegion: string | null;
 }
 
 interface ResultsDisplayProps {

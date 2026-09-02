@@ -173,6 +173,12 @@ export const RACEABLE_PROVIDER_IDS = [
   'zhipu',
 ] as const;
 
+export type RaceableProviderId = (typeof RACEABLE_PROVIDER_IDS)[number];
+
+export function isRaceableProviderId(value: string): value is RaceableProviderId {
+  return (RACEABLE_PROVIDER_IDS as readonly string[]).includes(value);
+}
+
 export const RACEABLE_PROVIDERS: ProviderConfig[] = PROVIDERS.filter(p =>
-  (RACEABLE_PROVIDER_IDS as readonly string[]).includes(p.id),
+  isRaceableProviderId(p.id),
 );

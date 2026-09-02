@@ -116,8 +116,8 @@ const RaceSettings: React.FC<RaceSettingsProps> = ({ config, onChange, selectedP
         className="w-full flex items-center justify-between text-left"
       >
         <div className="flex items-center gap-2">
-          <div className="w-6 h-6 rounded-md bg-gradient-to-br from-purple-500/20 to-purple-600/10 flex items-center justify-center ring-1 ring-purple-500/20">
-            <svg viewBox="0 0 24 24" className="w-3.5 h-3.5 text-purple-400" fill="none" stroke="currentColor" strokeWidth="2">
+          <div className="w-6 h-6 rounded-md bg-emerald-500/10 flex items-center justify-center ring-1 ring-emerald-400/25">
+            <svg viewBox="0 0 24 24" className="w-3.5 h-3.5 text-emerald-400" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M12.22 2h-.44a2 2 0 00-2 2v.18a2 2 0 01-1 1.73l-.43.25a2 2 0 01-2 0l-.15-.08a2 2 0 00-2.73.73l-.22.38a2 2 0 00.73 2.73l.15.1a2 2 0 011 1.72v.51a2 2 0 01-1 1.74l-.15.09a2 2 0 00-.73 2.73l.22.38a2 2 0 002.73.73l.15-.08a2 2 0 012 0l.43.25a2 2 0 011 1.73V20a2 2 0 002 2h.44a2 2 0 002-2v-.18a2 2 0 011-1.73l.43-.25a2 2 0 012 0l.15.08a2 2 0 002.73-.73l.22-.39a2 2 0 00-.73-2.73l-.15-.08a2 2 0 01-1-1.74v-.5a2 2 0 011-1.74l.15-.09a2 2 0 00.73-2.73l-.22-.38a2 2 0 00-2.73-.73l-.15.08a2 2 0 01-2 0l-.43-.25a2 2 0 01-1-1.73V4a2 2 0 00-2-2z" />
               <circle cx="12" cy="12" r="3" />
             </svg>
@@ -188,7 +188,7 @@ const RaceSettings: React.FC<RaceSettingsProps> = ({ config, onChange, selectedP
                   step="50"
                   value={config.tokenLimit || 500}
                   onChange={(e) => onChange({ ...config, tokenLimit: parseInt(e.target.value) })}
-                  className="flex-1 accent-purple-400"
+                  className="flex-1 accent-emerald-500"
                 />
                 <span className="text-sm text-white font-mono w-16 text-right">
                   {config.tokenLimit || 500}
@@ -210,7 +210,7 @@ const RaceSettings: React.FC<RaceSettingsProps> = ({ config, onChange, selectedP
                   step="5"
                   value={config.timeLimit || 30}
                   onChange={(e) => onChange({ ...config, timeLimit: parseInt(e.target.value) })}
-                  className="flex-1 accent-purple-400"
+                  className="flex-1 accent-emerald-500"
                 />
                 <span className="text-sm text-white font-mono w-12 text-right">
                   {config.timeLimit || 30}s
@@ -240,7 +240,7 @@ const RaceSettings: React.FC<RaceSettingsProps> = ({ config, onChange, selectedP
                 step="0.1"
                 value={config.modelSettings.temperature}
                 onChange={(e) => updateModelSettings('temperature', parseFloat(e.target.value))}
-                className="w-full accent-cyan-400"
+                className="w-full accent-emerald-500"
               />
               <div className="flex justify-between text-[9px] text-[var(--text-muted)]">
                 <span>Focused</span>
@@ -263,7 +263,7 @@ const RaceSettings: React.FC<RaceSettingsProps> = ({ config, onChange, selectedP
                 step="100"
                 value={config.modelSettings.maxTokens}
                 onChange={(e) => updateModelSettings('maxTokens', parseInt(e.target.value))}
-                className="w-full accent-cyan-400"
+                className="w-full accent-emerald-500"
               />
               <div className="flex justify-between text-[9px] text-[var(--text-muted)]">
                 <span>100</span>
@@ -286,7 +286,7 @@ const RaceSettings: React.FC<RaceSettingsProps> = ({ config, onChange, selectedP
                 step="0.05"
                 value={config.modelSettings.topP}
                 onChange={(e) => updateModelSettings('topP', parseFloat(e.target.value))}
-                className="w-full accent-cyan-400"
+                className="w-full accent-emerald-500"
               />
               <div className="flex justify-between text-[9px] text-[var(--text-muted)]">
                 <span>Narrow</span>
