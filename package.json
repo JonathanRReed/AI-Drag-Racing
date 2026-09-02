@@ -11,7 +11,7 @@
     "lint": "eslint . --ext .js,.cjs,.mjs,.jsx,.ts,.tsx",
     "lint:fix": "eslint . --ext .js,.cjs,.mjs,.jsx,.ts,.tsx --fix",
     "test": "vitest run",
-    "build:pages": "next-on-pages && bun scripts/patch-routes.js",
+    "build:pages": "bun scripts/verify-share-config.mjs && next-on-pages && bun scripts/patch-routes.js",
     "build:cf": "next-on-pages",
     "postbuild:cf": "bun scripts/patch-routes.js",
     "deploy:cf": "wrangler pages deploy .vercel/output/static --branch production"

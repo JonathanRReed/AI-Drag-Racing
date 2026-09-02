@@ -7,5 +7,11 @@ compatibility_date = "2025-08-13"
 compatibility_flags = ["nodejs_compat"]
 pages_build_output_dir = ".vercel/output/static"
 
+[vars]
+NEXT_PUBLIC_SUPABASE_URL = "https://bgbqdzmgxkwstjihgeef.supabase.co"
+
+# NEXT_PUBLIC_SUPABASE_ANON_KEY is stored in Pages encrypted environment
+# configuration, never in the repository. Both values are build-time inputs.
+
 # Note: You do not need to set `main` for Pages. The adapter generates
 # .vercel/output/static/_worker.js automatically during the build.
