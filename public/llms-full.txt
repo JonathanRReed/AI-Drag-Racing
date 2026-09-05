@@ -12,7 +12,7 @@ Usage policy: search indexing allowed, AI answers with attribution and a link al
 
 What this site is: a browser tool that sends one prompt to models the visitor selects, with the visitor's own provider API key, and reports the timing of that single run. Every result is one observation from one route at one moment. There is no leaderboard, no global ranking, and no claim about which model is fastest in general.
 
-Linking in: /?model=<openrouter id>&provider=openrouter preselects a model when the visitor supplies an OpenRouter key.
+Linking in: /?model=<openrouter id>&provider=openrouter prefills model search. After supplying an OpenRouter key, select the model checkbox to add it to the race.
 
 ## Definitions
 
