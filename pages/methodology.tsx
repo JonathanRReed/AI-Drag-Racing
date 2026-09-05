@@ -1,8 +1,122 @@
 import Head from 'next/head';
+import type { ReactNode } from 'react';
 import { SiteFooter, SiteHeader } from '../components/layout/SiteChrome';
+import { AUTHOR_PERSON, AUTHOR_REF } from '../lib/author';
+import {
+  DEFINITIONS,
+  HOW_TO_COMPARE,
+  INLINE_PATTERN,
+  METHODOLOGY_UPDATED,
+  SECTIONS,
+  plainText,
+} from '../lib/methodologyContent';
 
+const SITE = 'https://ai-dragrace.jonathanrreed.com';
+const PAGE_URL = `${SITE}/methodology`;
 const DESCRIPTION =
   'How AI Drag Racing measures LLM speed: where the timer runs, what request is sent, how time to first token, total time, and tokens per second are calculated, the n=1 sample size, and what the code does not record.';
+
+const LINK_CLASS = 'text-red-400 underline decoration-red-400/40 underline-offset-4 hover:text-red-300';
+
+/** Renders the content module's inline syntax: **bold**, `code`, [label](href). */
+function Inline({ text }: { text: string }) {
+  const parts: ReactNode[] = [];
+  let last = 0;
+  for (const match of text.matchAll(INLINE_PATTERN)) {
+    const token = match[0];
+    const index = match.index ?? 0;
+    if (index > last) parts.push(text.slice(last, index));
+    if (token.startsWith('**')) {
+      parts.push(<span key={index} className="font-semibold text-white">{token.slice(2, -2)}</span>);
+    } else if (token.startsWith('`')) {
+      parts.push(
+        <code key={index} className="rounded-sm bg-white/10 px-1.5 py-0.5 text-sm text-zinc-200">
+          {token.slice(1, -1)}
+        </code>,
+      );
+    } else {
+      const link = token.match(/^\[([^\]]+)\]\(([^)]+)\)$/);
+      if (link) {
+        const external = link[2].startsWith('http');
+        parts.push(
+          <a key={index} href={link[2]} className={LINK_CLASS} rel={external ? 'noopener noreferrer' : undefined}>
+            {link[1]}
+          </a>,
+        );
+      } else {
+        parts.push(token);
+      }
+    }
+    last = index + token.length;
+  }
+  if (last < text.length) parts.push(text.slice(last));
+  return <>{parts}</>;
+}
+
+const updatedLabel = new Date(`${METHODOLOGY_UPDATED}T00:00:00Z`).toLocaleDateString('en-US', {
+  year: 'numeric',
+  month: 'long',
+  day: 'numeric',
+  timeZone: 'UTC',
+});
+
+const structuredData = {
+  '@context': 'https://schema.org',
+  '@graph': [
+    {
+      '@type': 'TechArticle',
+      '@id': `${PAGE_URL}#article`,
+      headline: 'How AI Drag Racing measures model speed',
+      name: 'Methodology',
+      description: DESCRIPTION,
+      url: PAGE_URL,
+      inLanguage: 'en-US',
+      datePublished: '2026-08-04',
+      dateModified: METHODOLOGY_UPDATED,
+      author: AUTHOR_REF,
+      publisher: AUTHOR_REF,
+      isPartOf: { '@id': `${SITE}/#website` },
+      about: { '@id': `${SITE}/#app` },
+      hasPart: [{ '@id': `${PAGE_URL}#definitions` }, { '@id': `${PAGE_URL}#howto` }],
+    },
+    {
+      '@type': 'DefinedTermSet',
+      '@id': `${PAGE_URL}#definitions`,
+      name: 'AI Drag Racing timing terms',
+      hasDefinedTerm: DEFINITIONS.map((entry) => ({
+        '@type': 'DefinedTerm',
+        name: entry.term,
+        ...(entry.short ? { alternateName: entry.short } : {}),
+        description: entry.definition,
+        inDefinedTermSet: { '@id': `${PAGE_URL}#definitions` },
+      })),
+    },
+    {
+      '@type': 'HowTo',
+      '@id': `${PAGE_URL}#howto`,
+      name: 'How to run a model speed comparison worth quoting',
+      description:
+        'Steps for getting a repeatable, honestly labeled speed comparison out of a browser race. Each race is still one observation from one route.',
+      totalTime: 'PT10M',
+      tool: [{ '@type': 'HowToTool', name: 'A provider API key that stays in the browser' }],
+      step: HOW_TO_COMPARE.map((step, index) => ({
+        '@type': 'HowToStep',
+        position: index + 1,
+        name: step.name,
+        text: step.text,
+        url: `${PAGE_URL}#compare-step-${index + 1}`,
+      })),
+    },
+    {
+      '@type': 'WebSite',
+      '@id': `${SITE}/#website`,
+      name: 'AI Drag Racing',
+      url: `${SITE}/`,
+      author: AUTHOR_REF,
+    },
+    AUTHOR_PERSON,
+  ],
+};
 
 export default function Methodology() {
   return (
@@ -10,7 +124,7 @@ export default function Methodology() {
       <Head>
         <title>Methodology | AI Drag Racing</title>
         <meta name="description" content={DESCRIPTION} />
-        <link rel="canonical" href="https://ai-dragrace.jonathanrreed.com/methodology" />
+        <link rel="canonical" href={PAGE_URL} />
         <meta name="robots" content="index, follow" />
         <meta name="author" content="Jonathan R. Reed" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -18,44 +132,16 @@ export default function Methodology() {
         <meta property="og:type" content="article" />
         <meta property="og:title" content="Methodology | AI Drag Racing" />
         <meta property="og:description" content={DESCRIPTION} />
-        <meta property="og:url" content="https://ai-dragrace.jonathanrreed.com/methodology" />
-        <meta property="og:image" content="https://ai-dragrace.jonathanrreed.com/Favicon/icon-512.png" />
+        <meta property="og:url" content={PAGE_URL} />
+        <meta property="og:image" content={`${SITE}/social-card.png`} />
+        <meta property="article:modified_time" content={METHODOLOGY_UPDATED} />
         <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:title" content="Methodology | AI Drag Racing" />
         <meta name="twitter:description" content={DESCRIPTION} />
-        <meta name="twitter:image" content="https://ai-dragrace.jonathanrreed.com/Favicon/icon-512.png" />
+        <meta name="twitter:image" content={`${SITE}/social-card.png`} />
         <script
           type="application/ld+json"
-          dangerouslySetInnerHTML={{
-            __html: JSON.stringify({
-              '@context': 'https://schema.org',
-              '@type': 'TechArticle',
-              '@id': 'https://ai-dragrace.jonathanrreed.com/methodology#article',
-              headline: 'How AI Drag Racing measures model speed',
-              name: 'Methodology',
-              description: DESCRIPTION,
-              url: 'https://ai-dragrace.jonathanrreed.com/methodology',
-              inLanguage: 'en-US',
-              datePublished: '2026-08-04',
-              dateModified: '2026-08-04',
-              author: {
-                '@type': 'Person',
-                name: 'Jonathan R. Reed',
-                alternateName: 'Jonathan Reed',
-                url: 'https://jonathanrreed.com',
-                sameAs: [
-                  'https://jonathanrreed.com/',
-                  'https://github.com/JonathanRReed',
-                ],
-              },
-              isPartOf: {
-                '@type': 'WebSite',
-                '@id': 'https://ai-dragrace.jonathanrreed.com/#website',
-                name: 'AI Drag Racing',
-                url: 'https://ai-dragrace.jonathanrreed.com/',
-              },
-            }),
-          }}
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData).replace(/</g, '\\u003c') }}
         />
         <link rel="icon" href="/Favicon/favicon.ico" sizes="any" />
       </Head>
@@ -76,183 +162,84 @@ export default function Methodology() {
             than provider-reported. That is useful evidence about your route today, not a global model ranking.
           </p>
 
-          <h2 className="mt-10 text-2xl font-semibold tracking-tight text-white">Where the clock actually runs</h2>
-          <p className="mt-4 text-base leading-8 text-zinc-300">
-            When you start a race, your browser sends one POST per model to{' '}
-            <code className="rounded-sm bg-white/10 px-1.5 py-0.5 text-sm text-zinc-200">
-              /api/providers/&lt;provider&gt;/completions
-            </code>
-            . That endpoint is a Cloudflare Pages Function on the edge runtime, and it is the piece that calls the
-            provider’s streaming API. The timer starts inside that function on the line right before the outbound
-            request, and stops when the provider’s stream closes.
-          </p>
-          <p className="mt-4 text-base leading-8 text-zinc-300">
-            The finish receipt keeps both clocks separate. Browser TTFT and browser total include your connection to
-            Cloudflare. Edge TTFT and edge total describe the worker-to-provider leg. The app does not blend them into
-            one ambiguous latency number.
-          </p>
+          <nav aria-label="On this page" className="mt-6 flex flex-wrap gap-x-4 gap-y-2 text-sm">
+            <a href="#definitions" className={LINK_CLASS}>Definitions</a>
+            <a href="#compare" className={LINK_CLASS}>Fair comparison checklist</a>
+            {SECTIONS.map((section) => (
+              <a key={section.id} href={`#${section.id}`} className={LINK_CLASS}>
+                {section.heading}
+              </a>
+            ))}
+          </nav>
 
-          <h2 className="mt-10 text-2xl font-semibold tracking-tight text-white">
-            Hardware and region, answered honestly
-          </h2>
-          <p className="mt-4 text-base leading-8 text-zinc-300">
-            There is no benchmark machine. The timing code runs in a Cloudflare V8 isolate at whichever data center
-            Cloudflare routes your request to. The app records the coarse Cloudflare colo code returned by the runtime,
-            not an IP address, precise location, CPU model, or browser hardware profile.
-          </p>
-          <p className="mt-4 text-base leading-8 text-zinc-300">
-            Provider region is still unknown. No region parameter is sent to OpenAI, Groq, Anthropic, Google, Cohere,
-            Mistral, Together, Fireworks, OpenRouter, Cerebras, Moonshot, or Z.AI, and their streaming responses do not
-            identify the serving region. A Cloudflare colo describes the edge hop, not the provider data center.
-          </p>
+          <section id="definitions" aria-labelledby="definitions-heading" className="mt-10 scroll-mt-20">
+            <h2 id="definitions-heading" className="text-2xl font-semibold tracking-tight text-white">
+              Definitions
+            </h2>
+            <p className="mt-3 text-sm leading-7 text-zinc-400">
+              The terms every receipt uses. Each one is defined by the code, not by convention.
+            </p>
+            <dl className="mt-4 grid gap-0 border border-white/10 md:grid-cols-2">
+              {DEFINITIONS.map((entry) => (
+                <div key={entry.term} className="border-b border-white/10 p-4 md:odd:border-r">
+                  <dt className="font-semibold text-white">
+                    {entry.term}
+                    {entry.short ? <span className="ml-2 font-mono text-xs font-normal text-zinc-400">{entry.short}</span> : null}
+                  </dt>
+                  <dd className="mt-1 text-sm leading-7 text-zinc-300">{entry.definition}</dd>
+                </div>
+              ))}
+            </dl>
+          </section>
 
-          <h2 className="mt-10 text-2xl font-semibold tracking-tight text-white">What gets sent</h2>
-          <p className="mt-4 text-base leading-8 text-zinc-300">
-            One streaming request per model. The message list holds a single user message containing your prompt
-            verbatim. No system prompt, no conversation history, no retries. If a request fails, the lane shows the
-            error instead of quietly trying again, which is deliberate: a silent retry would hide the exact provider
-            behavior worth seeing.
-          </p>
-          <p className="mt-4 text-base leading-8 text-zinc-300">
-            Provider keys stay in session storage for the current browser tab. A race sends the key and prompt through
-            the site&apos;s Cloudflare route to the selected provider. Neither is written to a race record, but the provider
-            may retain request data under its own policy and account terms.
-          </p>
-          <p className="mt-4 text-base leading-8 text-zinc-300">
-            Default sampling is temperature 0.7, max tokens 2048, and top p 1.0. All three are adjustable in Race
-            Settings (temperature 0 to 2, max tokens 100 to 4096, top p 0 to 1), and whatever you pick is sent to every
-            model in that race, so the lanes stay comparable to each other.
-          </p>
-          <p className="mt-4 text-base leading-8 text-zinc-300">
-            Reasoning effort is the one setting that is not applied uniformly. The code only attaches it when the model
-            ID looks like a reasoning model, matching on o1, o3, gpt-5, k2 or kimi-k2, glm-4.6-thinking, or any ID
-            containing thinking, reasoning, or reflect. You can also switch it off per model before a race. A reasoning
-            model running at high effort will look slow next to a non-reasoning model, and that is a real difference in
-            what the two are doing rather than a measurement artifact.
-          </p>
+          <section id="compare" aria-labelledby="compare-heading" className="mt-10 scroll-mt-20">
+            <h2 id="compare-heading" className="text-2xl font-semibold tracking-tight text-white">
+              How to run a comparison worth quoting
+            </h2>
+            <p className="mt-3 text-sm leading-7 text-zinc-400">
+              A race is one observation. This is how to turn a few of them into something you can stand behind.
+            </p>
+            <ol className="mt-4 space-y-3">
+              {HOW_TO_COMPARE.map((step, index) => (
+                <li key={step.name} id={`compare-step-${index + 1}`} className="grid grid-cols-[2rem_minmax(0,1fr)] gap-3 scroll-mt-20">
+                  <span className="font-mono text-sm text-zinc-500" aria-hidden="true">
+                    {String(index + 1).padStart(2, '0')}
+                  </span>
+                  <p className="text-base leading-8 text-zinc-300">
+                    <span className="font-semibold text-white">{step.name}.</span> {step.text}
+                  </p>
+                </li>
+              ))}
+            </ol>
+          </section>
 
-          <h2 className="mt-10 text-2xl font-semibold tracking-tight text-white">What each number means</h2>
-          <p className="mt-4 text-base leading-8 text-zinc-300">
-            <span className="font-semibold text-white">Time to first token</span> is the first-chunk timestamp minus the
-            start timestamp. The stamp lands on the first chunk carrying non-empty content, so an empty keepalive frame
-            does not count as a start.
-          </p>
-          <p className="mt-4 text-base leading-8 text-zinc-300">
-            <span className="font-semibold text-white">Total time</span> is the finish timestamp minus the start
-            timestamp, where finish is stamped as the provider’s stream closes.
-          </p>
-          <p className="mt-4 text-base leading-8 text-zinc-300">
-            <span className="font-semibold text-white">Tokens per second</span> divides output tokens by the seconds
-            between first token and finish. Read that one carefully. The wait for the first token is not in the
-            denominator, so this is a streaming rate and not an end to end rate, and a model with a slow start can still
-            post the highest tok/s in the race.
-          </p>
-          <p className="mt-4 text-base leading-8 text-zinc-300">
-            <span className="font-semibold text-white">Token counts</span> are where the honesty matters most. Google
-            Gemini returns usage metadata in its stream and the app uses those numbers directly. Every other provider
-            gets an estimate: characters divided by four, rounded-sm up. That estimate is fine for rough comparison and
-            wrong in the specifics, especially for code, non-English text, and anything that tokenizes unusually. For
-            those providers, treat the ordering as more trustworthy than the value.
-          </p>
-          <p className="mt-4 text-base leading-8 text-zinc-300">
-            <span className="font-semibold text-white">The live pace chart</span> plots characters received, not tokens,
-            against a browser clock that starts from one shared Go instant for every lane. It is the one view that
-            includes your own network path, which is why its curve can disagree slightly with the timing table.
-          </p>
-
-          <h2 className="mt-10 text-2xl font-semibold tracking-tight text-white">Sample size</h2>
-          <p className="mt-4 text-base leading-8 text-zinc-300">
-            One run per model per race. n = 1.
-          </p>
-          <p className="mt-4 text-base leading-8 text-zinc-300">
-            There is no warm-up request, automatic repeat, median across trials, or outlier removal. Every lane fires
-            at the same moment from a single shared start. Experiment Lab exposes the settings, but each run is still a
-            single observation. Repeat it yourself before treating an ordering as stable.
-          </p>
-          <p className="mt-4 text-base leading-8 text-zinc-300">
-            A single race tells you very little about a provider. It tells you what happened once, on one route, under
-            whatever load that provider was carrying in that second. Run the same prompt several times before you
-            believe an ordering, and stop believing it as soon as the prompt or the model changes.
-          </p>
-
-          <h2 className="mt-10 text-2xl font-semibold tracking-tight text-white">
-            Two race modes measure differently
-          </h2>
-          <p className="mt-4 text-base leading-8 text-zinc-300">
-            Drag Race and Free Run read their metrics from the edge function, which is the path described above. Token
-            Sprint and Time Trial cut the stream off at the client once the limit is hit, so the provider never sends
-            its final metrics event and the app synthesizes one from the browser clock and its own chunk count instead.
-            Different clock, different token source. Do not compare those runs directly against Drag Race numbers.
-          </p>
-          <p className="mt-4 text-base leading-8 text-zinc-300">
-            The test race button is a simulation. It replays hardcoded timings so the visualization can be tried without
-            API keys. None of those numbers came from a provider.
-          </p>
-
-          <h2 className="mt-10 text-2xl font-semibold tracking-tight text-white">What the code does not do</h2>
-          <ul className="mt-4 space-y-3 text-base leading-8 text-zinc-300">
-            <li>
-              <span className="font-semibold text-white">No server-side race archive.</span> Sanitized receipts are kept
-              only in this browser for up to 30 days. They include model and provider IDs, settings, coarse edge colo,
-              timing, token counts, prompt length, and a prompt fingerprint. They do not include the prompt text,
-              response text, API keys, IP address, or precise location. You can export or delete them at any time.
-            </li>
-            <li>
-              <span className="font-semibold text-white">No model version pinning.</span> The model list comes from each
-              provider’s live models endpoint at the moment you open the app. Many of those IDs are aliases, and
-              providers move them onto new weights without changing the string. A race from today and a race from last
-              month can carry the same label and not be the same model.
-            </li>
-            <li>
-              <span className="font-semibold text-white">No quality scoring.</span> Responses sit next to the timings so
-              you can judge them yourself. Nothing in the app grades them.
-            </li>
-            <li>
-              <span className="font-semibold text-white">No cost math in the race view.</span> Speed only.
-            </li>
-            <li>
-              <span className="font-semibold text-white">No hidden provider fallbacks.</span> The lineup only lists
-              providers wired to the live completion route. A failed route stays failed instead of silently switching
-              to another provider or model.
-            </li>
-          </ul>
-
-          <h2 className="mt-10 text-2xl font-semibold tracking-tight text-white">If you are citing a result</h2>
-          <p className="mt-4 text-base leading-8 text-zinc-300">
-            Say what it is: a single live run, timed at a Cloudflare edge worker, with estimated token counts for every
-            provider except Google, and no controlled hardware or region. Include the date, the exact model IDs, and the
-            prompt. Without those three, the number stops meaning anything a month later.
-          </p>
-          <p className="mt-4 text-base leading-8 text-zinc-300">
-            For model capability and pricing context I keep a separate project at{' '}
-            <a
-              href="https://aistats.jonathanrreed.com"
-              rel="noopener noreferrer"
-              className="text-red-400 underline decoration-red-400/40 underline-offset-4 hover:text-red-300"
-            >
-              AI Stats
-            </a>
-            . This site answers one narrower question: how fast did this model respond, right now, on this route. The{' '}
-            <a
-              href="/about"
-              className="text-red-400 underline decoration-red-400/40 underline-offset-4 hover:text-red-300"
-            >
-              about page
-            </a>{' '}
-            covers why it exists, and the{' '}
-            <a
-              href="/privacy"
-              className="text-red-400 underline decoration-red-400/40 underline-offset-4 hover:text-red-300"
-            >
-              privacy page
-            </a>{' '}
-            covers what happens to the API key you paste in.
-          </p>
+          {SECTIONS.map((section) => (
+            <section key={section.id} id={section.id} aria-labelledby={`${section.id}-heading`} className="scroll-mt-20">
+              <h2 id={`${section.id}-heading`} className="mt-10 text-2xl font-semibold tracking-tight text-white">
+                {section.heading}
+              </h2>
+              {section.blocks.map((block, index) =>
+                block.type === 'p' ? (
+                  <p key={index} className="mt-4 text-base leading-8 text-zinc-300">
+                    <Inline text={block.text} />
+                  </p>
+                ) : (
+                  <ul key={index} className="mt-4 space-y-3 text-base leading-8 text-zinc-300">
+                    {block.items.map((item) => (
+                      <li key={plainText(item).slice(0, 40)}>
+                        <Inline text={item} />
+                      </li>
+                    ))}
+                  </ul>
+                ),
+              )}
+            </section>
+          ))}
 
           <p className="mt-8 text-sm text-zinc-500">
-            This page describes the code as it stands on{' '}
-            <time dateTime="2026-09-01">September 1, 2026</time>. If the measurement path changes, this page changes with
-            it.
+            This page describes the code as it stands on <time dateTime={METHODOLOGY_UPDATED}>{updatedLabel}</time>. If
+            the measurement path changes, this page changes with it. The same text is available as{' '}
+            <a href="/llms-full.txt" className={LINK_CLASS}>plain text</a>.
           </p>
           <p className="mt-4 text-sm text-zinc-500">
             <a href="/" className="text-red-400 hover:text-red-300">

@@ -14,7 +14,8 @@
     "build:pages": "bun scripts/verify-share-config.mjs && next-on-pages && bun scripts/patch-routes.js",
     "build:cf": "next-on-pages",
     "postbuild:cf": "bun scripts/patch-routes.js",
-    "deploy:cf": "wrangler pages deploy .vercel/output/static --branch production"
+    "deploy:cf": "wrangler pages deploy .vercel/output/static --branch production",
+    "llms:full": "bun scripts/generate-llms-full.ts"
   },
   "dependencies": {
     "@aws-sdk/client-bedrock": "^3.1124.0",

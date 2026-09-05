@@ -13,6 +13,7 @@ Built and maintained by Jonathan R. Reed, whose canonical site is <https://jonat
 - [Subprocessors](https://ai-dragrace.jonathanrreed.com/subprocessors): Hosting, model providers, and infrastructure disclosure.
 - [Contact](https://ai-dragrace.jonathanrreed.com/contact): Corrections, collaboration, and attribution questions.
 - [Sitemap](https://ai-dragrace.jonathanrreed.com/sitemap.xml): Every indexable URL on the site.
+- [Full methodology for assistants](https://ai-dragrace.jonathanrreed.com/llms-full.txt): Definitions, the comparison checklist, and the complete methodology text, generated from the same content the page renders.
 - [Alternate domain](https://airacing.jonathanrreed.com/): Same site, second hostname.
 
 ## Policies

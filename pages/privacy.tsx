@@ -1,4 +1,5 @@
 import Head from 'next/head';
+import { AUTHOR_REF } from '../lib/author';
 import { SiteFooter, SiteHeader } from '../components/layout/SiteChrome';
 
 export default function Privacy() {
@@ -17,14 +18,14 @@ export default function Privacy() {
           property="og:description"
           content="AI Drag Racing keeps provider keys only for the current browser tab and sends prompts to the provider routes you choose for a race."
         />
-        <meta property="og:image" content="https://ai-dragrace.jonathanrreed.com/Favicon/icon-512.png" />
+        <meta property="og:image" content="https://ai-dragrace.jonathanrreed.com/social-card.png" />
         <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:title" content="Privacy | AI Drag Racing" />
         <meta
           name="twitter:description"
           content="AI Drag Racing keeps provider keys only for the current browser tab and sends prompts to the provider routes you choose for a race."
         />
-        <meta name="twitter:image" content="https://ai-dragrace.jonathanrreed.com/Favicon/icon-512.png" />
+        <meta name="twitter:image" content="https://ai-dragrace.jonathanrreed.com/social-card.png" />
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{
@@ -37,15 +38,7 @@ export default function Privacy() {
               url: 'https://ai-dragrace.jonathanrreed.com/privacy',
               datePublished: '2026-04-21',
               dateModified: '2026-09-01',
-              author: {
-                '@type': 'Person',
-                name: 'Jonathan R. Reed',
-                url: 'https://jonathanrreed.com',
-                sameAs: [
-                  'https://jonathanrreed.com/',
-                  'https://github.com/JonathanRReed',
-                ],
-              },
+              author: AUTHOR_REF,
             }),
           }}
         />

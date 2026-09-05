@@ -1,4 +1,5 @@
 import Head from 'next/head';
+import { AUTHOR_REF } from '../lib/author';
 import { SiteFooter, SiteHeader } from '../components/layout/SiteChrome';
 
 export default function Contact() {
@@ -17,14 +18,14 @@ export default function Contact() {
           property="og:description"
           content="Contact Jonathan R. Reed about AI Drag Racing, a single-run browser comparison for LLM latency, throughput, and model behavior."
         />
-        <meta property="og:image" content="https://ai-dragrace.jonathanrreed.com/Favicon/icon-512.png" />
+        <meta property="og:image" content="https://ai-dragrace.jonathanrreed.com/social-card.png" />
         <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:title" content="Contact | AI Drag Racing" />
         <meta
           name="twitter:description"
           content="Contact Jonathan R. Reed about AI Drag Racing, a single-run browser comparison for LLM latency, throughput, and model behavior."
         />
-        <meta name="twitter:image" content="https://ai-dragrace.jonathanrreed.com/Favicon/icon-512.png" />
+        <meta name="twitter:image" content="https://ai-dragrace.jonathanrreed.com/social-card.png" />
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{
@@ -37,15 +38,7 @@ export default function Contact() {
               url: 'https://ai-dragrace.jonathanrreed.com/contact',
               datePublished: '2026-04-21',
               dateModified: '2026-08-04',
-              author: {
-                '@type': 'Person',
-                name: 'Jonathan R. Reed',
-                url: 'https://jonathanrreed.com',
-                sameAs: [
-                  'https://jonathanrreed.com/',
-                  'https://github.com/JonathanRReed',
-                ],
-              },
+              author: AUTHOR_REF,
             }),
           }}
         />

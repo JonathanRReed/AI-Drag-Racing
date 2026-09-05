@@ -1,4 +1,5 @@
 import Head from 'next/head';
+import { AUTHOR_REF } from '../lib/author';
 import { SiteFooter, SiteHeader } from '../components/layout/SiteChrome';
 
 export default function Subprocessors() {
@@ -17,14 +18,14 @@ export default function Subprocessors() {
           property="og:description"
           content="Subprocessor disclosure for AI Drag Racing, including hosting, provider API routing, and browser-local credential handling."
         />
-        <meta property="og:image" content="https://ai-dragrace.jonathanrreed.com/Favicon/icon-512.png" />
+        <meta property="og:image" content="https://ai-dragrace.jonathanrreed.com/social-card.png" />
         <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:title" content="Subprocessor Disclosure | AI Drag Racing" />
         <meta
           name="twitter:description"
           content="Subprocessor disclosure for AI Drag Racing, including hosting, provider API routing, and browser-local credential handling."
         />
-        <meta name="twitter:image" content="https://ai-dragrace.jonathanrreed.com/Favicon/icon-512.png" />
+        <meta name="twitter:image" content="https://ai-dragrace.jonathanrreed.com/social-card.png" />
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{
@@ -37,15 +38,7 @@ export default function Subprocessors() {
               url: 'https://ai-dragrace.jonathanrreed.com/subprocessors',
               datePublished: '2026-06-19',
               dateModified: '2026-08-04',
-              author: {
-                '@type': 'Person',
-                name: 'Jonathan R. Reed',
-                url: 'https://jonathanrreed.com',
-                sameAs: [
-                  'https://jonathanrreed.com/',
-                  'https://github.com/JonathanRReed',
-                ],
-              },
+              author: AUTHOR_REF,
             }),
           }}
         />

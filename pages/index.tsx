@@ -1,4 +1,5 @@
 import React, { useReducer, useCallback, useState, useRef, useEffect, useMemo } from 'react';
+import { AUTHOR_PERSON, AUTHOR_REF } from '../lib/author';
 import Head from 'next/head';
 import dynamic from 'next/dynamic';
 import { useRouter } from 'next/router';
@@ -686,11 +687,11 @@ export default function Home() {
         <meta property="og:title" content="AI Drag Racing | Compare AI Speed From Your Browser" />
         <meta property="og:description" content="Run the same prompt through selected AI models and compare the speed your browser experiences. Each result is one route-specific observation, not a global ranking." />
         <meta property="og:url" content="https://ai-dragrace.jonathanrreed.com/" />
-        <meta property="og:image" content="https://ai-dragrace.jonathanrreed.com/Favicon/icon-512.png" />
+        <meta property="og:image" content="https://ai-dragrace.jonathanrreed.com/social-card.png" />
         <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:title" content="AI Drag Racing | Compare AI Speed From Your Browser" />
         <meta name="twitter:description" content="Run the same prompt through selected AI models and compare the speed your browser experiences. Each result is one route-specific observation, not a global ranking." />
-        <meta name="twitter:image" content="https://ai-dragrace.jonathanrreed.com/Favicon/icon-512.png" />
+        <meta name="twitter:image" content="https://ai-dragrace.jonathanrreed.com/social-card.png" />
 
         {/* JSON-LD Structured Data */}
         <script
@@ -698,24 +699,41 @@ export default function Home() {
           dangerouslySetInnerHTML={{
             __html: JSON.stringify({
               "@context": "https://schema.org",
-              "@type": "WebSite",
-              "@id": "https://ai-dragrace.jonathanrreed.com/#website",
-              "name": "AI Drag Racing",
-              "description": "Run the same prompt through selected AI models and compare the speed your browser experiences. Each result is one route-specific observation, not a global ranking.",
-              "url": "https://ai-dragrace.jonathanrreed.com/",
-              "inLanguage": "en-US",
-              "datePublished": "2026-04-21",
-              "dateModified": "2026-09-01",
-              "author": {
-                "@type": "Person",
-                "name": "Jonathan R. Reed",
-                "alternateName": "Jonathan Reed",
-                "url": "https://jonathanrreed.com",
-                "sameAs": [
-                  "https://jonathanrreed.com/",
-                  "https://github.com/JonathanRReed"
-                ]
-              }
+              "@graph": [
+                {
+                  "@type": "WebSite",
+                  "@id": "https://ai-dragrace.jonathanrreed.com/#website",
+                  "name": "AI Drag Racing",
+                  "description": "Run the same prompt through selected AI models and compare the speed your browser experiences. Each result is one route-specific observation, not a global ranking.",
+                  "url": "https://ai-dragrace.jonathanrreed.com/",
+                  "inLanguage": "en-US",
+                  "datePublished": "2026-04-21",
+                  "dateModified": "2026-09-05",
+                  "author": AUTHOR_REF,
+                  "publisher": AUTHOR_REF
+                },
+                {
+                  "@type": "WebApplication",
+                  "@id": "https://ai-dragrace.jonathanrreed.com/#app",
+                  "name": "AI Drag Racing",
+                  "url": "https://ai-dragrace.jonathanrreed.com/",
+                  "applicationCategory": "DeveloperApplication",
+                  "operatingSystem": "Any",
+                  "browserRequirements": "Requires JavaScript and your own provider API key, which stays in this browser tab.",
+                  "isAccessibleForFree": true,
+                  "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+                  "featureList": [
+                    "Time to first token, total time, and tokens per second for one live request per model",
+                    "Browser clock and Cloudflare edge clock reported separately",
+                    "Up to several models racing from one shared start",
+                    "Sanitized receipts kept in the browser for 30 days, exportable, never uploaded",
+                    "Methodology page describing every clock and what is not recorded"
+                  ],
+                  "author": AUTHOR_REF,
+                  "isPartOf": { "@id": "https://ai-dragrace.jonathanrreed.com/#website" }
+                },
+                AUTHOR_PERSON
+              ]
             })
           }}
         />

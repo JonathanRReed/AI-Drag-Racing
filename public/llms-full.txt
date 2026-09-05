@@ -1,0 +1,107 @@
+# AI Drag Racing, full methodology
+
+> How AI Drag Racing measures model speed from a visitor's own browser and route: where the timer runs, what request is sent, how time to first token, total time, and tokens per second are calculated, the n = 1 sample size, and what the code does not record. Same words as the methodology page.
+
+Site: https://ai-dragrace.jonathanrreed.com/
+Short guide: https://ai-dragrace.jonathanrreed.com/llms.txt
+Methodology page: https://ai-dragrace.jonathanrreed.com/methodology
+Privacy: https://ai-dragrace.jonathanrreed.com/privacy
+Content as of: 2026-09-05
+
+Usage policy: search indexing allowed, AI answers with attribution and a link allowed, AI training not allowed. Matches the content signals in /robots.txt.
+
+What this site is: a browser tool that sends one prompt to models the visitor selects, with the visitor's own provider API key, and reports the timing of that single run. Every result is one observation from one route at one moment. There is no leaderboard, no global ranking, and no claim about which model is fastest in general.
+
+Linking in: /?model=<openrouter id>&provider=openrouter preselects a model when the visitor supplies an OpenRouter key.
+
+## Definitions
+
+- Time to first token (TTFT): The first content chunk timestamp minus the start timestamp. An empty keepalive frame does not count as a start.
+- Total time: The finish timestamp minus the start timestamp. Finish is stamped when the provider closes its stream.
+- Tokens per second (tok/s): Output tokens divided by the seconds between the first token and the finish. The wait for the first token is not in the denominator, so this is a streaming rate, not an end to end rate.
+- Browser clock and edge clock: Browser timings include your connection to Cloudflare. Edge timings describe the leg from the Cloudflare worker to the provider. The two are never blended.
+- Token count: Google Gemini reports usage in its stream and those numbers are used directly. Every other provider gets an estimate: characters divided by four, rounded up.
+- Colo: The coarse Cloudflare data center code where the edge function ran. It describes the edge hop, not the provider data center, which is unknown.
+- n = 1: One run per model per race. No warm-up, no automatic repeat, no median across trials, no outlier removal.
+
+## How to run a comparison worth quoting
+
+1. Fix the prompt. Pick the models and one prompt, then keep that prompt unchanged for every race you intend to compare.
+2. Use one set of sampling settings. The same temperature, max tokens, and top p go to every lane. Decide reasoning effort per model on purpose, and note it.
+3. Stay in one race mode. Drag Race and Free Run read the edge clock. Token Sprint and Time Trial cut the stream off in the browser and synthesize their metrics, so do not mix the two families.
+4. Repeat before believing an ordering. Run the same race at least three times at different minutes. If the order changes between runs, report that instead of the single best run.
+5. Read the clocks separately. Look at time to first token and tokens per second as two numbers, compare the edge and browser rows, and note the colo the receipt recorded.
+6. Cite with the context attached. Include the date, the exact model IDs, the prompt, the sampling settings, and the number of runs. State that token counts are estimated for every provider except Google.
+
+## Where the clock actually runs
+
+When you start a race, your browser sends one POST per model to /api/providers/<provider>/completions. That endpoint is a Cloudflare Pages Function on the edge runtime, and it is the piece that calls the provider’s streaming API. The timer starts inside that function on the line right before the outbound request, and stops when the provider’s stream closes.
+
+The finish receipt keeps both clocks separate. Browser TTFT and browser total include your connection to Cloudflare. Edge TTFT and edge total describe the worker-to-provider leg. The app does not blend them into one ambiguous latency number.
+
+## Hardware and region, answered honestly
+
+There is no benchmark machine. The timing code runs in a Cloudflare V8 isolate at whichever data center Cloudflare routes your request to. The app records the coarse Cloudflare colo code returned by the runtime, not an IP address, precise location, CPU model, or browser hardware profile.
+
+Provider region is still unknown. No region parameter is sent to OpenAI, Groq, Anthropic, Google, Cohere, Mistral, Together, Fireworks, OpenRouter, Cerebras, Moonshot, or Z.AI, and their streaming responses do not identify the serving region. A Cloudflare colo describes the edge hop, not the provider data center.
+
+## What gets sent
+
+One streaming request per model. The message list holds a single user message containing your prompt verbatim. No system prompt, no conversation history, no retries. If a request fails, the lane shows the error instead of quietly trying again, which is deliberate: a silent retry would hide the exact provider behavior worth seeing.
+
+Provider keys stay in session storage for the current browser tab. A race sends the key and prompt through the site's Cloudflare route to the selected provider. Neither is written to a race record, but the provider may retain request data under its own policy and account terms.
+
+Default sampling is temperature 0.7, max tokens 2048, and top p 1.0. All three are adjustable in Race Settings (temperature 0 to 2, max tokens 100 to 4096, top p 0 to 1), and whatever you pick is sent to every model in that race, so the lanes stay comparable to each other.
+
+Reasoning effort is the one setting that is not applied uniformly. The code only attaches it when the model ID looks like a reasoning model, matching on o1, o3, gpt-5, k2 or kimi-k2, glm-4.6-thinking, or any ID containing thinking, reasoning, or reflect. You can also switch it off per model before a race. A reasoning model running at high effort will look slow next to a non-reasoning model, and that is a real difference in what the two are doing rather than a measurement artifact.
+
+## What each number means
+
+Time to first token is the first-chunk timestamp minus the start timestamp. The stamp lands on the first chunk carrying non-empty content, so an empty keepalive frame does not count as a start.
+
+Total time is the finish timestamp minus the start timestamp, where finish is stamped as the provider’s stream closes.
+
+Tokens per second divides output tokens by the seconds between first token and finish. Read that one carefully. The wait for the first token is not in the denominator, so this is a streaming rate and not an end to end rate, and a model with a slow start can still post the highest tok/s in the race.
+
+Token counts are where the honesty matters most. Google Gemini returns usage metadata in its stream and the app uses those numbers directly. Every other provider gets an estimate: characters divided by four, rounded up. That estimate is fine for rough comparison and wrong in the specifics, especially for code, non-English text, and anything that tokenizes unusually. For those providers, treat the ordering as more trustworthy than the value.
+
+The live pace chart plots characters received, not tokens, against a browser clock that starts from one shared Go instant for every lane. It is the one view that includes your own network path, which is why its curve can disagree slightly with the timing table.
+
+## Sample size
+
+One run per model per race. n = 1.
+
+There is no warm-up request, automatic repeat, median across trials, or outlier removal. Every lane fires at the same moment from a single shared start. Experiment Lab exposes the settings, but each run is still a single observation. Repeat it yourself before treating an ordering as stable.
+
+A single race tells you very little about a provider. It tells you what happened once, on one route, under whatever load that provider was carrying in that second. Run the same prompt several times before you believe an ordering, and stop believing it as soon as the prompt or the model changes.
+
+## Two race modes measure differently
+
+Drag Race and Free Run read their metrics from the edge function, which is the path described above. Token Sprint and Time Trial cut the stream off at the client once the limit is hit, so the provider never sends its final metrics event and the app synthesizes one from the browser clock and its own chunk count instead. Different clock, different token source. Do not compare those runs directly against Drag Race numbers.
+
+The test race button is a simulation. It replays hardcoded timings so the visualization can be tried without API keys. None of those numbers came from a provider.
+
+## What the code does not do
+
+- No server-side race archive. Sanitized receipts are kept only in this browser for up to 30 days. They include model and provider IDs, settings, coarse edge colo, timing, token counts, prompt length, and a prompt fingerprint. They do not include the prompt text, response text, API keys, IP address, or precise location. You can export or delete them at any time.
+- No model version pinning. The model list comes from each provider’s live models endpoint at the moment you open the app. Many of those IDs are aliases, and providers move them onto new weights without changing the string. A race from today and a race from last month can carry the same label and not be the same model.
+- No quality scoring. Responses sit next to the timings so you can judge them yourself. Nothing in the app grades them.
+- No cost math in the race view. Speed only.
+- No hidden provider fallbacks. The lineup only lists providers wired to the live completion route. A failed route stays failed instead of silently switching to another provider or model.
+
+## If you are citing a result
+
+Say what it is: a single live run, timed at a Cloudflare edge worker, with estimated token counts for every provider except Google, and no controlled hardware or region. Include the date, the exact model IDs, and the prompt. Without those three, the number stops meaning anything a month later.
+
+For model capability and pricing context I keep a separate project at AI Stats (https://aistats.jonathanrreed.com). This site answers one narrower question: how fast did this model respond, right now, on this route. The about page (/about) covers why it exists, and the privacy page (/privacy) covers what happens to the API key you paste in.
+
+## Providers wired to the live route
+
+OpenAI, Groq, Anthropic, Google, Cohere, Mistral, Together, Fireworks, OpenRouter, Cerebras, Moonshot, Z.AI. The model list for each comes from the provider's live models endpoint at the moment the app opens.
+
+## Related tools by the same author
+
+- AI Stats (https://aistats.jonathanrreed.com/): published price, speed, context, and benchmark measurements per model.
+- Prompt Info (https://prompt-info.helloworldfirm.com/): what a prompt or recurring workload costs.
+- AI News (https://ai-news.helloworldfirm.com/): official announcements, dated and linked to the source.
+- PoliBench (https://polibench.jonathanrreed.com/): where models land on political questions, measured from output only.
