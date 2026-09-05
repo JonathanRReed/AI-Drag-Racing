@@ -223,7 +223,7 @@ const WinnerPodium: React.FC<WinnerPodiumProps> = ({ results, mode, reducedMotio
       <div className="mt-5 grid grid-cols-1 gap-2 sm:grid-cols-2">
         {pole && (
           <div className="flex items-center gap-2.5 rounded-xl border border-cyan-500/20 bg-cyan-500/5 px-3 py-2">
-            <span className="text-[10px] font-bold uppercase tracking-widest text-cyan-300">Pole</span>
+            <span className="text-[10px] font-bold text-cyan-300">Pole</span>
             <span className="min-w-0 flex-1 truncate text-sm text-[var(--text)]">
               {displayName(pole.r.providerName)}{' '}
               <span className="text-[var(--text-muted)]">· {pole.r.modelName}</span>
@@ -235,7 +235,7 @@ const WinnerPodium: React.FC<WinnerPodiumProps> = ({ results, mode, reducedMotio
         )}
         {fastestLap && (
           <div className="flex items-center gap-2.5 rounded-xl border border-amber-500/20 bg-amber-500/5 px-3 py-2">
-            <span className="text-[10px] font-bold uppercase tracking-widest text-amber-300">Fastest Lap</span>
+            <span className="text-[10px] font-bold text-amber-300">Fastest Lap</span>
             <span className="min-w-0 flex-1 truncate text-sm text-[var(--text)]">
               {displayName(fastestLap.r.providerName)}{' '}
               <span className="text-[var(--text-muted)]">· {fastestLap.r.modelName}</span>

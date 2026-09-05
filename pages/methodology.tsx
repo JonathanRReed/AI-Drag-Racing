@@ -1,4 +1,5 @@
 import Head from 'next/head';
+import { SiteFooter, SiteHeader } from '../components/layout/SiteChrome';
 
 const DESCRIPTION =
   'How AI Drag Racing measures LLM speed: where the timer runs, what request is sent, how time to first token, total time, and tokens per second are calculated, the n=1 sample size, and what the code does not record.';
@@ -58,9 +59,10 @@ export default function Methodology() {
         />
         <link rel="icon" href="/Favicon/favicon.ico" sizes="any" />
       </Head>
-      <main className="min-h-dvh bg-[var(--bg)] px-6 py-16 text-[var(--text)]">
-        <article className="mx-auto max-w-3xl rounded-[20px] border border-white/10 bg-zinc-950/70 p-8 shadow-2xl">
-          <a href="/" className="text-xs font-semibold uppercase tracking-[0.22em] text-red-400 hover:text-red-300">
+      <SiteHeader />
+      <main id="main-content" className="eco-container py-12 text-[var(--text)]">
+        <article className="mx-auto max-w-3xl border border-white/10 bg-zinc-950 p-6 md:p-8">
+          <a href="/" className="text-xs font-medium text-red-400 hover:text-red-300">
             AI Drag Racing
           </a>
           <h1 className="mt-5 text-4xl font-semibold tracking-tight text-white md:text-5xl">
@@ -77,7 +79,7 @@ export default function Methodology() {
           <h2 className="mt-10 text-2xl font-semibold tracking-tight text-white">Where the clock actually runs</h2>
           <p className="mt-4 text-base leading-8 text-zinc-300">
             When you start a race, your browser sends one POST per model to{' '}
-            <code className="rounded bg-white/10 px-1.5 py-0.5 text-sm text-zinc-200">
+            <code className="rounded-sm bg-white/10 px-1.5 py-0.5 text-sm text-zinc-200">
               /api/providers/&lt;provider&gt;/completions
             </code>
             . That endpoint is a Cloudflare Pages Function on the edge runtime, and it is the piece that calls the
@@ -148,7 +150,7 @@ export default function Methodology() {
           <p className="mt-4 text-base leading-8 text-zinc-300">
             <span className="font-semibold text-white">Token counts</span> are where the honesty matters most. Google
             Gemini returns usage metadata in its stream and the app uses those numbers directly. Every other provider
-            gets an estimate: characters divided by four, rounded up. That estimate is fine for rough comparison and
+            gets an estimate: characters divided by four, rounded-sm up. That estimate is fine for rough comparison and
             wrong in the specifics, especially for code, non-English text, and anything that tokenizes unusually. For
             those providers, treat the ordering as more trustworthy than the value.
           </p>
@@ -259,6 +261,7 @@ export default function Methodology() {
           </p>
         </article>
       </main>
+      <SiteFooter />
     </>
   );
 }

@@ -1,4 +1,5 @@
 import Head from 'next/head';
+import { SiteFooter, SiteHeader } from '../../components/layout/SiteChrome';
 import { useRouter } from 'next/router';
 import { useEffect, useState } from 'react';
 import SharedRaceView from '../../components/main/SharedRaceView';
@@ -25,7 +26,8 @@ export default function SharedRacePage() {
         <title>Shared race receipt | AI Drag Racing</title>
         <meta name="robots" content="noindex, nofollow, noarchive" />
       </Head>
-      <main className="shared-race-page">
+      <SiteHeader />
+      <main id="main-content" className="shared-race-page">
         {state === 'ready' && record ? <SharedRaceView record={record} /> : (
           <section className="shared-race-message" aria-live="polite">
             <h1>{state === 'loading' ? 'Loading race receipt' : 'Race receipt unavailable'}</h1>
@@ -34,6 +36,7 @@ export default function SharedRacePage() {
           </section>
         )}
       </main>
+      <SiteFooter />
     </>
   );
 }

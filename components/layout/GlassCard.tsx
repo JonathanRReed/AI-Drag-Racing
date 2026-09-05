@@ -47,7 +47,7 @@ const GlassCard: React.FC<GlassCardProps> = ({
     <div
       ref={cardRef}
       className={`${baseStyles} ${glowStyles} ${spotlightStyles} ${variantStyles[variant]} ${className}`}
-      style={{ willChange: hover ? 'transform, box-shadow' : 'auto' }}
+      style={{ willChange: hover ? 'transform, box-shadow-sm' : 'auto' }}
       onMouseMove={handleMouseMove}
     >
       {children}

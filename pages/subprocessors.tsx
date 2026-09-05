@@ -1,4 +1,5 @@
 import Head from 'next/head';
+import { SiteFooter, SiteHeader } from '../components/layout/SiteChrome';
 
 export default function Subprocessors() {
   return (
@@ -49,9 +50,10 @@ export default function Subprocessors() {
           }}
         />
       </Head>
-      <main className="min-h-dvh bg-[var(--bg)] px-6 py-16 text-[var(--text)]">
-        <article className="mx-auto max-w-3xl rounded-[20px] border border-white/10 bg-zinc-950/70 p-8 shadow-2xl">
-          <a href="/" className="text-xs font-semibold uppercase tracking-[0.22em] text-red-400 hover:text-red-300">
+      <SiteHeader />
+      <main id="main-content" className="eco-container py-12 text-[var(--text)]">
+        <article className="mx-auto max-w-3xl border border-white/10 bg-zinc-950 p-6 md:p-8">
+          <a href="/" className="text-xs font-medium text-red-400 hover:text-red-300">
             AI Drag Racing
           </a>
           <h1 className="mt-5 text-4xl font-semibold tracking-tight text-white md:text-5xl">
@@ -90,6 +92,7 @@ export default function Subprocessors() {
           </p>
         </article>
       </main>
+      <SiteFooter />
     </>
   );
 }

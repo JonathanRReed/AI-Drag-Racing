@@ -41,7 +41,7 @@ const PromptInput: React.FC<PromptInputProps> = ({
 
   return (
     <GlassCard className="prompt-card p-3" hover={false} spotlight={false}>
-      <label htmlFor="prompt-input" className="mb-2 block text-[10px] font-semibold uppercase tracking-[0.18em] text-zinc-500">
+      <label htmlFor="prompt-input" className="mb-2 block text-xs font-medium text-zinc-500">
         Prompt
       </label>
       <textarea

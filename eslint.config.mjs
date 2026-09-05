@@ -5,7 +5,6 @@ import tseslint from 'typescript-eslint';
 import react from 'eslint-plugin-react';
 import reactHooks from 'eslint-plugin-react-hooks';
 import nextPlugin from '@next/eslint-plugin-next';
-import tailwind from 'eslint-plugin-tailwindcss';
 import unusedImports from 'eslint-plugin-unused-imports';
 
 export default [
@@ -45,14 +44,10 @@ export default [
       react,
       'react-hooks': reactHooks,
       '@next/next': nextPlugin,
-      tailwind,
       'unused-imports': unusedImports,
     },
     settings: {
       react: { version: 'detect' },
-      tailwindcss: {
-        callees: ['classnames', 'clsx', 'ctl'],
-      },
     },
     rules: {
       // React & Hooks
@@ -70,10 +65,6 @@ export default [
 
       // Next.js plugin
       '@next/next/no-html-link-for-pages': 'off',
-
-      // TailwindCSS plugin — allow custom classnames and arbitrary values used widely here
-      'tailwindcss/no-custom-classname': 'off',
-      'tailwindcss/classnames-order': 'off',
 
       // Allow empty blocks (some provider stubs)
       'no-empty': 'off',

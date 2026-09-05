@@ -173,7 +173,7 @@ const RaceLane: React.FC<RaceLaneProps> = ({
           {/* Main lane content */}
           <div className="flex-1 min-w-0 flex flex-col">
             {/* Header row */}
-            <div className="flex items-start justify-between gap-2 mb-2 bg-black/40 p-2 rounded-lg border border-white/5 backdrop-blur-sm">
+            <div className="flex items-start justify-between gap-2 mb-2 bg-black/40 p-2 rounded-lg border border-white/5 backdrop-blur-xs">
               <div className="flex items-center gap-3 min-w-0 flex-1">
                 <div className="relative">
                   {/* Car / Provider Indicator */}
@@ -215,7 +215,7 @@ const RaceLane: React.FC<RaceLaneProps> = ({
                 <StatusBadge status={status} />
                 <button
                   onClick={() => setExpanded((v) => !v)}
-                  className="p-1 rounded bg-white/5 hover:bg-white/10 text-[var(--text-muted)] hover:text-white transition-colors"
+                  className="p-1 rounded-sm bg-white/5 hover:bg-white/10 text-[var(--text-muted)] hover:text-white transition-colors"
                   aria-expanded={expanded}
                   title={expanded ? 'Collapse' : 'Expand'}
                 >
@@ -248,9 +248,9 @@ const RaceLane: React.FC<RaceLaneProps> = ({
                   </div>
                   {/* Shimmer skeleton lines */}
                   <div className="space-y-2">
-                    <div className="skeleton h-3 w-full rounded" />
-                    <div className="skeleton h-3 w-4/5 rounded" />
-                    <div className="skeleton h-3 w-3/5 rounded" />
+                    <div className="skeleton h-3 w-full rounded-sm" />
+                    <div className="skeleton h-3 w-4/5 rounded-sm" />
+                    <div className="skeleton h-3 w-3/5 rounded-sm" />
                   </div>
                 </div>
               )}
@@ -273,19 +273,19 @@ const RaceLane: React.FC<RaceLaneProps> = ({
             {/* Metrics bar (Telemetry) */}
             <div className={`grid grid-cols-4 gap-2 text-[11px] pt-2 mt-2 border-t border-zinc-800 bg-black/40 rounded-b-lg px-2 pb-2 ${expanded ? '' : 'border-t-0 pt-0 hidden'}`}>
               <div className="flex flex-col">
-                <span className="text-zinc-500 uppercase tracking-widest text-[9px] font-bold">TTFT</span>
+                <span className="text-zinc-500 text-[9px] font-bold">TTFT</span>
                 <span className="text-zinc-300 font-mono font-bold tracking-tight">{formatMs(ttft)}</span>
               </div>
               <div className="flex flex-col">
-                <span className="text-zinc-500 uppercase tracking-widest text-[9px] font-bold">Total</span>
+                <span className="text-zinc-500 text-[9px] font-bold">Total</span>
                 <span className="text-zinc-300 font-mono font-bold tracking-tight">{formatMs(total)}</span>
               </div>
               <div className="flex flex-col">
-                <span className="text-zinc-500 uppercase tracking-widest text-[9px] font-bold">TPS</span>
+                <span className="text-zinc-500 text-[9px] font-bold">TPS</span>
                 <span className="text-emerald-400 font-mono font-bold tracking-tight drop-shadow-[0_0_2px_rgba(52,211,153,0.5)]">{calcTps(metrics)}</span>
               </div>
               <div className="flex flex-col">
-                <span className="text-zinc-500 uppercase tracking-widest text-[9px] font-bold">Tokens</span>
+                <span className="text-zinc-500 text-[9px] font-bold">Tokens</span>
                 <span className="text-zinc-300 font-mono font-bold tracking-tight">
                   {metrics && typeof metrics.outputTokens === 'number' ? metrics.outputTokens : '—'}
                 </span>

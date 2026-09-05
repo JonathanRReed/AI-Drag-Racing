@@ -45,7 +45,7 @@ const ResultsDisplay: React.FC<ResultsDisplayProps> = ({ results, hideFailed = f
               <path d="M5 3v18h2v-7h12V3H5zm2 2h8v3H7V5zm0 5h10v2H7v-2z" strokeLinejoin="round" />
             </svg>
           </div>
-          <h3 className="text-lg font-semibold tracking-tight text-white heading-tight">Line up your racers</h3>
+          <h2 className="text-lg font-semibold tracking-tight text-white heading-tight">Line up your racers</h2>
           <p className="mt-1.5 text-sm leading-relaxed text-[var(--text-muted)]">
             Add a provider in the <span className="font-medium text-[var(--text)]">Racers</span> panel, choose your models,
             and start a live head-to-head speed test.

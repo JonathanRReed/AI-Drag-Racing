@@ -810,7 +810,7 @@ export default function Home() {
             </div>
             <div className="race-hero-copy">
               <h1 className="race-hero-title">
-                AI Drag Racing
+                See how fast a model responds from here.
               </h1>
               <p className="race-hero-lead">
                 Run the same prompt through selected AI models and see the speed your browser actually experiences.
@@ -976,7 +976,7 @@ export default function Home() {
                             type="button"
                             onClick={() => setRaceView('strip')}
                             aria-pressed={raceView === 'strip'}
-                            className={`px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider transition ${raceView === 'strip' ? 'bg-white/[0.12] text-white' : 'bg-white/[0.03] text-[var(--text-muted)] hover:bg-white/[0.08]'}`}
+                            className={`px-3 py-1.5 text-[11px] font-bold  transition ${raceView === 'strip' ? 'bg-white/[0.12] text-white' : 'bg-white/[0.03] text-[var(--text-muted)] hover:bg-white/[0.08]'}`}
                           >
                             Track
                           </button>
@@ -984,13 +984,13 @@ export default function Home() {
                             type="button"
                             onClick={() => setRaceView('telemetry')}
                             aria-pressed={raceView === 'telemetry'}
-                            className={`px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider transition ${raceView === 'telemetry' ? 'bg-white/[0.12] text-white' : 'bg-white/[0.03] text-[var(--text-muted)] hover:bg-white/[0.08]'}`}
+                            className={`px-3 py-1.5 text-[11px] font-bold  transition ${raceView === 'telemetry' ? 'bg-white/[0.12] text-white' : 'bg-white/[0.03] text-[var(--text-muted)] hover:bg-white/[0.08]'}`}
                           >
                             Telemetry
                           </button>
                         </div>
                         {state.raceState === 'racing' && (
-                          <span className="inline-flex items-center gap-1.5 rounded-full bg-[var(--accent-muted)] px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-[var(--accent-light)]">
+                          <span className="inline-flex items-center gap-1.5 rounded-full bg-[var(--accent-muted)] px-2 py-0.5 text-[10px] font-bold text-[var(--accent-light)]">
                             <span className="h-1.5 w-1.5 rounded-full bg-[var(--accent-light)] animate-pulse" />
                             Live
                           </span>
@@ -1045,9 +1045,9 @@ export default function Home() {
                     )}
                   </GlassCard>
                   <GlassCard className="flex flex-col p-3" spotlight={false}>
-                    <h3 className="mb-2 px-1 text-xs font-semibold uppercase tracking-wider text-[var(--text-secondary)]">
+                    <h2 className="mb-2 px-1 text-xs font-semibold text-[var(--text-secondary)]">
                       Standings
-                    </h3>
+                    </h2>
                     <StandingsTicker
                       lanes={paceLanes}
                       buffersRef={laneBuffersRef}

@@ -4,15 +4,13 @@ export default function Document() {
   return (
     <Html lang="en">
       <Head>
-        {/* Preload primary font to reduce CLS */}
-        <link
-          rel="preload"
-          href="/fonts/nebula sans/NebulaSans-Book.woff2"
-          as="font"
-          type="font/woff2"
-          crossOrigin=""
-        />
-        <link rel="preconnect" href="https://unpkg.com" crossOrigin="" />
+        {/* Theme boots before paint so neither theme flashes. */}
+        <script src="/site-theme.js" />
+        <meta name="theme-color" content="#090b0a" />
+        {/* Ecosystem type, self-hosted */}
+        <link rel="preload" href="/fonts/nebula-sans/NebulaSans-Book.woff2" as="font" type="font/woff2" crossOrigin="" />
+        <link rel="preload" href="/fonts/nebula-sans/NebulaSans-Semibold.woff2" as="font" type="font/woff2" crossOrigin="" />
+        <link rel="preload" href="/fonts/jetbrains-mono/JetBrainsMono-Variable.woff2" as="font" type="font/woff2" crossOrigin="" />
         {/* Favicons: minimal set */}
         <link rel="icon" href="/Favicon/favicon.ico" sizes="any" />
         <link rel="apple-touch-icon" href="/Favicon/apple-touch-icon.png" />

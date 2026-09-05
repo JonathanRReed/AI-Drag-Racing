@@ -36,7 +36,7 @@ const ResponseCard: React.FC<ResponseCardProps> = ({
         <h3 className="text-lg font-semibold text-white">{providerName}</h3>
         <p className="text-sm text-gray-400 ml-2">({modelName})</p>
       </div>
-      <div className="flex-grow overflow-y-auto pr-2">
+      <div className="grow overflow-y-auto pr-2">
         {isLoading && <p className="text-gray-400">Waiting for response...</p>}
         {error && <p className="text-red-400">Error: {error}</p>}
         <p className="whitespace-pre-wrap text-gray-200">{responseText}</p>

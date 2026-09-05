@@ -43,7 +43,7 @@ const ApiKeyModal: React.FC<ApiKeyModalProps> = ({
           value={apiKey}
           onChange={(e) => setApiKey(e.target.value)}
           onKeyDown={(e) => { if (e.key === 'Enter') handleSave(); }}
-          className="w-full px-3 py-2 rounded-md bg-zinc-800 border border-white/20 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-cyan-400"
+          className="w-full px-3 py-2 rounded-md bg-zinc-800 border border-white/20 text-white placeholder-gray-400 focus:outline-hidden focus:ring-2 focus:ring-cyan-400"
           placeholder="sk-..."
         />
         <div className="flex justify-end space-x-4 mt-6">

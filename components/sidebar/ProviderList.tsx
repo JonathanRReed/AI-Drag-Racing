@@ -320,7 +320,7 @@ const ProviderList: React.FC<ProviderListProps> = ({
                     onChange={(e) => setModelQuery(prev => ({ ...prev, [provider.id]: e.target.value }))}
                     placeholder="Search models"
                     aria-label={`Search models for ${provider.displayName}`}
-                    className="w-full px-2 py-1 text-xs rounded-md bg-zinc-900/60 border border-white/10 focus:border-white/20 outline-none text-gray-200 placeholder:text-gray-500"
+                    className="w-full px-2 py-1 text-xs rounded-md bg-zinc-900/60 border border-white/10 focus:border-white/20 outline-hidden text-gray-200 placeholder:text-gray-500"
                   />
                 </div>
                 <div className="max-h-60 overflow-auto rounded-md border border-white/10 divide-y divide-white/5 bg-zinc-900/40">
@@ -345,7 +345,7 @@ const ProviderList: React.FC<ProviderListProps> = ({
                             checked={checked}
                             onChange={(e) => handleToggleModel(provider.id, m, e.target.checked)}
                           />
-                          <IconImg slugs={slugs} alt="brand" width={14} height={14} className="w-3.5 h-3.5 rounded-sm opacity-80" />
+                          <IconImg slugs={slugs} alt="brand" width={14} height={14} className="w-3.5 h-3.5 rounded-xs opacity-80" />
                           <span className="min-w-0 break-all leading-5" title={m}>{m}</span>
                         </label>
                       );

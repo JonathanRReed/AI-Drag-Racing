@@ -18,8 +18,9 @@ describe('privacy and mobile UI contracts', () => {
   it('offers a no-key demo and keeps live race controls available on mobile', () => {
     expect(homeSource).toContain('Run a demo race');
     expect(homeSource).toContain('Demo timings are simulated and never saved.');
-    expect(stylesSource).toContain('.race-start-button');
+    // Tailwind v4 expresses component classes as @utility blocks.
+    expect(stylesSource).toMatch(/(\.|@utility )race-start-button\b/);
     expect(stylesSource).toContain('col-span-2 inline-flex min-h-11');
-    expect(stylesSource).toContain('.finish-board-table tbody td::before');
+    expect(stylesSource).toMatch(/(\.finish-board-table tbody td::before|@utility finish-board-table)/);
   });
 });

@@ -108,7 +108,7 @@ const CountdownOverlay: React.FC<CountdownOverlayProps> = ({ visible, value }) =
         </div>
 
         {/* Instruction text */}
-        <p className="text-white/60 text-lg uppercase tracking-[0.3em] font-bold z-10 bg-black/50 px-6 py-2 rounded-full border border-white/10 backdrop-blur-md">
+        <p className="text-white/60 text-lg font-bold z-10 bg-black/50 px-6 py-2 rounded-full border border-white/10 backdrop-blur-md">
           {isGo ? 'Launch!' : 'Stage...'}
         </p>
       </div>
