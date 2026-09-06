@@ -128,7 +128,6 @@ export default function Methodology() {
         <meta name="robots" content="index, follow" />
         <meta name="author" content="Jonathan R. Reed" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
-        <meta name="theme-color" content="#07090D" />
         <meta property="og:type" content="article" />
         <meta property="og:title" content="Methodology | AI Drag Racing" />
         <meta property="og:description" content={DESCRIPTION} />

@@ -126,7 +126,7 @@ const DragStrip: React.FC<DragStripProps> = ({ lanes, buffersRef, running, reduc
           if (b.errored) readout.textContent = 'OUT';
           else if (b.done) readout.textContent = `${(b.lastT / 1000).toFixed(2)}s`;
           else if (launched) readout.textContent = compact(speed);
-          else readout.textContent = '—';
+          else readout.textContent = 'Ready';
         }
         if (sub) {
           if (b.errored) sub.textContent = 'DNF';
@@ -174,10 +174,10 @@ const DragStrip: React.FC<DragStripProps> = ({ lanes, buffersRef, running, reduc
             <span className="font-speed shrink-0 text-lg text-[var(--text-subtle)]">{i + 1}</span>
             <span className="h-6 w-1 shrink-0 rounded-full" style={{ background: lane.color, boxShadow: `0 0 8px ${lane.color}` }} />
             <span className="flex min-w-0 flex-col leading-tight">
-              <span className="truncate text-[13px] font-semibold text-white" title={lane.label}>
+              <span className="truncate text-sm font-semibold text-white" title={lane.label}>
                 {lane.label}
               </span>
-              <span className="truncate text-[10px] text-[var(--text-muted)]" title={lane.sublabel}>
+              <span className="truncate text-xs text-[var(--text-muted)]" title={lane.sublabel}>
                 {lane.sublabel}
               </span>
             </span>
@@ -210,7 +210,7 @@ const DragStrip: React.FC<DragStripProps> = ({ lanes, buffersRef, running, reduc
                 style={{ color: lane.color, opacity: 0, width: 0 }}
               />
               <Dragster color={lane.color} />
-              <span className="leader-crown absolute -top-1 right-1 font-mono text-[9px] font-bold" aria-hidden>
+              <span className="leader-crown absolute -top-1 right-1 font-mono text-xs font-bold" aria-hidden>
                 LEAD
               </span>
             </div>
@@ -222,15 +222,15 @@ const DragStrip: React.FC<DragStripProps> = ({ lanes, buffersRef, running, reduc
               ref={(el) => {
                 readoutRefs.current[lane.id] = el;
               }}
-              className="font-speed text-[15px] text-white"
+              className="font-speed text-base text-white"
             >
-              —
+              Ready
             </span>
             <span
               ref={(el) => {
                 subRefs.current[lane.id] = el;
               }}
-              className="truncate text-[9px] text-[var(--text-muted)]"
+              className="truncate text-xs text-[var(--text-muted)]"
             >
               staging
             </span>

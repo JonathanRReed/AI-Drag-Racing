@@ -378,6 +378,7 @@ export default function Home() {
           const buf = laneBuffersRef.current[resultId];
           if (buf) { buf.errored = true; buf.done = true; }
           dispatch({ type: 'SET_ERROR', payload: { resultId, error: 'API Key not set' } });
+          setAnnouncement(`${getProviderById(p.providerId)?.displayName || p.providerId} failed: API key not set.`);
           return;
         }
         try {
@@ -475,6 +476,7 @@ export default function Home() {
               if (buf) { buf.errored = true; buf.done = true; }
               flushLane(resultId);
               dispatch({ type: 'SET_ERROR', payload: { resultId, error: 'Stream ended without metrics' } });
+              setAnnouncement(`${getProviderById(p.providerId)?.displayName || p.providerId} failed: the stream ended without metrics.`);
             }
           }
         } catch (e: any) {
@@ -492,6 +494,7 @@ export default function Home() {
             error: e instanceof Error ? e.message : 'Provider stream failed',
           };
           dispatch({ type: 'SET_ERROR', payload: { resultId, error: e.message } });
+          setAnnouncement(`${getProviderById(p.providerId)?.displayName || p.providerId} failed: ${e.message}`);
         }
       })
     );
@@ -682,7 +685,6 @@ export default function Home() {
         <meta name="robots" content="index, follow" />
         <meta name="author" content="Jonathan R. Reed" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
-        <meta name="theme-color" content="#07090D" />
         <meta property="og:type" content="website" />
         <meta property="og:title" content="AI Drag Racing | Compare AI Speed From Your Browser" />
         <meta property="og:description" content="Run the same prompt through selected AI models and compare the speed your browser experiences. Each result is one route-specific observation, not a global ranking." />
@@ -910,17 +912,29 @@ export default function Home() {
           <div className="race-toolbar-wrap">
             <div className="race-toolbar">
               {/* Tabs */}
-              <div className="race-tabs">
+              <div className="race-tabs" role="tablist" aria-label="Race output">
                 <button
+                  type="button"
+                  role="tab"
+                  id="race-tab-results"
+                  aria-selected={activeTab === 'results'}
+                  aria-controls="race-panel-results"
                   onClick={() => setActiveTab('results')}
                   className={`race-tab ${activeTab === 'results' ? 'is-active' : ''}`}
                 >
                   Results
                 </button>
                 <button
+                  type="button"
+                  role="tab"
+                  id="race-tab-charts"
+                  aria-selected={activeTab === 'charts'}
+                  aria-controls="race-panel-charts"
                   onClick={() => setActiveTab('charts')}
                   className={`race-tab ${activeTab === 'charts' ? 'is-active' : ''}`}
                   disabled={state.results.length === 0}
+                  aria-label={state.results.length === 0 ? 'Charts, available after a race' : undefined}
+                  title={state.results.length === 0 ? 'Charts become available after a race' : undefined}
                 >
                   Charts
                 </button>
@@ -982,7 +996,12 @@ export default function Home() {
 
           {/* Content */}
           {activeTab === 'results' && (
-            <>
+            <div
+              id="race-panel-results"
+              role="tabpanel"
+              aria-labelledby="race-tab-results"
+              className="space-y-4"
+            >
               {showStage && (
                 <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_320px]">
                   <GlassCard className="p-4" spotlight={false}>
@@ -994,7 +1013,7 @@ export default function Home() {
                             type="button"
                             onClick={() => setRaceView('strip')}
                             aria-pressed={raceView === 'strip'}
-                            className={`px-3 py-1.5 text-[11px] font-bold  transition ${raceView === 'strip' ? 'bg-white/[0.12] text-white' : 'bg-white/[0.03] text-[var(--text-muted)] hover:bg-white/[0.08]'}`}
+                            className={`px-3 py-1.5 text-xs font-bold  transition ${raceView === 'strip' ? 'bg-white/[0.12] text-white' : 'bg-white/[0.03] text-[var(--text-muted)] hover:bg-white/[0.08]'}`}
                           >
                             Track
                           </button>
@@ -1002,13 +1021,13 @@ export default function Home() {
                             type="button"
                             onClick={() => setRaceView('telemetry')}
                             aria-pressed={raceView === 'telemetry'}
-                            className={`px-3 py-1.5 text-[11px] font-bold  transition ${raceView === 'telemetry' ? 'bg-white/[0.12] text-white' : 'bg-white/[0.03] text-[var(--text-muted)] hover:bg-white/[0.08]'}`}
+                            className={`px-3 py-1.5 text-xs font-bold  transition ${raceView === 'telemetry' ? 'bg-white/[0.12] text-white' : 'bg-white/[0.03] text-[var(--text-muted)] hover:bg-white/[0.08]'}`}
                           >
                             Telemetry
                           </button>
                         </div>
                         {state.raceState === 'racing' && (
-                          <span className="inline-flex items-center gap-1.5 rounded-full bg-[var(--accent-muted)] px-2 py-0.5 text-[10px] font-bold text-[var(--accent-light)]">
+                          <span className="inline-flex items-center gap-1.5 rounded-full bg-[var(--accent-muted)] px-2 py-0.5 text-xs font-bold text-[var(--accent-light)]">
                             <span className="h-1.5 w-1.5 rounded-full bg-[var(--accent-light)] animate-pulse" />
                             Live
                           </span>
@@ -1016,14 +1035,14 @@ export default function Home() {
                       </div>
                       {raceView === 'telemetry' && (
                         <div className="flex items-center gap-3">
-                          <span className="hidden text-[10px] text-[var(--text-muted)] sm:inline">
+                          <span className="hidden text-xs text-[var(--text-muted)] sm:inline">
                             X: seconds since Go · Y: characters streamed
                           </span>
                           <button
                             type="button"
                             onClick={() => setNormalize((v) => !v)}
                             aria-pressed={normalize}
-                            className="btn-ghost text-[11px]"
+                            className="btn-ghost text-xs"
                             title="Toggle the Y scale between absolute characters and percent of the most output so far"
                           >
                             {normalize ? 'Scale: % of most output' : 'Scale: absolute'}
@@ -1051,9 +1070,9 @@ export default function Home() {
                         />
                         <div className="mt-2 flex max-h-[68px] flex-wrap gap-x-4 gap-y-1 overflow-y-auto scrollbar-none">
                           {paceLanes.map((l) => (
-                            <span key={l.id} className="inline-flex items-center gap-1.5 text-[11px] text-[var(--text-muted)]">
+                            <span key={l.id} className="inline-flex items-center gap-1.5 text-xs text-[var(--text-muted)]">
                               <span className="h-2 w-2 rounded-full" style={{ background: l.color }} />
-                              <span className="max-w-[160px] truncate" title={`${l.label} — ${l.sublabel}`}>
+                              <span className="max-w-[160px] truncate" title={`${l.label} · ${l.sublabel}`}>
                                 {l.label}
                               </span>
                             </span>
@@ -1086,10 +1105,12 @@ export default function Home() {
                   setHistory([]);
                 }}
               />
-            </>
+            </div>
           )}
           {activeTab === 'charts' && state.results.length > 0 && (
-            <ComparisonCharts results={state.results} />
+            <div id="race-panel-charts" role="tabpanel" aria-labelledby="race-tab-charts">
+              <ComparisonCharts results={state.results} />
+            </div>
           )}
         </div>
       </MainLayout>

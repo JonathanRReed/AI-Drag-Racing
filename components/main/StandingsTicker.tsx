@@ -133,10 +133,10 @@ const StandingsTicker: React.FC<StandingsTickerProps> = ({
               style={{ willChange: reducedMotion ? 'auto' : 'transform' }}
             >
               <span
-                className="font-speed w-5 shrink-0 text-center text-base"
+                className="font-speed min-w-5 shrink-0 text-center text-base"
                 style={{ color: r.errored ? 'var(--text-subtle)' : r.color }}
               >
-                {r.errored ? '—' : pos}
+                {r.errored ? <abbr title="Did not finish">DNF</abbr> : pos}
               </span>
               <span
                 className="h-2.5 w-2.5 shrink-0 rounded-full"
@@ -152,12 +152,12 @@ const StandingsTicker: React.FC<StandingsTickerProps> = ({
                     </svg>
                   )}
                 </span>
-                <span className="break-all text-[11px] text-[var(--text-muted)]" title={r.sublabel}>
+                <span className="break-all text-xs text-[var(--text-muted)]" title={r.sublabel}>
                   {r.sublabel}
                 </span>
               </span>
               <span className="shrink-0 text-right">
-                <span className="font-speed block text-[15px] text-[var(--text)]">
+                <span className="font-speed block text-base text-[var(--text)]">
                   {r.errored
                     ? 'DNF'
                     : rankByFinish && r.done
@@ -166,7 +166,7 @@ const StandingsTicker: React.FC<StandingsTickerProps> = ({
                       ? `${compact(r.finalOutputTokens)} tok`
                       : `${compact(r.chars)} ch`}
                 </span>
-                <span className="block font-mono text-[10px] tabular-nums text-[var(--text-muted)]">
+                <span className="block font-mono text-xs tabular-nums text-[var(--text-muted)]">
                   {r.errored
                     ? ''
                     : rankByFinish && r.done

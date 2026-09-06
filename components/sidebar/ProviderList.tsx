@@ -22,8 +22,9 @@ interface ProviderListItemProps {
   onClearKey?: () => void;
 }
 
-// Build CDN URLs (monochrome only)
-const ICON_SVG = (slug: string) => `https://unpkg.com/@lobehub/icons-static-svg@latest/icons/${slug}.svg`;
+// Build CDN URLs (monochrome only). The version is pinned so the request this
+// page makes to unpkg cannot change under us; it is disclosed on /subprocessors.
+const ICON_SVG = (slug: string) => `https://unpkg.com/@lobehub/icons-static-svg@1.95.0/icons/${slug}.svg`;
 
 // Generic icon component that attempts multiple sources in order
 const IconImg: React.FC<{
@@ -94,6 +95,8 @@ const ProviderListItem: React.FC<ProviderListItemProps> = ({ provider, hasApiKey
   );
 };
 
+type ModelFetchState = { status: 'loading' } | { status: 'error'; message: string };
+
 interface ProviderListProps {
   apiKeys: Record<string, string>;
   dispatch: React.Dispatch<any>; // Using 'any' for simplicity, could be typed with AppAction
@@ -102,8 +105,6 @@ interface ProviderListProps {
   suggestedModel?: string;
   suggestedProvider?: string;
 }
-
-const ICON = (slug: string) => `https://unpkg.com/@lobehub/icons-static-svg@latest/icons/${slug}.svg`;
 
 // Map model IDs to brand icon slug candidates (best-effort)
 function brandSlugsForModel(providerId: string, modelId: string): string[] | undefined {
@@ -153,6 +154,10 @@ const ProviderList: React.FC<ProviderListProps> = ({
   const [savedFlash, setSavedFlash] = useState<Record<string, boolean>>({});
   const [enabledByProvider, setEnabledByProvider] = useState<Record<string, boolean>>({});
   const [modelQuery, setModelQuery] = useState<Record<string, string>>({});
+  // A key can be valid while the model list still fails to load. That state has
+  // to be visible instead of leaving the picker silently missing.
+  const [modelFetch, setModelFetch] = useState<Record<string, ModelFetchState>>({});
+  const attemptedRef = React.useRef<Set<string>>(new Set());
 
   React.useEffect(() => {
     if (!suggestedModel || !suggestedProvider || !isRaceableProviderId(suggestedProvider)) return;
@@ -165,6 +170,37 @@ const ProviderList: React.FC<ProviderListProps> = ({
 
   // Providers that are wired up server-side for streaming right now
   const SUPPORTED_FOR_STREAM = useMemo(() => new Set<string>(RACEABLE_PROVIDER_IDS), []);
+
+  const loadModelsForProvider = React.useCallback(async (providerId: string, key: string) => {
+    if (!SUPPORTED_FOR_STREAM.has(providerId)) return;
+    attemptedRef.current.add(providerId);
+    setModelFetch(prev => ({ ...prev, [providerId]: { status: 'loading' } }));
+    try {
+      const list = await fetchModels(providerId, key);
+      if (Array.isArray(list) && list.length) {
+        setModelsByProvider(prev => ({ ...prev, [providerId]: list }));
+        localStorage.setItem(`${providerId}_models`, JSON.stringify(list));
+        setModelFetch(prev => {
+          const next = { ...prev };
+          delete next[providerId];
+          return next;
+        });
+        return;
+      }
+      setModelFetch(prev => ({
+        ...prev,
+        [providerId]: { status: 'error', message: 'The provider accepted the key but returned no models.' },
+      }));
+    } catch (e) {
+      setModelFetch(prev => ({
+        ...prev,
+        [providerId]: {
+          status: 'error',
+          message: e instanceof Error && e.message ? e.message : 'The model list request did not complete.',
+        },
+      }));
+    }
+  }, [SUPPORTED_FOR_STREAM]);
 
   const handleSaveApiKey = (apiKey: string) => {
     if (modalOpenFor) {
@@ -194,6 +230,12 @@ const ProviderList: React.FC<ProviderListProps> = ({
     dispatch({ type: 'CLEAR_PROVIDER_SELECTIONS', payload: { providerId } });
     setModelsByProvider(prev => ({ ...prev, [providerId]: [] }));
     setEnabledByProvider(prev => ({ ...prev, [providerId]: false }));
+    attemptedRef.current.delete(providerId);
+    setModelFetch(prev => {
+      const next = { ...prev };
+      delete next[providerId];
+      return next;
+    });
     localStorage.setItem(`${providerId}_enabled`, 'false');
   };
 
@@ -240,37 +282,22 @@ const ProviderList: React.FC<ProviderListProps> = ({
 
   // When api keys change, fetch models for providers with keys (if not already loaded)
   React.useEffect(() => {
-    const fetchPromises = PROVIDERS.map(async (p) => {
+    PROVIDERS.forEach((p) => {
       const key = apiKeys[p.id];
       if (!key) return;
       if (!SUPPORTED_FOR_STREAM.has(p.id)) return; // only fetch for supported providers
       if (modelsByProvider[p.id]?.length) return; // already have
-      try {
-        const list = await fetchModels(p.id, key);
-        if (Array.isArray(list) && list.length) {
-          setModelsByProvider(prev => ({ ...prev, [p.id]: list }));
-          localStorage.setItem(`${p.id}_models`, JSON.stringify(list));
-        }
-      } catch (e) {
-        // swallow; show no dropdown
-        console.warn(`[models] Failed to fetch models for ${p.id}:`, e);
-      }
+      if (attemptedRef.current.has(p.id)) return; // a failure waits for an explicit retry
+      void loadModelsForProvider(p.id, key);
     });
-    void Promise.all(fetchPromises);
-  }, [apiKeys, modelsByProvider, SUPPORTED_FOR_STREAM]);
+  }, [apiKeys, modelsByProvider, SUPPORTED_FOR_STREAM, loadModelsForProvider]);
 
-  async function loadModelsForProvider(providerId: string, key: string) {
-    if (!SUPPORTED_FOR_STREAM.has(providerId)) return;
-    try {
-      const list = await fetchModels(providerId, key);
-      if (Array.isArray(list) && list.length) {
-        setModelsByProvider(prev => ({ ...prev, [providerId]: list }));
-        localStorage.setItem(`${providerId}_models`, JSON.stringify(list));
-      }
-    } catch (e) {
-      console.warn(`[models] Failed to fetch models for ${providerId}:`, e);
-    }
-  }
+  const retryModelsForProvider = (providerId: string) => {
+    const key = apiKeys[providerId];
+    if (!key) return;
+    attemptedRef.current.delete(providerId);
+    void loadModelsForProvider(providerId, key);
+  };
 
   const handleToggleModel = (providerId: string, modelId: string, checked: boolean) => {
     // Compute next selection list for persistence
@@ -309,10 +336,11 @@ const ProviderList: React.FC<ProviderListProps> = ({
               onAddKey={() => setModalOpenFor(provider)}
               onClearKey={() => handleClearKey(provider.id)}
             />
-            {/* Model selector appears when key is present and provider is supported and models list available */}
+            {/* Model selector appears when key is present and provider is supported.
+                A key that cannot list models says so instead of showing nothing. */}
             {apiKeys[provider.id] && SUPPORTED_FOR_STREAM.has(provider.id) && (modelsByProvider[provider.id]?.length ? (
               <div className="px-2">
-                <label className="block text-xs uppercase tracking-wide text-gray-400 mb-1">Models</label>
+                <p className="eco-label mb-1">Models</p>
                 <div className="mb-1">
                   <input
                     type="text"
@@ -367,6 +395,28 @@ const ProviderList: React.FC<ProviderListProps> = ({
                     <span className="text-green-400 text-xs">Saved for this tab</span>
                   )}
                 </div>
+              </div>
+            ) : modelFetch[provider.id]?.status === 'loading' ? (
+              <div className="flex items-center gap-2 px-2 py-1 text-xs text-gray-400" role="status">
+                <span
+                  className="h-3 w-3 shrink-0 rounded-full border-2 border-white/20 border-t-white/70 animate-spin"
+                  aria-hidden="true"
+                />
+                Loading models for {provider.displayName}
+              </div>
+            ) : modelFetch[provider.id]?.status === 'error' ? (
+              <div className="px-2 py-1 text-xs text-red-400">
+                <p>
+                  Could not load the model list for {provider.displayName}.{' '}
+                  {(modelFetch[provider.id] as { message: string }).message}
+                </p>
+                <button
+                  type="button"
+                  onClick={() => retryModelsForProvider(provider.id)}
+                  className="mt-1 inline-flex min-h-[var(--control-h)] items-center rounded-md border border-white/10 px-3 text-xs text-gray-200 hover:border-white/20"
+                >
+                  Retry model list
+                </button>
               </div>
             ) : null)}
           </li>

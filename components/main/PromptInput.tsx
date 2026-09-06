@@ -69,7 +69,7 @@ const PromptInput: React.FC<PromptInputProps> = ({
         dir="auto"
       />
       <div className="mt-2 flex items-center justify-between gap-2">
-        <span className="text-[10px] text-zinc-600">Enter starts the race when racers are ready. Shift+Enter adds a line.</span>
+        <span className="text-xs text-zinc-600">Enter starts the race when racers are ready. Shift+Enter adds a line.</span>
       </div>
     </GlassCard>
   );

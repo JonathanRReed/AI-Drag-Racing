@@ -11,7 +11,9 @@ export interface ProviderConfig {
   fetcher?: (apiKey: string, endpoint?: string) => Promise<string[]>;
 }
 
-const ICON = (slug: string) => `https://unpkg.com/@lobehub/icons-static-svg@latest/icons/${slug}.svg`;
+// Provider marks are fetched from unpkg at a pinned version, so the request the
+// browser makes cannot change without a code change. Disclosed on /subprocessors.
+const ICON = (slug: string) => `https://unpkg.com/@lobehub/icons-static-svg@1.95.0/icons/${slug}.svg`;
 
 export const PROVIDERS: ProviderConfig[] = [
   {

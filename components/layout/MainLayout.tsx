@@ -6,17 +6,68 @@ interface MainLayoutProps {
   children: React.ReactNode;
 }
 
+const FOCUSABLE_SELECTOR = [
+  'a[href]',
+  'button:not([disabled])',
+  'input:not([disabled])',
+  'select:not([disabled])',
+  'textarea:not([disabled])',
+  '[tabindex]:not([tabindex="-1"])',
+].join(', ');
+
 const MainLayout: React.FC<MainLayoutProps> = ({ sidebar, children }) => {
   const [mobileOpen, setMobileOpen] = React.useState(false);
+  const asideRef = React.useRef<HTMLElement | null>(null);
+  const closeButtonRef = React.useRef<HTMLButtonElement | null>(null);
+  const returnFocusRef = React.useRef<HTMLElement | null>(null);
 
   const asideClasses = `app-sidebar ${mobileOpen ? 'is-open' : 'is-closed'}`;
 
-  // Close on Escape
+  // Move focus into the drawer when it opens and hand it back to the control
+  // that opened it (the Racers button) when it closes.
   React.useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setMobileOpen(false);
+    if (!mobileOpen) return;
+    returnFocusRef.current = document.activeElement as HTMLElement | null;
+    closeButtonRef.current?.focus();
+    return () => {
+      const target = returnFocusRef.current;
+      if (target && typeof target.focus === 'function' && target.isConnected) {
+        target.focus();
+      }
     };
-    if (mobileOpen) document.addEventListener('keydown', onKey);
+  }, [mobileOpen]);
+
+  // Close on Escape, and keep Tab inside the panel while it is open.
+  React.useEffect(() => {
+    if (!mobileOpen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setMobileOpen(false);
+        return;
+      }
+      if (e.key !== 'Tab') return;
+      const panel = asideRef.current;
+      if (!panel) return;
+      const nodes = Array.from(panel.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR))
+        .filter((node) => node.offsetParent !== null || node === document.activeElement);
+      if (nodes.length === 0) return;
+      const first = nodes[0];
+      const last = nodes[nodes.length - 1];
+      const active = document.activeElement;
+      const inside = active instanceof Node && panel.contains(active);
+      if (e.shiftKey) {
+        if (!inside || active === first) {
+          e.preventDefault();
+          last.focus();
+        }
+        return;
+      }
+      if (!inside || active === last) {
+        e.preventDefault();
+        first.focus();
+      }
+    };
+    document.addEventListener('keydown', onKey);
     return () => document.removeEventListener('keydown', onKey);
   }, [mobileOpen]);
 
@@ -41,6 +92,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({ sidebar, children }) => {
 
         {/* Sidebar: provider rail on desktop, setup drawer on phones */}
         <aside
+          ref={asideRef}
           className={asideClasses}
           role={mobileOpen ? 'dialog' : undefined}
           aria-modal={mobileOpen ? true : undefined}
@@ -49,6 +101,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({ sidebar, children }) => {
           <div className="app-sidebar-close-row">
             <span className="app-sidebar-title">Racers</span>
             <button
+              ref={closeButtonRef}
               onClick={() => setMobileOpen(false)}
               className="app-sidebar-close"
               aria-label="Close providers menu"

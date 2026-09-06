@@ -263,7 +263,7 @@ const LivePaceChart: React.FC<LivePaceChartProps> = ({
         y1={PAD.t + PLOT_H}
         x2={PAD.l + PLOT_W}
         y2={PAD.t + PLOT_H}
-        stroke="rgba(255,255,255,0.14)"
+        stroke="var(--line-1)"
         strokeWidth={1}
       />
       <line
@@ -271,7 +271,7 @@ const LivePaceChart: React.FC<LivePaceChartProps> = ({
         y1={PAD.t}
         x2={PAD.l}
         y2={PAD.t + PLOT_H}
-        stroke="rgba(255,255,255,0.08)"
+        stroke="var(--line-0)"
         strokeWidth={1}
       />
       {gridYs.map((gy, i) => (
@@ -281,19 +281,19 @@ const LivePaceChart: React.FC<LivePaceChartProps> = ({
           y1={gy}
           x2={PAD.l + PLOT_W}
           y2={gy}
-          stroke="rgba(255,255,255,0.05)"
+          stroke="var(--line-0)"
           strokeWidth={1}
         />
       ))}
 
       {/* axis labels */}
-      <text x={PAD.l} y={PAD.t - 4} fill="rgba(244,245,247,0.45)" fontSize={11} fontFamily="inherit">
+      <text x={PAD.l} y={PAD.t - 4} fill="var(--ink-2)" fontSize={11} fontFamily="inherit">
         <tspan ref={yLabelEl}>chars</tspan>
       </text>
       <text
         x={PAD.l + PLOT_W}
         y={PAD.t + PLOT_H + 20}
-        fill="rgba(244,245,247,0.45)"
+        fill="var(--ink-2)"
         fontSize={11}
         textAnchor="end"
         fontFamily="inherit"
@@ -303,7 +303,7 @@ const LivePaceChart: React.FC<LivePaceChartProps> = ({
       <text
         x={PAD.l}
         y={PAD.t + PLOT_H + 20}
-        fill="rgba(244,245,247,0.45)"
+        fill="var(--ink-2)"
         fontSize={11}
         fontFamily="inherit"
       >
@@ -317,7 +317,7 @@ const LivePaceChart: React.FC<LivePaceChartProps> = ({
         y1={PAD.t}
         x2={PAD.l}
         y2={PAD.t + PLOT_H}
-        stroke="rgba(255,255,255,0.55)"
+        stroke="var(--ink-2)"
         strokeWidth={1}
         strokeDasharray="3 4"
         opacity={0}
@@ -361,7 +361,7 @@ const LivePaceChart: React.FC<LivePaceChartProps> = ({
         ref={emptyEl}
         x={PAD.l + PLOT_W / 2}
         y={PAD.t + PLOT_H / 2}
-        fill="rgba(244,245,247,0.4)"
+        fill="var(--ink-2)"
         fontSize={13}
         textAnchor="middle"
         fontFamily="inherit"

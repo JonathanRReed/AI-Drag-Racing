@@ -14,7 +14,7 @@ function formatMs(value: number | null | undefined): string {
 }
 
 export default function FinishSummary({ results }: { results: ResultState[] }) {
-  const completed = useMemo(
+  const finished = useMemo(
     () => results
       .filter((result) => !result.error && (result.browserTiming?.totalMs != null || edgeDuration(result) != null))
       .sort((a, b) => (
@@ -23,28 +23,43 @@ export default function FinishSummary({ results }: { results: ResultState[] }) {
       )),
     [results],
   );
+  // A lane that failed is evidence about this route too, so it stays on the
+  // board instead of disappearing and making the race look cleaner than it was.
+  const unfinished = useMemo(() => results.filter((result) => !finished.includes(result)), [results, finished]);
 
-  if (!completed.length) return null;
-  const leader = completed[0];
-  const edgeRegion = completed.find((result) => result.edgeRegion)?.edgeRegion ?? null;
+  if (!results.length) return null;
+
+  const isDemo = results.some((result) => result.metrics?.timingSource === 'demo');
+  const leader = finished[0] ?? null;
+  const edgeRegion = finished.find((result) => result.edgeRegion)?.edgeRegion ?? null;
 
   return (
     <section className="finish-board" aria-labelledby="finish-heading">
       <div className="finish-board-lead">
         <div>
-          <h2 id="finish-heading">Fastest here, this run</h2>
+          <h2 id="finish-heading">
+            {isDemo ? 'Simulated demo, not a measurement' : leader ? 'Fastest here, this run' : 'No lane finished'}
+          </h2>
           <p>
-            {leader.modelName}
-            <span> via {leader.providerName}</span>
+            {leader ? (
+              <>
+                {leader.modelName}
+                <span> via {leader.providerName}</span>
+              </>
+            ) : (
+              <span>Every lane in this race ended before it returned a timing.</span>
+            )}
           </p>
         </div>
-        <div className="finish-board-time">
-          <strong>{formatMs(leader.browserTiming?.totalMs ?? edgeDuration(leader))}</strong>
-          <span>browser to final token</span>
-        </div>
+        {leader && (
+          <div className="finish-board-time">
+            <strong>{formatMs(leader.browserTiming?.totalMs ?? edgeDuration(leader))}</strong>
+            <span>browser to final token</span>
+          </div>
+        )}
       </div>
 
-      <div className="finish-board-table-wrap">
+      <div className="finish-board-table-wrap" role="region" aria-labelledby="finish-heading" tabIndex={0}>
         <table className="finish-board-table">
           <thead>
             <tr>
@@ -56,17 +71,19 @@ export default function FinishSummary({ results }: { results: ResultState[] }) {
             </tr>
           </thead>
           <tbody>
-            {completed.map((result, index) => {
+            {finished.map((result, index) => {
               const edgeTtft = result.metrics?.firstTokenTime && result.metrics.startTime
                 ? result.metrics.firstTokenTime - result.metrics.startTime
                 : null;
               return (
                 <tr key={result.id} data-leader={index === 0 ? 'true' : 'false'}>
                   <th scope="row">
-                    <span>{index + 1}</span>
                     <div>
-                      <strong>{result.modelName}</strong>
-                      <small>{result.providerName}</small>
+                      <span>{index + 1}</span>
+                      <div>
+                        <strong>{result.modelName}</strong>
+                        <small>{result.providerName}</small>
+                      </div>
                     </div>
                   </th>
                   <td data-label="Browser first token">{formatMs(result.browserTiming?.ttftMs)}</td>
@@ -76,13 +93,31 @@ export default function FinishSummary({ results }: { results: ResultState[] }) {
                 </tr>
               );
             })}
+            {unfinished.map((result) => (
+              <tr key={result.id} data-unfinished="true">
+                <th scope="row">
+                  <div>
+                    <span aria-hidden="true">·</span>
+                    <div>
+                      <strong>{result.modelName}</strong>
+                      <small>{result.providerName}</small>
+                    </div>
+                  </div>
+                </th>
+                <td colSpan={4} data-label="Outcome">
+                  Did not finish{result.error ? `: ${result.error}` : ''}
+                </td>
+              </tr>
+            ))}
           </tbody>
         </table>
       </div>
 
       <p className="finish-board-note">
-        One observation from this browser{edgeRegion ? ` through Cloudflare ${edgeRegion}` : ''}. Results vary with
-        route, provider load, prompt, settings, and output length. They are not a global model ranking.
+        {finished.length} of {results.length} {results.length === 1 ? 'lane' : 'lanes'} finished.{' '}
+        {isDemo
+          ? 'These timings are simulated. No provider was contacted and nothing was saved.'
+          : `One observation from this browser${edgeRegion ? ` through Cloudflare ${edgeRegion}` : ''}. Results vary with route, provider load, prompt, settings, and output length. They are not a global model ranking.`}
       </p>
     </section>
   );

@@ -189,7 +189,7 @@ const RaceLane: React.FC<RaceLaneProps> = ({
                     />
                   ) : (
                     <span
-                      className="w-8 h-8 inline-flex items-center justify-center rounded-md text-[12px] font-bold text-white relative z-10"
+                      className="w-8 h-8 inline-flex items-center justify-center rounded-md text-xs font-bold text-white relative z-10"
                       style={{ background: `linear-gradient(135deg, ${laneColor}, ${laneColor}88)`, boxShadow: `0 0 12px ${laneColor}55` }}
                       aria-hidden
                     >
@@ -203,10 +203,10 @@ const RaceLane: React.FC<RaceLaneProps> = ({
                   )}
                 </div>
                 <div className="min-w-0">
-                  <h3 className="font-bold text-[15px] text-white truncate drop-shadow-md" title={displayName}>
+                  <h3 className="font-bold text-base text-white truncate drop-shadow-md" title={displayName}>
                     {displayName}
                   </h3>
-                  <span className="text-[11px] text-[var(--text-muted)] truncate block max-w-[180px] font-medium" title={modelName}>
+                  <span className="text-xs text-[var(--text-muted)] truncate block max-w-[180px] font-medium" title={modelName}>
                     {modelName}
                   </span>
                 </div>
@@ -215,7 +215,7 @@ const RaceLane: React.FC<RaceLaneProps> = ({
                 <StatusBadge status={status} />
                 <button
                   onClick={() => setExpanded((v) => !v)}
-                  className="p-1 rounded-sm bg-white/5 hover:bg-white/10 text-[var(--text-muted)] hover:text-white transition-colors"
+                  className="inline-flex min-h-[var(--control-h)] min-w-[var(--control-h)] items-center justify-center rounded-sm bg-white/5 hover:bg-white/10 text-[var(--text-muted)] hover:text-white transition-colors"
                   aria-expanded={expanded}
                   title={expanded ? 'Collapse' : 'Expand'}
                 >
@@ -237,8 +237,6 @@ const RaceLane: React.FC<RaceLaneProps> = ({
               ref={scrollRef}
               className={`overflow-y-auto overflow-x-hidden pr-1 transition-all duration-300 ${expanded ? 'max-h-64 opacity-100' : 'max-h-0 opacity-0'
                 }`}
-              role="status"
-              aria-live="polite"
             >
               {isLoading && !responseText && !error && (
                 <div className="space-y-3 py-2">
@@ -271,48 +269,42 @@ const RaceLane: React.FC<RaceLaneProps> = ({
             </div>
 
             {/* Metrics bar (Telemetry) */}
-            <div className={`grid grid-cols-4 gap-2 text-[11px] pt-2 mt-2 border-t border-zinc-800 bg-black/40 rounded-b-lg px-2 pb-2 ${expanded ? '' : 'border-t-0 pt-0 hidden'}`}>
+            <div className={`grid grid-cols-4 gap-2 text-xs pt-2 mt-2 border-t border-zinc-800 bg-black/40 rounded-b-lg px-2 pb-2 ${expanded ? '' : 'border-t-0 pt-0 hidden'}`}>
               <div className="flex flex-col">
-                <span className="text-zinc-500 text-[9px] font-bold">TTFT</span>
+                <span className="text-zinc-500 text-xs font-bold">TTFT</span>
                 <span className="text-zinc-300 font-mono font-bold tracking-tight">{formatMs(ttft)}</span>
               </div>
               <div className="flex flex-col">
-                <span className="text-zinc-500 text-[9px] font-bold">Total</span>
+                <span className="text-zinc-500 text-xs font-bold">Total</span>
                 <span className="text-zinc-300 font-mono font-bold tracking-tight">{formatMs(total)}</span>
               </div>
               <div className="flex flex-col">
-                <span className="text-zinc-500 text-[9px] font-bold">TPS</span>
-                <span className="text-emerald-400 font-mono font-bold tracking-tight drop-shadow-[0_0_2px_rgba(52,211,153,0.5)]">{calcTps(metrics)}</span>
+                <span className="text-zinc-500 text-xs font-bold">TPS</span>
+                <span className="text-emerald-400 font-mono font-bold tracking-tight">{calcTps(metrics)}</span>
               </div>
               <div className="flex flex-col">
-                <span className="text-zinc-500 text-[9px] font-bold">Tokens</span>
+                <span className="text-zinc-500 text-xs font-bold">Tokens</span>
                 <span className="text-zinc-300 font-mono font-bold tracking-tight">
-                  {metrics && typeof metrics.outputTokens === 'number' ? metrics.outputTokens : '—'}
+                  {metrics && typeof metrics.outputTokens === 'number' ? metrics.outputTokens : 'Not measured'}
                 </span>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Animated glow border for active racing state */}
+        {/* Active racing state: a border marks the live lane, no glow. */}
         {status === 'green' && !metrics && (
           <div
-            className="pointer-events-none absolute inset-0 rounded-[18px] animate-pulse"
-            style={{
-              border: `1px solid ${laneColor}66`,
-              boxShadow: `inset 0 0 12px ${laneColor}22, 0 0 20px ${laneColor}11`
-            }}
+            className="pointer-events-none absolute inset-0 rounded-[18px]"
+            style={{ border: '1px solid var(--signal)' }}
           />
         )}
 
-        {/* Finish celebration glow */}
+        {/* Finished state */}
         {status === 'finish' && (
           <div
             className="pointer-events-none absolute inset-0 rounded-[18px]"
-            style={{
-              border: `1px solid ${laneColor}44`,
-              boxShadow: `inset 0 0 8px ${laneColor}15`
-            }}
+            style={{ border: '1px solid var(--signal)' }}
           />
         )}
       </GlassCard>

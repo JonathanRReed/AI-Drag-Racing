@@ -70,7 +70,7 @@ const ResultsDisplay: React.FC<ResultsDisplayProps> = ({ results, hideFailed = f
                 </svg>
                 Watch a demo race
               </button>
-              <span className="text-[11px] text-[var(--text-subtle)]">Simulated, no API key. Just to see how it looks.</span>
+              <span className="text-xs text-[var(--text-subtle)]">Simulated, no API key. Just to see how it looks.</span>
             </div>
           )}
         </div>

@@ -140,7 +140,7 @@ export function SiteFooter() {
           </nav>
         </div>
         <div className="eco-footer-meta">
-          <p>By <a href="https://jonathanrreed.com/" rel="author">Jonathan R. Reed</a>. Keys stay in your browser. Every result is one observation from your route, not a ranking.</p>
+          <p>By <a href="https://jonathanrreed.com/" rel="author">Jonathan R. Reed</a>. Keys stay in this tab and go only to the edge route and the provider you pick. Every result is one observation from your route, not a ranking.</p>
           <p>ai-dragrace.jonathanrreed.com &middot; {year}</p>
         </div>
       </div>
