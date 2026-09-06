@@ -2,13 +2,13 @@
 export function providerSlugs(providerId: string): string[] {
   switch (providerId) {
     case 'google': return ['gemini', 'google'];
-    case 'azure': return ['azure-openai', 'azure', 'azure-ai', 'azureai', 'microsoftazure'];
+    case 'azure': return ['azure', 'azureai'];
     case 'together': return ['together'];
     case 'fireworks': return ['fireworks'];
-    case 'bedrock': return ['amazonaws', 'aws', 'bedrock'];
-    case 'xai': return ['x', 'xai'];
+    case 'bedrock': return ['aws', 'bedrock'];
+    case 'xai': return ['xai'];
     case 'moonshot': return ['moonshot', 'kimi'];
-    case 'zhipu': return ['zhipu', 'chatglm', 'glm'];
+    case 'zhipu': return ['zhipu', 'chatglm'];
     default: return [providerId];
   }
 }

@@ -64,9 +64,8 @@ export default function Subprocessors() {
             browser tab. Race prompts are forwarded only to the providers you choose for that run.
           </p>
           <p className="mt-4 text-base leading-8 text-zinc-300">
-            Provider and model logos are loaded as static SVG files from the unpkg content delivery network at a pinned
-            package version. Your browser makes that request directly, so unpkg and its network provider can see your IP
-            address, user agent, and which logo files were requested. No prompt text, key, or race result is included.
+            Provider and model logos are served from this site as static SVG files. Opening the app contacts no
+            third party for them, so no outside service learns that you visited from the interface alone.
           </p>
           <p className="mt-4 text-base leading-8 text-zinc-300">
             When you select an external provider, that provider may process the prompt, model settings, streamed output,
@@ -86,7 +85,7 @@ export default function Subprocessors() {
             </a>.
           </p>
           <p className="mt-6 text-sm text-zinc-500">
-            Last updated <time dateTime="2026-09-06">September 6, 2026</time>.
+            Last updated <time dateTime="2026-09-07">September 7, 2026</time>.
           </p>
         </article>
       </main>

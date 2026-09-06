@@ -22,9 +22,9 @@ interface ProviderListItemProps {
   onClearKey?: () => void;
 }
 
-// Build CDN URLs (monochrome only). The version is pinned so the request this
-// page makes to unpkg cannot change under us; it is disclosed on /subprocessors.
-const ICON_SVG = (slug: string) => `https://unpkg.com/@lobehub/icons-static-svg@1.95.0/icons/${slug}.svg`;
+// Same-origin marks. Only slugs that exist in the vendored set are listed, so
+// the fallback chain no longer tries names that were always 404s.
+const ICON_SVG = (slug: string) => `/provider-icons/${slug}.svg`;
 
 // Generic icon component that attempts multiple sources in order
 const IconImg: React.FC<{
@@ -114,31 +114,31 @@ function brandSlugsForModel(providerId: string, modelId: string): string[] | und
     const vendor = id.split('/')[0] || '';
     if (vendor.includes('openai')) return ['openai'];
     if (vendor.includes('anthropic')) return ['anthropic'];
-    if (vendor.includes('google')) return ['googlegemini', 'gemini', 'google'];
+    if (vendor.includes('google')) return ['gemini', 'google'];
     if (vendor.includes('mistral') || vendor.includes('mistralai')) return ['mistral'];
-    if (vendor.includes('meta') || vendor.includes('llama')) return ['meta', 'facebook'];
-    if (vendor.includes('xai')) return ['x', 'xai'];
-    if (vendor.includes('deepseek')) return ['deepseek', 'deepseek-ai', 'deepseekai'];
+    if (vendor.includes('meta') || vendor.includes('llama')) return ['meta'];
+    if (vendor.includes('xai')) return ['xai'];
+    if (vendor.includes('deepseek')) return ['deepseek'];
     if (vendor.includes('cohere')) return ['cohere'];
     if (vendor.includes('ai21')) return ['ai21'];
     if (vendor.includes('perplexity')) return ['perplexity'];
     if (vendor.includes('groq')) return ['groq'];
-    if (vendor.includes('firework')) return ['fireworks', 'fireworksai'];
+    if (vendor.includes('firework')) return ['fireworks'];
     return undefined;
   }
   // Provider-specific heuristics
-  if (providerId === 'google' || id.startsWith('gemini')) return ['googlegemini', 'gemini', 'google'];
+  if (providerId === 'google' || id.startsWith('gemini')) return ['gemini', 'google'];
   if (providerId === 'anthropic' || id.startsWith('claude')) return ['anthropic'];
   if (providerId === 'openai' || id.startsWith('gpt') || id.includes('o1') || id.includes('4o')) return ['openai'];
   if (providerId === 'mistral' || id.includes('mistral') || id.includes('mixtral')) return ['mistral'];
   if (providerId === 'cohere' || id.includes('command')) return ['cohere'];
   if (providerId === 'groq') return ['groq'];
   if (providerId === 'ai21' || id.includes('jamba') || id.includes('ai21')) return ['ai21'];
-  if (providerId === 'xai' || id.includes('grok')) return ['x', 'xai'];
-  if (providerId === 'deepseek' || id.includes('deepseek')) return ['deepseek', 'deepseek-ai', 'deepseekai'];
-  if (providerId === 'bedrock') return ['amazonaws', 'aws', 'bedrock'];
-  if (providerId === 'together') return ['togetherai', 'together', 'together-ai'];
-  if (providerId === 'fireworks') return ['fireworks', 'fireworksai'];
+  if (providerId === 'xai' || id.includes('grok')) return ['xai'];
+  if (providerId === 'deepseek' || id.includes('deepseek')) return ['deepseek'];
+  if (providerId === 'bedrock') return ['aws', 'bedrock'];
+  if (providerId === 'together') return ['together'];
+  if (providerId === 'fireworks') return ['fireworks'];
   return undefined;
 }
 
