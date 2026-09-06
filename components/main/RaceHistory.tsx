@@ -2,6 +2,17 @@ import React, { useState } from 'react';
 import type { RaceReceipt } from '../../utils/raceReceipts';
 import { serializeSanitizedReceipt } from '../../utils/raceReceipts';
 import { createRaceShare, isRaceShareConfigured } from '../../utils/raceShares';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 
 function downloadReceipt(receipt: RaceReceipt) {
   const blob = new Blob([serializeSanitizedReceipt(receipt)], { type: 'application/json' });
@@ -59,7 +70,23 @@ export default function RaceHistory({
           <h2 id="history-heading">Recent local races</h2>
           <p>Local records expire after 30 days. Sharing uploads only timing metrics and settings.</p>
         </div>
-        <button type="button" className="race-tool-button" onClick={onClear}>Clear history</button>
+        {/* Clearing wipes every local receipt, so it asks first. */}
+        <AlertDialog>
+          <AlertDialogTrigger className="race-tool-button">Clear history</AlertDialogTrigger>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Clear every local race record?</AlertDialogTitle>
+              <AlertDialogDescription>
+                This removes all {receipts.length} {receipts.length === 1 ? 'record' : 'records'} stored in this
+                browser. Records are only here, so they cannot be recovered. Export anything you want to keep first.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Keep them</AlertDialogCancel>
+              <AlertDialogAction onClick={onClear}>Clear history</AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
       <div className="race-history-list">
         {receipts.map((receipt) => {
