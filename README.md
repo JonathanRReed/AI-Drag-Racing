@@ -1,213 +1,68 @@
-# AI Drag Racing – Model Performance Showdown
+# AI Drag Racing
 
-Race large language models head‑to‑head across multiple providers & see who wins.
+Send the same prompt to several language models and compare time to first token, completion time, and token throughput. Each model gets a lane with its streamed response. Use it for quick comparisons, not a controlled benchmark.
 
-This Next.js app lets you:
+[Live site](https://ai-dragrace.jonathanrreed.com/)
 
-- **Plug in your own API keys** for multiple AI providers
-- **Select one or more models per provider**
-- **Run “drag races”** with different race modes
-- Visualize **time‑to‑first‑token, total duration, and token throughput**
+## Run locally
 
-Good for fun & quick benchmarking models.
-
----
-
-## Features
-
-- **Multi‑provider support**
-
-  Compare models from providers such as:
-  - OpenAI
-  - Groq
-  - Fireworks
-  - Together
-  - Azure
-  - Anthropic
-  - Google Gemini
-  - OpenRouter AWS Bedrock
-  - Cohere
-  - Mistral
-  - Perplexity
-  - xAI (Grok)
-  - DeepSeek
-  - AI21
-  - Cerebras
-
-- **Race modes**
-
-  Configure how the race is scored:
-  - **Drag Race** – first model to finish wins
-  - **Token Sprint** – race to generate a fixed number of tokens
-  - **Time Trial** – see who outputs the most in a fixed time window
-  - **Free Run** – no explicit limits; watch full completions
-
-- **Detailed metrics**
-
-  For each model you’ll see:
-  - Start time and first‑token time
-  - Finish time
-  - Token counts (total / output)
-  - Streaming text response
-
-- **Rich UI**
-
-  - Racing‑themed layout with “lanes”
-  - Results grid and leaderboard
-  - Charts view with per‑model comparisons
-  - Provider / model search and filtering
-
----
-
-## Tech Stack
-
-- **Framework**: Next.js
-- **Language**: TypeScript + React
-- **Styling**: Tailwind CSS + custom glassmorphism components
-- **Charts**: `chart.js` + `react-chartjs-2`
-- **Deployment**: Cloudflare Pages (via `@cloudflare/next-on-pages`)
-
-See [package.json](cci:7://file:///Users/jonathanreed/Downloads/AI-Drag-Racing/package.json:0:0-0:0) for exact versions.
-
----
-
-## Getting Started
-
-### Prerequisites
-
-- **Node.js** `>= 18.18.0`
-- A package manager such as `npm` (or `pnpm` / `yarn` if you prefer)
-
-### Install dependencies
+Requires Node.js 18.18.0 or newer and your own provider API keys. See [package.json](package.json) for dependencies and versions.
 
 ```bash
 npm install
-```
-
-### Run the development server
-
-```bash
 npm run dev
 ```
 
-The app will start on `http://localhost:3000` by default.
-
----
-
-## Usage
-
-### 1. Add API keys
-
-On the left sidebar:
-
-- Open the **Racers** list.
-- For each provider you want to use:
-  - Click **Add** (plus icon).
-  - Paste your API key.
-  - Save.
-
-Keys are stored in tab-scoped `sessionStorage`, sent through the app's Cloudflare edge route only when you run or configure that provider, and cleared when the tab closes. Current builds also remove legacy key values left in `localStorage` by older versions.
-
-You control which providers you enable; no keys are hard‑coded in the repo.
-
-### 2. Fetch and select models
-
-Once a key is saved for a supported provider:
-
-- The app automatically **fetches available models** for that provider.
-- Use the **Models** list under each provider to:
-  - Search by model name.
-  - Select one or more models (checkboxes).
-  - Toggle **“Enable for race”** per provider.
-
-Model and provider selections persist in `localStorage` so you don’t have to reconfigure on every visit.
-
-### 3. Configure the race
-
-In **Race Settings** (sidebar):
-
-- Choose a **Race Mode**:
-  - Drag Race
-  - Token Sprint (set a token limit)
-  - Time Trial (set a time limit, in seconds)
-  - Free Run
-- Adjust **model settings**:
-  - Temperature
-  - Max tokens
-  - Top‑p
-
-These settings are passed through to each provider’s API (where supported).
-
-### 4. Enter a prompt and start
-
-At the top:
-
-1. Enter your **prompt** in the prompt bar.
-2. Optionally expand to multi‑line mode for longer prompts.
-3. Click **Start Race** (or press Enter when available).
-
-The app:
-
-- Starts a short countdown (accessible reduced‑motion mode supported).
-- Sends streaming completion requests to each selected provider/model pair.
-- Updates each lane in real time with streamed text and metrics.
-
-### 5. Inspect results & charts
-
-- **Results** tab:
-  - View streaming output per model.
-  - See errors for any failing lanes.
-  - Quickly **hide failed** or **collapse/expand all** results.
-  - Leaderboard ranks models by performance.
-
-- **Charts** tab:
-  - Visual comparison of metrics across all completed runs.
-  - Switch to this tab once you have results.
-
-You can **Reset** at any time to clear state and run a fresh race.
-
----
-
-## Environment & Configuration
-
-Most configuration is done in‑app, but for reference:
-
-- **Providers registry**: `utils/providers.ts`
-- **Provider abstractions**: `utils/providerService.ts`
-- **Client streaming**: `utils/apiClient.ts`
-- **Sidebar provider UI**: [components/sidebar/ProviderList.tsx](cci:7://file:///Users/jonathanreed/Downloads/AI-Drag-Racing/components/sidebar/ProviderList.tsx:0:0-0:0)
-- **Main page & reducer**: `pages/index.tsx`
-
-If you introduce a new provider, you’ll typically:
-
-1. Implement a `ProviderService` for that provider.
-2. Register it in the provider registry.
-3. Add its config to `PROVIDERS` (id, display name, etc.).
-4. Wire up a corresponding `/api/providers/{id}/completions` route.
-
----
-
-## Build & Deployment
-
-### Local production build
+Open `http://localhost:3000`. To test a production build:
 
 ```bash
 npm run build
 npm start
 ```
 
----
+The app uses Next.js, React, TypeScript, Tailwind CSS, and Chart.js. Deployment uses Cloudflare Pages through `@cloudflare/next-on-pages`.
 
-## Credits
+## Run a race
 
-- Built by **Jonathan Reed** (for hello.world consulting).
-- Icons by **Lobe Icons** & **simple-icons**.
-- Live instance: `https://ai-dragrace.jonathanrreed.com/` (URL may change over time).
+In the sidebar's Racers list, click Add for a provider, enter its API key, and save. The app fetches that provider's available models. Select models, then turn on Enable for race for each provider you want to include.
 
----
+Choose a mode in Race Settings:
 
-## License
+| Mode | Finish condition |
+| --- | --- |
+| Drag Race | First model to finish wins |
+| Token Sprint | Generate a fixed number of tokens |
+| Time Trial | Generate as much as possible within a time limit |
+| Free Run | Watch completions without an explicit race limit |
 
-Licensed under the Functional Source License, Version 1.1, MIT Future License.
-This repository is source-available today and converts to MIT two years after
-each version is made available. See [`LICENSE`](./LICENSE).
+Set temperature, max tokens, and top-p as needed. The app passes these settings to providers that support them. Enter a prompt and click Start Race. A short countdown precedes the streaming requests; reduced-motion mode is supported.
+
+Results shows responses, errors, token counts, timing, and a leaderboard. Hide failed lanes or collapse responses to compare runs. Charts compares completed runs. Reset clears the race state.
+
+## Providers
+
+The registry includes OpenAI, Groq, Fireworks, Together, Azure, Anthropic, Google Gemini, OpenRouter, AWS Bedrock, Cohere, Mistral, Perplexity, xAI, DeepSeek, AI21, and Cerebras. Provider capabilities and model availability differ; see [utils/providers.ts](utils/providers.ts).
+
+## Keys and stored settings
+
+API keys live in tab-scoped `sessionStorage`. The app sends them through its Cloudflare edge route when you run or configure that provider. Closing the tab clears them. Current builds also remove keys that older versions left in `localStorage`.
+
+Model and provider selections persist in `localStorage`. No API keys are hard-coded in the repository.
+
+## Add a provider
+
+Implement a `ProviderService`, register the provider and its `PROVIDERS` configuration, then add an `/api/providers/{id}/completions` route.
+
+| File | Role |
+| --- | --- |
+| [utils/providers.ts](utils/providers.ts) | Provider registry |
+| [utils/providerService.ts](utils/providerService.ts) | Provider interface |
+| [utils/apiClient.ts](utils/apiClient.ts) | Client streaming |
+| [components/sidebar/ProviderList.tsx](components/sidebar/ProviderList.tsx) | Provider settings UI |
+| [pages/index.tsx](pages/index.tsx) | Main page and reducer |
+
+## Credits and license
+
+Built by Jonathan Reed for hello.world consulting. Icons from Lobe Icons and simple-icons.
+
+Licensed under the Functional Source License, Version 1.1, MIT Future License. The source converts to MIT two years after each version is made available. See [LICENSE](LICENSE).
