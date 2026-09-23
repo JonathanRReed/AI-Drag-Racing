@@ -1,6 +1,6 @@
 # ---------------------------------------------------------------------------
-# robots.txt — policy: search YES / AI grounding YES / AI training NO
-# Last reviewed: 2026-08-04
+# robots.txt — policy: search YES / AI grounding YES / Google-Extended training YES
+# Last reviewed: 2026-09-22
 #
 # As a condition of accessing this website, you agree to abide by the
 # following content signals:
@@ -29,7 +29,7 @@
 # AND RELATED RIGHTS IN THE DIGITAL SINGLE MARKET.
 # ---------------------------------------------------------------------------
 
-# === DEFAULT: everything may crawl; search + AI grounding granted, training refused
+# === DEFAULT: search + AI grounding allowed; model-prefill URLs are not search pages
 # /api/ is closed to every group below: those routes are credential-backed
 # provider proxies with no indexable content.
 User-agent: *
@@ -48,6 +48,7 @@ Disallow: /includes/
 Disallow: /search/
 Disallow: /*?s=
 Disallow: /*?q=
+Disallow: /*?*model=
 
 # NOTE (RFC 9309): a crawler obeys only the FIRST matching user-agent group.
 # Any bot named below never reads the "*" group above, so the Content-Signal
@@ -75,6 +76,7 @@ Disallow: /includes/
 Disallow: /search/
 Disallow: /*?s=
 Disallow: /*?q=
+Disallow: /*?*model=
 
 # Anthropic — Claude search index.
 User-agent: Claude-SearchBot
@@ -93,6 +95,7 @@ Disallow: /includes/
 Disallow: /search/
 Disallow: /*?s=
 Disallow: /*?q=
+Disallow: /*?*model=
 
 # Perplexity — search index. Operator states it is NOT used for foundation models.
 User-agent: PerplexityBot
@@ -111,6 +114,7 @@ Disallow: /includes/
 Disallow: /search/
 Disallow: /*?s=
 Disallow: /*?q=
+Disallow: /*?*model=
 
 # Meta — Meta AI search index (distinct from meta-externalagent, which trains).
 User-agent: meta-webindexer
@@ -129,6 +133,7 @@ Disallow: /includes/
 Disallow: /search/
 Disallow: /*?s=
 Disallow: /*?q=
+Disallow: /*?*model=
 
 # Amazon — search only; operator states it does NOT crawl for GenAI training.
 User-agent: Amzn-SearchBot
@@ -147,6 +152,7 @@ Disallow: /includes/
 Disallow: /search/
 Disallow: /*?s=
 Disallow: /*?q=
+Disallow: /*?*model=
 
 # ===========================================================================
 # ALLOWED — user-initiated fetchers (a human asked for this page)
@@ -233,11 +239,13 @@ Disallow: /
 User-agent: ClaudeBot
 Disallow: /
 
-# Google — controls BOTH Gemini training AND Gemini Apps / Vertex grounding;
-# no token splits them. Training-no wins per site policy. This has NO effect
-# on Google Search, AI Overviews, or AI Mode (governed by Googlebot access).
+# Google-Extended controls Gemini Apps / Vertex grounding and Gemini training.
+# The owner allows those uses. Google Search still uses Googlebot separately.
 User-agent: Google-Extended
-Disallow: /
+Content-Signal: search=yes, ai-input=yes, ai-train=yes
+Allow: /
+Disallow: /api/
+Disallow: /*?*model=
 
 # Apple training opt-out. Does not crawl; Applebot itself stays allowed via "*".
 User-agent: Applebot-Extended

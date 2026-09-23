@@ -15,7 +15,7 @@ export function buildLlmsFullText(): string {
     `Privacy: ${SITE}/privacy`,
     `Content as of: ${METHODOLOGY_UPDATED}`,
     '',
-    'Usage policy: search indexing allowed, AI answers with attribution and a link allowed, AI training not allowed. Matches the content signals in /robots.txt.',
+    'Usage policy: search indexing and AI answers with attribution are allowed. Google-Extended may use the site for Gemini grounding and training; other AI training is not allowed. See /robots.txt.',
     '',
     'What this site is: a browser tool that sends one prompt to models the visitor selects, with the visitor\'s own provider API key, and reports the timing of that single run. Every result is one observation from one route at one moment. There is no leaderboard, no global ranking, and no claim about which model is fastest in general.',
     '',
