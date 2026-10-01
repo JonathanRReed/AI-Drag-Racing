@@ -94,7 +94,7 @@ export function decimate(samples: LaneSample[], maxPoints = 180, out?: LaneSampl
   const n = samples.length;
   if (n <= maxPoints) return samples;
   const stride = (n - 1) / (maxPoints - 1);
-  const result = out || [];
+  const result = out === samples ? [] : out || [];
   result.length = maxPoints;
   for (let i = 0; i < maxPoints - 1; i++) {
     result[i] = samples[Math.round(i * stride)];

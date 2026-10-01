@@ -164,7 +164,8 @@ const LivePaceChart: React.FC<LivePaceChartProps> = ({
   const emptyEl = useRef<SVGTextElement | null>(null);
   const rafRef = useRef<number | null>(null);
   const lastDrawRef = useRef<number>(0);
-  const decimateBuffersRef = useRef<Record<string, LaneSample[]>>({});
+  // Each SVG path consumes the samples synchronously, so all lanes can share one scratch array.
+  const decimateBufferRef = useRef<LaneSample[]>([]);
 
   // Keep a stable reference to lanes for the rAF loop without re-subscribing each render.
   const lanesRef = useRef(lanes);
@@ -191,9 +192,6 @@ const LivePaceChart: React.FC<LivePaceChartProps> = ({
       if (emptyEl.current) emptyEl.current.style.opacity = anyData ? '0' : '1';
 
       for (const lane of ls) {
-        if (!decimateBuffersRef.current[lane.id]) {
-          decimateBuffersRef.current[lane.id] = [];
-        }
         updateLaneSVG(
           lane,
           buffers[lane.id],
@@ -204,9 +202,12 @@ const LivePaceChart: React.FC<LivePaceChartProps> = ({
           showFlags,
           x,
           y,
-          decimateBuffersRef.current[lane.id]
+          decimateBufferRef.current
         );
       }
+
+      // Do not retain samples from removed lanes or previous races between draws.
+      decimateBufferRef.current.length = 0;
 
       // Sweeping NOW cursor + axis labels.
       if (cursorEl.current) {
