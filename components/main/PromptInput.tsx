@@ -70,6 +70,11 @@ const PromptInput: React.FC<PromptInputProps> = ({
       />
       <div className="mt-2 flex items-center justify-between gap-2">
         <span className="text-xs text-zinc-600">Enter starts the race when racers are ready. Shift+Enter adds a line.</span>
+        {prompt.length > 0 && (
+          <span className="text-xs font-mono text-zinc-500 shrink-0" aria-label={`${prompt.length} characters`}>
+            {prompt.length.toLocaleString()} char{prompt.length === 1 ? '' : 's'}
+          </span>
+        )}
       </div>
     </GlassCard>
   );
