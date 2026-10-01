@@ -12,3 +12,11 @@ describe('prompt character counter', () => {
     expect(html).toContain('1 char<');
   });
 });
+
+
+it('defers browser-dependent counter markup until hydration', () => {
+  const html = renderToStaticMarkup(
+    <PromptInput prompt="A normal prompt" onPromptChange={() => {}} onSubmit={() => {}} isLoading={false} />
+  );
+  expect(html).not.toMatch(/aria-label="\d+ characters?"/);
+});
