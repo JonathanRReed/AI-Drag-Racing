@@ -89,3 +89,17 @@ describe('decimate buffer reuse', () => {
     expect(result[49]).toEqual({ t: 2990, chars: 1495 });
   });
 });
+
+
+describe('decimate alias safety', () => {
+  it('does not truncate its input when the same array is passed as output', () => {
+    const samples: LaneSample[] = Array.from({ length: 300 }, (_, i) => ({ t: i, chars: i * 5 }));
+    const original = samples.slice();
+    const result = decimate(samples, 50, samples);
+    expect(samples).toEqual(original);
+    expect(result).not.toBe(samples);
+    expect(result).toHaveLength(50);
+    expect(result[0]).toEqual(original[0]);
+    expect(result[49]).toEqual(original[299]);
+  });
+});
