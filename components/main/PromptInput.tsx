@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useMemo, useRef } from 'react';
 import GlassCard from '../layout/GlassCard';
 
 interface PromptInputProps {
@@ -17,6 +17,17 @@ const PromptInput: React.FC<PromptInputProps> = ({
   disabled,
 }) => {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const counter = useMemo(() => {
+    const supportsGraphemes = typeof Intl.Segmenter === 'function';
+    const segments = supportsGraphemes
+      ? new Intl.Segmenter(undefined, { granularity: 'grapheme' }).segment(prompt)
+      : prompt;
+    let count = 0;
+    for (const _segment of segments) count += 1;
+    const unit = supportsGraphemes ? 'character' : 'code point';
+    const shortUnit = supportsGraphemes ? 'char' : 'code point';
+    return { count, label: `${count} ${unit}${count === 1 ? '' : 's'}`, shortUnit };
+  }, [prompt]);
 
   useEffect(() => {
     const element = textareaRef.current;
@@ -71,8 +82,8 @@ const PromptInput: React.FC<PromptInputProps> = ({
       <div className="mt-2 flex items-center justify-between gap-2">
         <span className="text-xs text-zinc-600">Enter starts the race when racers are ready. Shift+Enter adds a line.</span>
         {prompt.length > 0 && (
-          <span className="text-xs font-mono text-zinc-500 shrink-0" aria-label={`${prompt.length} characters`}>
-            {prompt.length.toLocaleString()} char{prompt.length === 1 ? '' : 's'}
+          <span className="text-xs font-mono text-zinc-500 shrink-0" aria-label={counter.label}>
+            {counter.count.toLocaleString()} {counter.shortUnit}{counter.count === 1 ? '' : 's'}
           </span>
         )}
       </div>
