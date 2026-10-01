@@ -13,7 +13,7 @@
 // client-observed stream), ready to be screenshotted / exported.
 
 import React, { useEffect, useRef } from 'react';
-import { LaneBuffer, decimate, recentCharsPerSec } from '../../utils/raceBuffers';
+import { LaneBuffer, LaneSample, decimate, recentCharsPerSec } from '../../utils/raceBuffers';
 
 export interface PaceLane {
   id: string;
@@ -87,7 +87,8 @@ function updateLaneSVG(
   isLeader: boolean,
   showFlags: boolean,
   x: (t: number) => number,
-  y: (chars: number) => number
+  y: (chars: number) => number,
+  outBuffer?: LaneSample[]
 ) {
   if (!b || !path) return;
 
@@ -98,11 +99,12 @@ function updateLaneSVG(
     return;
   }
 
-  const pts = decimate(b.samples);
+  // Reuse outBuffer to avoid array allocation per frame; use fast numeric rounding instead of .toFixed(1)
+  const pts = decimate(b.samples, 180, outBuffer);
   let d = '';
   for (let i = 0; i < pts.length; i++) {
-    const px = x(pts[i].t).toFixed(1);
-    const py = y(pts[i].chars).toFixed(1);
+    const px = Math.round(x(pts[i].t) * 10) / 10;
+    const py = Math.round(y(pts[i].chars) * 10) / 10;
     d += (i === 0 ? 'M' : 'L') + px + ',' + py + ' ';
   }
   path.setAttribute('d', d.trim());
@@ -162,6 +164,7 @@ const LivePaceChart: React.FC<LivePaceChartProps> = ({
   const emptyEl = useRef<SVGTextElement | null>(null);
   const rafRef = useRef<number | null>(null);
   const lastDrawRef = useRef<number>(0);
+  const decimateBuffersRef = useRef<Record<string, LaneSample[]>>({});
 
   // Keep a stable reference to lanes for the rAF loop without re-subscribing each render.
   const lanesRef = useRef(lanes);
@@ -188,6 +191,9 @@ const LivePaceChart: React.FC<LivePaceChartProps> = ({
       if (emptyEl.current) emptyEl.current.style.opacity = anyData ? '0' : '1';
 
       for (const lane of ls) {
+        if (!decimateBuffersRef.current[lane.id]) {
+          decimateBuffersRef.current[lane.id] = [];
+        }
         updateLaneSVG(
           lane,
           buffers[lane.id],
@@ -197,7 +203,8 @@ const LivePaceChart: React.FC<LivePaceChartProps> = ({
           lane.id === leaderId,
           showFlags,
           x,
-          y
+          y,
+          decimateBuffersRef.current[lane.id]
         );
       }
 

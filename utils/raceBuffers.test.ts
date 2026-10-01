@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { createLaneBuffer, pushChunk, recentCharsPerSec, LaneBuffer } from './raceBuffers';
+import { createLaneBuffer, pushChunk, recentCharsPerSec, decimate, LaneBuffer, LaneSample } from './raceBuffers';
 
 describe('recentCharsPerSec', () => {
   let buffer: LaneBuffer;
@@ -74,5 +74,18 @@ describe('recentCharsPerSec', () => {
     // start = sample[0] (t: 1000), end = sample[1] (t: 1000)
     // dt = 0
     expect(recentCharsPerSec(buffer, 1000)).toBe(0);
+  });
+});
+
+describe('decimate buffer reuse', () => {
+  it('reuses the passed output array when downsampling', () => {
+    const samples: LaneSample[] = Array.from({ length: 300 }, (_, i) => ({ t: i * 10, chars: i * 5 }));
+    const reuseBuffer: LaneSample[] = [];
+    const result = decimate(samples, 50, reuseBuffer);
+
+    expect(result).toBe(reuseBuffer);
+    expect(result.length).toBe(50);
+    expect(result[0]).toEqual({ t: 0, chars: 0 });
+    expect(result[49]).toEqual({ t: 2990, chars: 1495 });
   });
 });
