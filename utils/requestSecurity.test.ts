@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { boundedNumber, corsHeadersForRequest, isAllowedRequestOrigin, readJsonBodyWithLimit, validateRaceRequestBody } from './requestSecurity';
+import { boundedNumber, corsHeadersForRequest, isAllowedRequestOrigin, readJsonBodyWithLimit, sanitizeApiKey, validateRaceRequestBody } from './requestSecurity';
 
 function request(url: string, origin?: string) {
   return new Request(url, { headers: origin ? { origin } : {} });
@@ -27,6 +27,17 @@ describe('request security', () => {
     expect(validateRaceRequestBody({ prompt: 'hello', model: 'm', apiKey: 'k', settings: {} }).ok).toBe(true);
     expect(boundedNumber(10, 0.7, 0, 2)).toBe(2);
     expect(boundedNumber(Number.NaN, 0.7, 0, 2)).toBe(0.7);
+  });
+
+  it('sanitizes API keys removing quotes, whitespace, and control/CRLF characters', () => {
+    expect(sanitizeApiKey('  "sk-123456"  ')).toBe('sk-123456');
+    expect(sanitizeApiKey("'sk-7890'\r\n")).toBe('sk-7890');
+    expect(sanitizeApiKey('sk-abc\x00def\r\nghi')).toBe('sk-abcdefghi');
+    const res = validateRaceRequestBody({ prompt: 'hi', model: 'm', apiKey: ' "key-123\r\n" ' });
+    expect(res.ok).toBe(true);
+    if (res.ok) {
+      expect(res.value.apiKey).toBe('key-123');
+    }
   });
 
   it('rejects oversized JSON before parsing an unbounded request body', async () => {
