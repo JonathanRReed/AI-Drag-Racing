@@ -9,12 +9,17 @@ export async function* parseSseJson<T = unknown>(
   let buffer = '';
 
   const parseEvent = (event: string): { done: boolean; value?: T } => {
-    const data = event
-      .split('\n')
-      .filter((line) => line.startsWith('data:'))
-      .map((line) => line.slice(5).trimStart())
-      .join('\n')
-      .trim();
+    // Fast single-pass line extraction without intermediate array allocations per chunk
+    let data = '';
+    const lines = event.split('\n');
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+      if (line.startsWith('data:')) {
+        const payload = line.slice(5).trimStart();
+        data = data ? data + '\n' + payload : payload;
+      }
+    }
+    data = data.trim();
     if (!data) return { done: false };
     if (data === '[DONE]') return { done: true };
     try {
@@ -39,7 +44,10 @@ export async function* parseSseJson<T = unknown>(
       throw error;
     }
     buffer += decoder.decode(value, { stream: !done });
-    buffer = buffer.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+    // Performance optimization: avoid regex scan across whole buffer unless CRLF is present
+    if (buffer.includes('\r')) {
+      buffer = buffer.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+    }
 
     let boundary = buffer.indexOf('\n\n');
     while (boundary !== -1) {
