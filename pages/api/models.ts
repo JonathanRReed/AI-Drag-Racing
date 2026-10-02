@@ -1,6 +1,6 @@
 export const config = { runtime: 'edge' };
 
-import { corsHeadersForRequest, readJsonBodyWithLimit } from '../../utils/requestSecurity';
+import { corsHeadersForRequest, readJsonBodyWithLimit, sanitizeApiKey } from '../../utils/requestSecurity';
 
 type ModelResponse = {
     data: string[];
@@ -124,12 +124,6 @@ const STATIC_FALLBACKS: Record<string, string[]> = {
         'gpt-5-preview',
     ],
 };
-
-// Sanitize API key - trim whitespace and remove any accidental quotes
-function sanitizeApiKey(key: string): string {
-    if (typeof key !== 'string' || !key) return '';
-    return key.trim().replace(/^["']|["']$/g, '');
-}
 
 function jsonResponse(data: ModelResponse, corsHeaders: Record<string, string>, status = 200): Response {
     return new Response(JSON.stringify(data), {

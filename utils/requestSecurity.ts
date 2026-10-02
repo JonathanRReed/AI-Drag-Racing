@@ -72,6 +72,16 @@ export async function readJsonBodyWithLimit(
   }
 }
 
+export function sanitizeApiKey(key: string): string {
+  if (typeof key !== 'string' || !key) return '';
+  return key
+    // eslint-disable-next-line no-control-regex
+    .replace(/[\x00-\x1F\x7F]/g, '')
+    .trim()
+    .replace(/^["']|["']$/g, '')
+    .trim();
+}
+
 export function validateRaceRequestBody(body: unknown):
   | { ok: true; value: { prompt: string; model: string; apiKey: string; settings: Record<string, unknown> } }
   | { ok: false; error: string } {
@@ -79,7 +89,8 @@ export function validateRaceRequestBody(body: unknown):
   const value = body as Record<string, unknown>;
   const prompt = typeof value.prompt === 'string' ? value.prompt : '';
   const model = typeof value.model === 'string' ? value.model : '';
-  const apiKey = typeof value.apiKey === 'string' ? value.apiKey.trim() : '';
+  const rawApiKey = typeof value.apiKey === 'string' ? value.apiKey : '';
+  const apiKey = sanitizeApiKey(rawApiKey);
   const settings = value.settings && typeof value.settings === 'object'
     ? value.settings as Record<string, unknown>
     : {};
