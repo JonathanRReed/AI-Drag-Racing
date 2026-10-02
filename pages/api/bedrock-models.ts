@@ -1,6 +1,8 @@
 // pages/api/bedrock-models.ts
 export const config = { runtime: 'edge' };
 
+import { corsHeadersForRequest } from '../../utils/requestSecurity';
+
 // Edge-friendly static list of common Bedrock text models.
 const STATIC_BEDROCK_MODELS: string[] = [
   'amazon.titan-text-lite-v1',
@@ -14,22 +16,35 @@ const STATIC_BEDROCK_MODELS: string[] = [
 ];
 
 export default async function handler(req: Request): Promise<Response> {
+  const corsHeaders = corsHeadersForRequest(req);
+  if (!corsHeaders) {
+    return new Response(JSON.stringify({ error: 'Origin not allowed' }), {
+      status: 403,
+      headers: { 'Content-Type': 'application/json', Vary: 'Origin' },
+    });
+  }
+
+  if (req.method === 'OPTIONS') {
+    return new Response(null, { status: 204, headers: corsHeaders });
+  }
+
   if (req.method !== 'POST') {
     return new Response(JSON.stringify({ error: 'Method not allowed' }), {
       status: 405,
-      headers: { 'Content-Type': 'application/json' },
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   }
+
   // We previously validated/parsed AWS creds here; for Edge we return a static list.
   try {
     return new Response(JSON.stringify({ models: STATIC_BEDROCK_MODELS }), {
       status: 200,
-      headers: { 'Content-Type': 'application/json' },
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   } catch (e: any) {
     return new Response(JSON.stringify({ error: e?.message || 'Failed to list Bedrock models' }), {
       status: 500,
-      headers: { 'Content-Type': 'application/json' },
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   }
 }
