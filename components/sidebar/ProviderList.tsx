@@ -89,6 +89,7 @@ const ProviderListItem: React.FC<ProviderListItemProps> = ({ provider, hasApiKey
           onClick={onAddKey}
           className="provider-key-button"
           aria-label={`${hasApiKey ? 'Edit' : 'Add'} API key for ${provider.displayName}`}
+          title={`${hasApiKey ? 'Edit' : 'Add'} API key for ${provider.displayName}`}
         />
       </div>
     </div>

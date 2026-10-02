@@ -1,5 +1,6 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useMemo, useRef } from 'react';
 import GlassCard from '../layout/GlassCard';
+import { measurePromptCharacters } from '../../utils/promptCharacters';
 
 interface PromptInputProps {
   prompt: string;
@@ -17,6 +18,9 @@ const PromptInput: React.FC<PromptInputProps> = ({
   disabled,
 }) => {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const [counterReady, setCounterReady] = React.useState(false);
+  useEffect(() => setCounterReady(true), []);
+  const counter = useMemo(() => measurePromptCharacters(prompt), [prompt]);
 
   useEffect(() => {
     const element = textareaRef.current;
@@ -70,6 +74,11 @@ const PromptInput: React.FC<PromptInputProps> = ({
       />
       <div className="mt-2 flex items-center justify-between gap-2">
         <span className="text-xs text-zinc-600">Enter starts the race when racers are ready. Shift+Enter adds a line.</span>
+        {counterReady && prompt.length > 0 && (
+          <span className="text-xs font-mono text-zinc-500 shrink-0" aria-label={counter.label}>
+            {counter.count.toLocaleString()} {counter.shortUnit}{counter.count === 1 ? '' : 's'}
+          </span>
+        )}
       </div>
     </GlassCard>
   );
