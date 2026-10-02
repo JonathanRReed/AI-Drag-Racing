@@ -45,9 +45,18 @@ const PromptInput: React.FC<PromptInputProps> = ({
 
   return (
     <GlassCard className="prompt-card p-3" hover={false} spotlight={false}>
-      <label htmlFor="prompt-input" className="mb-2 block text-xs font-medium text-zinc-500">
-        Prompt
-      </label>
+      <div className="mb-2 flex items-center justify-between">
+        <label htmlFor="prompt-input" className="text-xs font-medium text-zinc-500">
+          Prompt
+        </label>
+        <kbd
+          className="rounded border border-white/10 bg-white/5 px-1.5 py-0.5 text-[10px] font-mono text-zinc-400 select-none"
+          aria-label="Keyboard shortcut: Command or Control plus L to focus prompt"
+          title="Press ⌘L or Ctrl+L to focus prompt input"
+        >
+          ⌘L / Ctrl+L
+        </kbd>
+      </div>
       <textarea
         id="prompt-input"
         ref={textareaRef}
