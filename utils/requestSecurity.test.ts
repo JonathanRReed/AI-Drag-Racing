@@ -55,3 +55,11 @@ describe('request security', () => {
     expect(await readJsonBodyWithLimit(streamed, 16_384)).toMatchObject({ ok: false, status: 413 });
   });
 });
+
+describe('pasted API key boundaries', () => {
+  it('removes boundary controls before trimming and unquoting', () => {
+    expect(sanitizeApiKey('\x00 "sk-test-only" \x7F')).toBe('sk-test-only');
+    expect(sanitizeApiKey('"sk-test-only"\x00')).toBe('sk-test-only');
+    expect(sanitizeApiKey('\x00   \x7F')).toBe('');
+  });
+});
