@@ -75,10 +75,11 @@ export async function readJsonBodyWithLimit(
 export function sanitizeApiKey(key: string): string {
   if (typeof key !== 'string' || !key) return '';
   return key
+    // eslint-disable-next-line no-control-regex
+    .replace(/[\x00-\x1F\x7F]/g, '')
     .trim()
     .replace(/^["']|["']$/g, '')
-    // eslint-disable-next-line no-control-regex
-    .replace(/[\r\n\x00-\x1F\x7F]/g, '');
+    .trim();
 }
 
 export function validateRaceRequestBody(body: unknown):
