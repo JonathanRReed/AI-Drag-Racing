@@ -89,14 +89,16 @@ export function recentCharsPerSec(buf: LaneBuffer, windowMs = 1000): number {
 }
 
 // Down-sample a sample list to at most `maxPoints` for drawing, preserving first/last.
-export function decimate(samples: LaneSample[], maxPoints = 180): LaneSample[] {
+// Optional `out` buffer reuses an existing array to avoid GC allocations in 60Hz render loops.
+export function decimate(samples: LaneSample[], maxPoints = 180, out?: LaneSample[]): LaneSample[] {
   const n = samples.length;
   if (n <= maxPoints) return samples;
-  const out: LaneSample[] = [];
   const stride = (n - 1) / (maxPoints - 1);
+  const result = out === samples ? [] : out || [];
+  result.length = maxPoints;
   for (let i = 0; i < maxPoints - 1; i++) {
-    out.push(samples[Math.round(i * stride)]);
+    result[i] = samples[Math.round(i * stride)];
   }
-  out.push(samples[n - 1]);
-  return out;
+  result[maxPoints - 1] = samples[n - 1];
+  return result;
 }

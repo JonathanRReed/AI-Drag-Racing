@@ -217,6 +217,7 @@ const RaceLane: React.FC<RaceLaneProps> = ({
                   onClick={() => setExpanded((v) => !v)}
                   className="inline-flex min-h-[var(--control-h)] min-w-[var(--control-h)] items-center justify-center rounded-sm bg-white/5 hover:bg-white/10 text-[var(--text-muted)] hover:text-white transition-colors"
                   aria-expanded={expanded}
+                  aria-label={`${expanded ? 'Collapse' : 'Expand'} ${displayName} response`}
                   title={expanded ? 'Collapse' : 'Expand'}
                 >
                   <svg
