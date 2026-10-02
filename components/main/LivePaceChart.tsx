@@ -13,6 +13,7 @@
 // client-observed stream), ready to be screenshotted / exported.
 
 import React, { useEffect, useRef } from 'react';
+import { applyPaceFilter } from '../../utils/paceSvg';
 import { LaneBuffer, LaneSample, decimate, recentCharsPerSec } from '../../utils/raceBuffers';
 
 export interface PaceLane {
@@ -126,9 +127,7 @@ function updateLaneSVG(
   }
 
   const expectedFilter = isLeader && !b.errored ? `drop-shadow(0 0 6px ${lane.color}aa)` : 'none';
-  if (path.style.filter !== expectedFilter) {
-    path.style.filter = expectedFilter;
-  }
+  applyPaceFilter(path, expectedFilter);
 
   const last = pts[pts.length - 1];
   const hx = x(last.t);
