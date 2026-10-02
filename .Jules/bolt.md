@@ -1,0 +1,3 @@
+## 2025-05-18 - Guard DOM Attribute Writes in 60Hz SVG Animation Loops
+**Learning:** In imperative SVG update loops driven by `requestAnimationFrame`, calling `setAttribute` or modifying `style` unconditionally on every frame forces unnecessary DOM mutations and triggers browser style/path re-parsing even when values have not changed. Guarding DOM mutations by checking the existing attribute value beforehand (`if (el.getAttribute(attr) !== val)`) eliminates redundant DOM updates during smooth 60fps streaming animations.
+**Action:** Always check current DOM attribute/style values before executing `setAttribute` or style assignments inside continuous high-frequency update loops like `requestAnimationFrame`.

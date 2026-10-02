@@ -93,9 +93,9 @@ function updateLaneSVG(
   if (!b || !path) return;
 
   if (b.samples.length === 0) {
-    path.setAttribute('d', '');
-    if (head) head.setAttribute('opacity', '0');
-    if (flag) flag.setAttribute('opacity', '0');
+    if (path.getAttribute('d') !== '') path.setAttribute('d', '');
+    if (head && head.getAttribute('opacity') !== '0') head.setAttribute('opacity', '0');
+    if (flag && flag.getAttribute('opacity') !== '0') flag.setAttribute('opacity', '0');
     return;
   }
 
@@ -105,44 +105,75 @@ function updateLaneSVG(
   for (let i = 0; i < pts.length; i++) {
     const px = Math.round(x(pts[i].t) * 10) / 10;
     const py = Math.round(y(pts[i].chars) * 10) / 10;
-    d += (i === 0 ? 'M' : 'L') + px + ',' + py + ' ';
+    d += i === 0 ? `M${px},${py} ` : `L${px},${py} `;
   }
-  path.setAttribute('d', d.trim());
+  const pathD = d.trim();
 
-  path.setAttribute('stroke-width', isLeader ? '3' : '2');
-  path.setAttribute('opacity', b.errored ? '0.28' : '1');
-  path.style.filter = isLeader && !b.errored ? `drop-shadow(0 0 6px ${lane.color}aa)` : 'none';
+  // Bolt optimization: Guard DOM attribute writes to avoid triggering unnecessary SVG path re-parsing
+  // and style recalculations on unchanged values during 60fps rAF animation loops.
+  if (path.getAttribute('d') !== pathD) {
+    path.setAttribute('d', pathD);
+  }
+
+  const strokeWidth = isLeader ? '3' : '2';
+  if (path.getAttribute('stroke-width') !== strokeWidth) {
+    path.setAttribute('stroke-width', strokeWidth);
+  }
+
+  const pathOpacity = b.errored ? '0.28' : '1';
+  if (path.getAttribute('opacity') !== pathOpacity) {
+    path.setAttribute('opacity', pathOpacity);
+  }
+
+  const expectedFilter = isLeader && !b.errored ? `drop-shadow(0 0 6px ${lane.color}aa)` : 'none';
+  if (path.style.filter !== expectedFilter) {
+    path.style.filter = expectedFilter;
+  }
 
   const last = pts[pts.length - 1];
   const hx = x(last.t);
   const hy = y(last.chars);
+  const hxStr = hx.toFixed(1);
+  const hyStr = hy.toFixed(1);
 
   if (head) {
-    head.setAttribute('cx', hx.toFixed(1));
-    head.setAttribute('cy', hy.toFixed(1));
-    head.setAttribute('r', b.done ? '4.5' : isLeader ? '4' : '3');
-    head.setAttribute('opacity', b.errored ? '0.3' : '1');
+    if (head.getAttribute('cx') !== hxStr) head.setAttribute('cx', hxStr);
+    if (head.getAttribute('cy') !== hyStr) head.setAttribute('cy', hyStr);
+
+    const rVal = b.done ? '4.5' : isLeader ? '4' : '3';
+    if (head.getAttribute('r') !== rVal) head.setAttribute('r', rVal);
+
+    const headOpacity = b.errored ? '0.3' : '1';
+    if (head.getAttribute('opacity') !== headOpacity) head.setAttribute('opacity', headOpacity);
   }
 
   if (flag) {
     if (!showFlags) {
-      flag.setAttribute('opacity', '0');
+      if (flag.getAttribute('opacity') !== '0') flag.setAttribute('opacity', '0');
     } else {
       const fy = Math.max(PAD.t + 8, Math.min(hy, PAD.t + PLOT_H - 4));
       const nearEdge = hx > PAD.l + PLOT_W - 70;
-      flag.setAttribute('text-anchor', nearEdge ? 'end' : 'start');
-      flag.setAttribute('x', (nearEdge ? hx - 7 : hx + 8).toFixed(1));
-      flag.setAttribute('y', (fy + 3.5).toFixed(1));
-      flag.setAttribute('opacity', b.errored ? '0.4' : '1');
+      const textAnchor = nearEdge ? 'end' : 'start';
+      const fxStr = (nearEdge ? hx - 7 : hx + 8).toFixed(1);
+      const fyStr = (fy + 3.5).toFixed(1);
+      const flagOpacity = b.errored ? '0.4' : '1';
+
+      if (flag.getAttribute('text-anchor') !== textAnchor) flag.setAttribute('text-anchor', textAnchor);
+      if (flag.getAttribute('x') !== fxStr) flag.setAttribute('x', fxStr);
+      if (flag.getAttribute('y') !== fyStr) flag.setAttribute('y', fyStr);
+      if (flag.getAttribute('opacity') !== flagOpacity) flag.setAttribute('opacity', flagOpacity);
+
+      let textContent = '';
       if (b.errored) {
-        flag.textContent = 'error';
+        textContent = 'error';
       } else if (b.done) {
-        flag.textContent =
+        textContent =
           b.finalOutputTokens != null ? `${compact(b.finalOutputTokens)} tok` : `${compact(b.chars)} ch`;
       } else {
         const cps = recentCharsPerSec(b);
-        flag.textContent = `${compact(b.chars)} · ${compact(cps)}/s`;
+        textContent = `${compact(b.chars)} · ${compact(cps)}/s`;
       }
+      if (flag.textContent !== textContent) flag.textContent = textContent;
     }
   }
 }
