@@ -24,6 +24,7 @@ const ApiKeyModal: React.FC<ApiKeyModalProps> = ({
   onSave,
 }) => {
   const [apiKey, setApiKey] = useState('');
+  const [showKey, setShowKey] = useState(false);
   const dialogRef = useRef<HTMLDivElement | null>(null);
   const inputRef = useRef<HTMLInputElement | null>(null);
   const returnFocusRef = useRef<HTMLElement | null>(null);
@@ -92,30 +93,63 @@ const ApiKeyModal: React.FC<ApiKeyModalProps> = ({
         role="dialog"
         aria-modal="true"
         aria-labelledby="api-key-modal-heading"
-        className="glass-card p-6 w-[min(92vw,28rem)] m-4"
+        aria-describedby="api-key-modal-description"
+        className="glass-card p-6 w-[min(92vw,28rem)] m-4 relative"
       >
-        <h2 id="api-key-modal-heading" className="text-2xl font-bold text-white mb-4 leading-tight">
+        <button
+          onClick={onClose}
+          type="button"
+          className="absolute top-4 right-4 text-gray-400 hover:text-white p-1 rounded-md transition-colors"
+          aria-label="Close dialog"
+        >
+          <svg viewBox="0 0 24 24" className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2">
+            <path d="M18 6L6 18M6 6l12 12" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        </button>
+        <h2 id="api-key-modal-heading" className="text-2xl font-bold text-white mb-4 pr-6 leading-tight">
           Enter API Key for {providerName}
         </h2>
-        <p className="text-gray-400 mb-4 text-sm">
+        <p id="api-key-modal-description" className="text-gray-400 mb-4 text-sm">
           Your API key is kept only for this browser tab. Closing the tab clears it. For each race, the key is sent to the server-side provider proxy and is never stored in a race record.
         </p>
         <label htmlFor="apiKey" className="eco-label mb-1">
           API key
         </label>
-        <input
-          id="apiKey"
-          ref={inputRef}
-          type="password"
-          value={apiKey}
-          onChange={(e) => setApiKey(e.target.value)}
-          onKeyDown={(e) => { if (e.key === 'Enter') handleSave(); }}
-          className="w-full px-3 py-2 rounded-md bg-zinc-800 border border-white/20 text-white placeholder-gray-400 focus:outline-hidden focus:ring-2 focus:ring-cyan-400"
-          placeholder="sk-..."
-        />
+        <div className="relative flex items-center">
+          <input
+            id="apiKey"
+            ref={inputRef}
+            type={showKey ? 'text' : 'password'}
+            value={apiKey}
+            onChange={(e) => setApiKey(e.target.value)}
+            onKeyDown={(e) => { if (e.key === 'Enter') handleSave(); }}
+            className="w-full px-3 py-2 pr-10 rounded-md bg-zinc-800 border border-white/20 text-white placeholder-gray-400 focus:outline-hidden focus:ring-2 focus:ring-cyan-400"
+            placeholder="sk-..."
+          />
+          <button
+            type="button"
+            onClick={() => setShowKey(!showKey)}
+            className="absolute right-2 text-gray-400 hover:text-white p-1 rounded-sm"
+            aria-label={showKey ? 'Hide API key' : 'Show API key'}
+            title={showKey ? 'Hide API key' : 'Show API key'}
+          >
+            {showKey ? (
+              <svg viewBox="0 0 24 24" className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" strokeLinecap="round" strokeLinejoin="round" />
+                <line x1="1" y1="1" x2="23" y2="23" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            ) : (
+              <svg viewBox="0 0 24 24" className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" strokeLinecap="round" strokeLinejoin="round" />
+                <circle cx="12" cy="12" r="3" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            )}
+          </button>
+        </div>
         <div className="flex justify-end space-x-4 mt-6">
           <button
             onClick={onClose}
+            type="button"
             className="px-4 py-2 rounded-md text-gray-300 hover:bg-white/10 transition-colors"
           >
             Cancel
