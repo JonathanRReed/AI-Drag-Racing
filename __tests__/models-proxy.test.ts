@@ -1,59 +1,74 @@
-import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import handler from '../pages/api/models';
 
-describe('pages/api/models handler security and fallback tests', () => {
-  const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+const ORIGIN = 'https://ai-dragrace.jonathanrreed.com';
+const PRIVATE_DETAIL = 'dummy-provider-credential-do-not-log';
 
+function request(providerId: string) {
+  return new Request(ORIGIN + '/api/models', {
+    method: 'POST',
+    headers: { origin: ORIGIN },
+    body: JSON.stringify({ providerId, apiKey: 'test-key' }),
+  });
+}
+
+describe('models proxy error handling', () => {
   beforeEach(() => {
-    consoleSpy.mockClear();
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+    vi.spyOn(console, 'warn').mockImplementation(() => {});
   });
 
   afterEach(() => {
+    vi.restoreAllMocks();
     vi.unstubAllGlobals();
   });
 
-  it('rejects forbidden origin', async () => {
-    const req = new Request('https://ai-dragrace.jonathanrreed.com/api/models', {
+  it('rejects forbidden origins', async () => {
+    const response = await handler(new Request(ORIGIN + '/api/models', {
       method: 'POST',
       headers: { origin: 'https://evil.com' },
-    });
-    const res = await handler(req);
-    expect(res.status).toBe(403);
-    const body = await res.json();
-    expect(body.error).toBe('Origin not allowed');
+    }));
+    expect(response.status).toBe(403);
+    expect(await response.json()).toEqual({ data: [], error: 'Origin not allowed' });
   });
 
-  it('handles provider fetch failures gracefully with static fallback without leaking error message details', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('Sensitive key sk-12345 leaked in provider error')));
-
-    const req = new Request('https://ai-dragrace.jonathanrreed.com/api/models', {
-      method: 'POST',
-      headers: { origin: 'https://ai-dragrace.jonathanrreed.com' },
-      body: JSON.stringify({ providerId: 'openai', apiKey: 'test-key' }),
-    });
-
-    const res = await handler(req);
-    expect(res.status).toBe(200);
-    const body = await res.json();
-    expect(Array.isArray(body.data)).toBe(true);
-    expect(body.data.length).toBeGreaterThan(0);
-
-    const calledArgs = consoleSpy.mock.calls.flat().join(' ');
-    expect(calledArgs).not.toContain('sk-12345');
-    expect(calledArgs).not.toContain('Sensitive key');
+  it('uses a static fallback after a provider fetch failure without logging its details', async () => {
+    const fetchMock = vi.fn().mockRejectedValue(new Error(PRIVATE_DETAIL));
+    vi.stubGlobal('fetch', fetchMock);
+    const response = await handler(request('openai'));
+    expect(fetchMock).toHaveBeenCalledOnce();
+    expect(response.status).toBe(200);
+    expect((await response.json()).data.length).toBeGreaterThan(0);
+    expect(console.warn).toHaveBeenCalled();
+    expect(console.error).not.toHaveBeenCalled();
+    expect(vi.mocked(console.warn).mock.calls.flat().join(' ')).not.toContain(PRIVATE_DETAIL);
   });
 
-  it('does not log raw error messages to console when handler catches uncaught errors', async () => {
-    const req = new Request('https://ai-dragrace.jonathanrreed.com/api/models', {
-      method: 'POST',
-      headers: { origin: 'https://ai-dragrace.jonathanrreed.com' },
-      body: JSON.stringify({ providerId: 'unknown-provider', apiKey: 'test-key' }),
-    });
+  it.each([
+    [new Error(PRIVATE_DETAIL), 'Failed to fetch models'],
+    [new Error('401 ' + PRIVATE_DETAIL), 'Invalid API Key'],
+    [new Error('403 ' + PRIVATE_DETAIL), 'Invalid API Key'],
+    [{ message: 401 }, 'Failed to fetch models'],
+    [null, 'Failed to fetch models'],
+  ])('sanitizes an outer-catch failure %#', async (failure, expectedError) => {
+    const req = request('unknown-provider');
+    // Provider fetch failures are caught internally. A response serialization
+    // failure reaches the outer catch; only the first serialization fails.
+    const stringify = vi.spyOn(JSON, 'stringify').mockImplementationOnce(() => { throw failure; });
+    const response = await handler(req);
+    expect(stringify).toHaveBeenCalledTimes(2);
+    expect(console.error).toHaveBeenCalledExactlyOnceWith('[Proxy Error] Provider: unknown-provider');
+    expect(response.status).toBe(500);
+    expect(await response.json()).toEqual({ data: [], error: expectedError });
+  });
 
-    const res = await handler(req);
-    expect(res.status).toBe(200);
-
-    const calledArgs = consoleSpy.mock.calls.flat().join(' ');
-    expect(calledArgs).not.toContain('sk-12345');
+  it('keeps the static fallback when the outer catch handles a failure', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response('{"data":[]}')));
+    const req = request('openai');
+    vi.spyOn(JSON, 'stringify').mockImplementationOnce(() => { throw new Error(PRIVATE_DETAIL); });
+    const response = await handler(req);
+    expect(console.error).toHaveBeenCalledExactlyOnceWith('[Proxy Error] Provider: openai');
+    expect(response.status).toBe(200);
+    expect((await response.json()).data.length).toBeGreaterThan(0);
   });
 });
