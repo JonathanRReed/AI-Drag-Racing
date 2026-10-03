@@ -305,7 +305,6 @@ export default async function handler(req: Request): Promise<Response> {
 
     } catch (error: any) {
         console.error(`[Proxy Error] Provider: ${providerId}`);
-        console.error(`[Proxy Error] Message: ${error.message}`);
 
         // Return fallback data instead of error when possible
         const fallback = STATIC_FALLBACKS[providerId];
@@ -313,11 +312,12 @@ export default async function handler(req: Request): Promise<Response> {
             return jsonResponse({ data: fallback }, corsHeaders);
         }
 
+        const isAuthError = typeof error?.message === 'string' &&
+            (error.message.includes('401') || error.message.includes('403'));
+
         return jsonResponse({
             data: [],
-            error: error.message?.includes('401') || error.message?.includes('403')
-                ? 'Invalid API Key'
-                : 'Failed to fetch models'
+            error: isAuthError ? 'Invalid API Key' : 'Failed to fetch models'
         }, corsHeaders, 500);
     }
 }
