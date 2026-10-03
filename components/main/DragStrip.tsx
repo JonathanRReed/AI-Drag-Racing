@@ -103,36 +103,50 @@ const DragStrip: React.FC<DragStripProps> = ({ lanes, buffersRef, running, reduc
         const next = reducedMotion || b.done || b.errored ? frac : cur + (frac - cur) * 0.16;
         curFracRef.current[lane.id] = next;
 
-        // Browser resolves the percentage against the real track width — no JS measurement.
-        car.style.left = `calc(${next.toFixed(4)} * (100% - ${CAR_W}px))`;
-        car.dataset.running = launched && !b.done && !b.errored ? 'true' : 'false';
-        car.dataset.leader = lane.id === leaderId && !b.done && !b.errored ? 'true' : 'false';
-        car.style.opacity = b.errored ? '0.35' : '1';
+        // Guard DOM writes to prevent layout/style thrashing during 60fps rAF animation loops.
+        const leftStr = `calc(${next.toFixed(4)} * (100% - ${CAR_W}px))`;
+        if (car.style.left !== leftStr) car.style.left = leftStr;
+
+        const runningStr = launched && !b.done && !b.errored ? 'true' : 'false';
+        if (car.dataset.running !== runningStr) car.dataset.running = runningStr;
+
+        const leaderStr = lane.id === leaderId && !b.done && !b.errored ? 'true' : 'false';
+        if (car.dataset.leader !== leaderStr) car.dataset.leader = leaderStr;
+
+        const opacityStr = b.errored ? '0.35' : '1';
+        if (car.style.opacity !== opacityStr) car.style.opacity = opacityStr;
 
         const speed = recentCharsPerSec(b);
         const streak = streakRefs.current[lane.id];
         if (streak) {
           const active = launched && !b.done && !b.errored && speed > 15;
-          streak.style.opacity = active ? String(Math.min(1, 0.25 + speed / 600)) : '0';
-          streak.style.width = active ? `${Math.min(64, 14 + speed / 9).toFixed(0)}px` : '0px';
+          const streakOpacityStr = active ? String(Math.min(1, 0.25 + speed / 600)) : '0';
+          const streakWidthStr = active ? `${Math.min(64, 14 + speed / 9).toFixed(0)}px` : '0px';
+          if (streak.style.opacity !== streakOpacityStr) streak.style.opacity = streakOpacityStr;
+          if (streak.style.width !== streakWidthStr) streak.style.width = streakWidthStr;
         }
 
         const lane2 = laneRefs.current[lane.id];
-        if (lane2) lane2.dataset.state = b.errored ? 'out' : b.done ? 'fin' : launched ? 'go' : 'stage';
+        if (lane2) {
+          const stateStr = b.errored ? 'out' : b.done ? 'fin' : launched ? 'go' : 'stage';
+          if (lane2.dataset.state !== stateStr) lane2.dataset.state = stateStr;
+        }
 
         const readout = readoutRefs.current[lane.id];
         const sub = subRefs.current[lane.id];
         if (readout) {
-          if (b.errored) readout.textContent = 'OUT';
-          else if (b.done) readout.textContent = `${(b.lastT / 1000).toFixed(2)}s`;
-          else if (launched) readout.textContent = compact(speed);
-          else readout.textContent = 'Ready';
+          let readoutText = 'Ready';
+          if (b.errored) readoutText = 'OUT';
+          else if (b.done) readoutText = `${(b.lastT / 1000).toFixed(2)}s`;
+          else if (launched) readoutText = compact(speed);
+          if (readout.textContent !== readoutText) readout.textContent = readoutText;
         }
         if (sub) {
-          if (b.errored) sub.textContent = 'DNF';
-          else if (b.done) sub.textContent = 'ET · finished';
-          else if (launched) sub.textContent = `c/s · ${compact(b.chars)} ch`;
-          else sub.textContent = 'staging';
+          let subText = 'staging';
+          if (b.errored) subText = 'DNF';
+          else if (b.done) subText = 'ET · finished';
+          else if (launched) subText = `c/s · ${compact(b.chars)} ch`;
+          if (sub.textContent !== subText) sub.textContent = subText;
         }
       }
     };
