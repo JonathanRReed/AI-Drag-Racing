@@ -1,6 +1,6 @@
 export const config = { runtime: 'edge' };
 
-import { corsHeadersForRequest, readJsonBodyWithLimit, sanitizeApiKey } from '../../utils/requestSecurity';
+import { corsHeadersForRequest, readJsonBodyWithLimit, redactCredentials, sanitizeApiKey } from '../../utils/requestSecurity';
 
 type ModelResponse = {
     data: string[];
@@ -154,6 +154,7 @@ export default async function handler(req: Request): Promise<Response> {
         return jsonResponse({ data: [], error: 'Request body must be an object' }, corsHeaders, 400);
     }
 
+    let apiKey = '';
     const { providerId, apiKey: rawApiKey } = parsedBody.value as Record<string, unknown>;
     if (typeof providerId !== 'string' || !providerId || providerId.length > 80) {
         return jsonResponse({ data: [], error: 'Valid provider ID required' }, corsHeaders, 400);
@@ -161,7 +162,7 @@ export default async function handler(req: Request): Promise<Response> {
     if (typeof rawApiKey !== 'string' || rawApiKey.length > 4096) {
         return jsonResponse({ data: [], error: 'Valid API key required' }, corsHeaders, 400);
     }
-    const apiKey = sanitizeApiKey(rawApiKey);
+    apiKey = sanitizeApiKey(rawApiKey);
 
     if (!apiKey) {
         return jsonResponse({ data: [], error: 'API key required' }, corsHeaders, 400);
@@ -305,10 +306,10 @@ export default async function handler(req: Request): Promise<Response> {
 
     } catch (error: any) {
         console.error(`[Proxy Error] Provider: ${providerId}`);
-        console.error(`[Proxy Error] Message: ${error.message}`);
+        console.error(`[Proxy Error] Message: ${redactCredentials(error?.message, apiKey)}`);
 
         // Return fallback data instead of error when possible
-        const fallback = STATIC_FALLBACKS[providerId];
+        const fallback = Array.isArray(STATIC_FALLBACKS[providerId]) ? STATIC_FALLBACKS[providerId] : undefined;
         if (fallback && fallback.length > 0) {
             return jsonResponse({ data: fallback }, corsHeaders);
         }

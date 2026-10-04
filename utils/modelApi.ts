@@ -1,4 +1,5 @@
 import { modelApiProviders } from './modelApiProviders';
+import { redactCredentials } from './requestSecurity';
 
 export interface ModelApiParams {
   provider: string;
@@ -45,12 +46,13 @@ export async function callModelApi({
       error: result.error
     };
   } catch (err: any) {
+    const message = redactCredentials(err, apiKey);
     // Enhanced error logging for debugging
-    console.error('Model API error:', err);
+    console.error('Model API error:', message);
     if (typeof window !== 'undefined') {
-      alert('Model API error: ' + (err?.message || JSON.stringify(err)));
+      alert('Model API error: ' + message);
     }
-    return { output: null, latency: null, error: err?.message || 'Unknown error' };
+    return { output: null, latency: null, error: message || 'Unknown error' };
   }
 }
 

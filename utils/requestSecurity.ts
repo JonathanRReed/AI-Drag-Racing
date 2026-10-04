@@ -107,3 +107,19 @@ export function boundedNumber(value: unknown, fallback: number, min: number, max
   if (typeof value !== 'number' || !Number.isFinite(value)) return fallback;
   return Math.min(max, Math.max(min, value));
 }
+
+export function redactCredentials(input: unknown, apiKey?: string): string {
+  if (input === null || input === undefined) return '';
+  let text = typeof input === 'string' ? input : (input instanceof Error ? input.message : String(input));
+
+  if (apiKey && typeof apiKey === 'string' && apiKey.trim().length > 3) {
+    const trimmedKey = apiKey.trim();
+    const escapedKey = trimmedKey.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    text = text.replace(new RegExp(escapedKey, 'g'), '[REDACTED]');
+  }
+
+  return text
+    .replace(/\b(sk-[a-zA-Z0-9_-]{8,})\b/g, '[REDACTED]')
+    .replace(/\b(AKIA[0-9A-Z]{16})\b/g, '[REDACTED]')
+    .replace(/(Bearer\s+)[A-Za-z0-9_.~+=/-]{8,}/gi, '$1[REDACTED]');
+}
