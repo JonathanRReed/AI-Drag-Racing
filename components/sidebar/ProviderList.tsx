@@ -56,7 +56,7 @@ const IconImg: React.FC<{
   );
 };
 
-const ProviderListItem: React.FC<ProviderListItemProps> = ({ provider, hasApiKey, onAddKey, onClearKey }) => {
+const ProviderListItem: React.FC<ProviderListItemProps> = React.memo(({ provider, hasApiKey, onAddKey, onClearKey }) => {
   return (
     <div className="provider-row">
       <div className="provider-main">
@@ -94,7 +94,8 @@ const ProviderListItem: React.FC<ProviderListItemProps> = ({ provider, hasApiKey
       </div>
     </div>
   );
-};
+});
+ProviderListItem.displayName = 'ProviderListItem';
 
 type ModelFetchState = { status: 'loading' } | { status: 'error'; message: string };
 
@@ -168,6 +169,13 @@ const ProviderList: React.FC<ProviderListProps> = ({
         : { ...previous, [suggestedProvider]: suggestedModel }
     ));
   }, [suggestedModel, suggestedProvider]);
+
+  // Bolt optimization: Pre-compute a Set of selected provider-model keys for O(1) selection check.
+  // Eliminates O(M * N) nested array searches during model rendering and search filtering.
+  const selectedSet = useMemo(
+    () => new Set(selectedPairs.map((p) => `${p.providerId}:${p.modelId}`)),
+    [selectedPairs]
+  );
 
   // Providers that are wired up server-side for streaming right now
   const SUPPORTED_FOR_STREAM = useMemo(() => new Set<string>(RACEABLE_PROVIDER_IDS), []);
@@ -363,7 +371,7 @@ const ProviderList: React.FC<ProviderListProps> = ({
                       );
                     }
                     return filtered.map((m) => {
-                      const checked = selectedPairs.some(p => p.providerId === provider.id && p.modelId === m);
+                      const checked = selectedSet.has(`${provider.id}:${m}`);
                       const brandSlugs = brandSlugsForModel(provider.id, m);
                       const slugs = brandSlugs?.length ? brandSlugs : providerSlugs(provider.id);
                       return (
