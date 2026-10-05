@@ -47,100 +47,200 @@ const formatNumber = (v: number) => {
   return Number.isInteger(v) ? String(v) : v.toFixed(1);
 };
 
+// Bolt Optimization: Reusable factory for Chart.js options to avoid creating
+// inline options objects on every render, preventing unnecessary Chart.js internal canvas re-evaluation.
+function createChartOptions(
+  theme: { text: string; muted: string; divider: string },
+  titleText: string,
+  fullLabels: string[]
+) {
+  return {
+    responsive: true,
+    maintainAspectRatio: false,
+    indexAxis: 'y' as const,
+    scales: {
+      y: {
+        beginAtZero: true,
+        ticks: { color: theme.muted, font: { size: 11 } },
+        grid: { color: theme.divider },
+        border: { display: false },
+      },
+      x: {
+        beginAtZero: true,
+        ticks: {
+          color: theme.muted,
+          font: { size: 11 },
+          callback: (val: unknown) => formatNumber(Number(val)),
+        },
+        grid: { color: theme.divider },
+        border: { display: false },
+      },
+    },
+    elements: baseElements,
+    plugins: {
+      legend: { display: false },
+      title: { display: true, color: theme.text, text: titleText, font: { size: 15, weight: 600 }, padding: { top: 8, bottom: 8 }, align: 'center' as const },
+      tooltip: {
+        backgroundColor: 'rgba(7,9,13,0.92)',
+        titleColor: theme.text,
+        bodyColor: theme.text,
+        borderColor: 'rgba(255,255,255,0.08)',
+        borderWidth: 1,
+        displayColors: false,
+        callbacks: {
+          title: (items: any[]) => items.map(i => fullLabels[i.dataIndex]),
+          label: (ctx: any) => `${formatNumber(Number(ctx.raw))}`
+        }
+      },
+    },
+    layout: { padding: { left: 4, right: 8, top: 4, bottom: 4 } },
+    animation: { duration: 450, easing: 'easeOutCubic' as const },
+  };
+}
+
 const ComparisonCharts: React.FC<ComparisonChartsProps> = ({ results }) => {
   const theme = useThemeColors();
-  const validResults = results.filter(r => r.metrics && !r.isLoading && !r.error);
-
-  const fullLabels = validResults.map(r => `${r.providerName} (${r.modelName})`);
-  const ellipsize = (s: string, max = 28) => (s.length > max ? s.slice(0, max - 1) + '…' : s);
-  const labels = fullLabels.map(l => ellipsize(l));
-  const baseBgColors = validResults.map(r => getProviderColor(r.providerName).soft);
-  const baseBorderColors = validResults.map(r => getProviderColor(r.providerName).solid);
-
   // Sort toggle: High → Low (default), can flip to Low → High
   const [descending, setDescending] = useState(true);
 
-  // Helper to sort arrays consistently for a given metric
-  const sortForChart = (vals: number[]) => {
-    const idx = vals.map((v, i) => i);
-    idx.sort((a, b) => (descending ? vals[b] - vals[a] : vals[a] - vals[b]));
+  // Bolt Optimization: Memoize valid result extraction and label/color derivations
+  const { validResults, labels, fullLabels, baseBgColors, baseBorderColors } = useMemo(() => {
+    const valid = results.filter(r => r.metrics && !r.isLoading && !r.error);
+    const full = valid.map(r => `${r.providerName} (${r.modelName})`);
+    const ellipsize = (s: string, max = 28) => (s.length > max ? s.slice(0, max - 1) + '…' : s);
+    const shortLabels = full.map(l => ellipsize(l));
+    const bg = valid.map(r => getProviderColor(r.providerName).soft);
+    const border = valid.map(r => getProviderColor(r.providerName).solid);
     return {
-      labels: idx.map(i => labels[i]),
-      full: idx.map(i => fullLabels[i]),
-      values: idx.map(i => vals[i]),
-      bg: idx.map(i => baseBgColors[i]),
-      border: idx.map(i => baseBorderColors[i]),
+      validResults: valid,
+      labels: shortLabels,
+      fullLabels: full,
+      baseBgColors: bg,
+      baseBorderColors: border,
     };
-  };
+  }, [results]);
 
-  const latencyVals = validResults.map(r => r.metrics!.finishTime - r.metrics!.startTime);
-  const latencySorted = sortForChart(latencyVals);
-  const latencyData = {
-    labels: latencySorted.labels,
-    datasets: [{
-      label: 'Total Time (ms)',
-      data: latencySorted.values,
-      backgroundColor: latencySorted.bg,
-      borderColor: latencySorted.border,
-      borderWidth: 1,
-      barThickness: 20,
-    }],
-  };
+  // Bolt Optimization: Memoize sorted metric calculations and Chart.js dataset objects
+  const {
+    latencySorted,
+    latencyData,
+    ttftSorted,
+    ttftData,
+    tpsSorted,
+    tpsData,
+    tokensSorted,
+    tokensData,
+  } = useMemo(() => {
+    const sortForChart = (vals: number[]) => {
+      const idx = vals.map((_, i) => i);
+      idx.sort((a, b) => (descending ? vals[b] - vals[a] : vals[a] - vals[b]));
+      return {
+        labels: idx.map(i => labels[i]),
+        full: idx.map(i => fullLabels[i]),
+        values: idx.map(i => vals[i]),
+        bg: idx.map(i => baseBgColors[i]),
+        border: idx.map(i => baseBorderColors[i]),
+      };
+    };
 
-  const ttftVals = validResults.map(r => {
-    const m = r.metrics!;
-    return m.firstTokenTime ? (m.firstTokenTime - m.startTime) : 0;
-  });
-  const ttftSorted = sortForChart(ttftVals);
-  const ttftData = {
-    labels: ttftSorted.labels,
-    datasets: [{
-      label: 'TTFT (ms)',
-      data: ttftSorted.values,
-      backgroundColor: ttftSorted.bg,
-      borderColor: ttftSorted.border,
-      borderWidth: 1,
-      barThickness: 20,
-    }],
-  };
+    const latencyVals = validResults.map(r => r.metrics!.finishTime - r.metrics!.startTime);
+    const latSorted = sortForChart(latencyVals);
+    const latData = {
+      labels: latSorted.labels,
+      datasets: [{
+        label: 'Total Time (ms)',
+        data: latSorted.values,
+        backgroundColor: latSorted.bg,
+        borderColor: latSorted.border,
+        borderWidth: 1,
+        barThickness: 20,
+      }],
+    };
 
-  const tpsVals = validResults.map(r => {
-    const { metrics } = r;
-    if (!metrics || !metrics.finishTime || !metrics.firstTokenTime) return 0;
-    const duration = (metrics.finishTime - metrics.firstTokenTime) / 1000;
-    const out = typeof metrics.outputTokens === 'number' ? metrics.outputTokens : metrics.tokenCount;
-    return duration > 0 ? out / duration : 0;
-  });
-  const tpsSorted = sortForChart(tpsVals);
-  const tpsData = {
-    labels: tpsSorted.labels,
-    datasets: [{
-      label: 'Output Tokens per Second',
-      data: tpsSorted.values,
-      backgroundColor: tpsSorted.bg,
-      borderColor: tpsSorted.border,
-      borderWidth: 1,
-      barThickness: 20,
-    }],
-  };
+    const ttftVals = validResults.map(r => {
+      const m = r.metrics!;
+      return m.firstTokenTime ? (m.firstTokenTime - m.startTime) : 0;
+    });
+    const ttSorted = sortForChart(ttftVals);
+    const ttData = {
+      labels: ttSorted.labels,
+      datasets: [{
+        label: 'TTFT (ms)',
+        data: ttSorted.values,
+        backgroundColor: ttSorted.bg,
+        borderColor: ttSorted.border,
+        borderWidth: 1,
+        barThickness: 20,
+      }],
+    };
 
-  const tokensVals = validResults.map(r => {
-    const m = r.metrics;
-    if (!m) return 0;
-    return typeof m.outputTokens === 'number' ? m.outputTokens : 0;
-  });
-  const tokensSorted = sortForChart(tokensVals);
-  const tokensData = {
-    labels: tokensSorted.labels,
-    datasets: [{
-      label: 'Output Tokens',
-      data: tokensSorted.values,
-      backgroundColor: tokensSorted.bg,
-      borderColor: tokensSorted.border,
-      borderWidth: 1,
-      barThickness: 20,
-    }],
-  };
+    const tpsVals = validResults.map(r => {
+      const { metrics } = r;
+      if (!metrics || !metrics.finishTime || !metrics.firstTokenTime) return 0;
+      const duration = (metrics.finishTime - metrics.firstTokenTime) / 1000;
+      const out = typeof metrics.outputTokens === 'number' ? metrics.outputTokens : metrics.tokenCount;
+      return duration > 0 ? out / duration : 0;
+    });
+    const tpSorted = sortForChart(tpsVals);
+    const tpData = {
+      labels: tpSorted.labels,
+      datasets: [{
+        label: 'Output Tokens per Second',
+        data: tpSorted.values,
+        backgroundColor: tpSorted.bg,
+        borderColor: tpSorted.border,
+        borderWidth: 1,
+        barThickness: 20,
+      }],
+    };
+
+    const tokensVals = validResults.map(r => {
+      const m = r.metrics;
+      if (!m) return 0;
+      return typeof m.outputTokens === 'number' ? m.outputTokens : 0;
+    });
+    const tokSorted = sortForChart(tokensVals);
+    const tokData = {
+      labels: tokSorted.labels,
+      datasets: [{
+        label: 'Output Tokens',
+        data: tokSorted.values,
+        backgroundColor: tokSorted.bg,
+        borderColor: tokSorted.border,
+        borderWidth: 1,
+        barThickness: 20,
+      }],
+    };
+
+    return {
+      latencySorted: latSorted,
+      latencyData: latData,
+      ttftSorted: ttSorted,
+      ttftData: ttData,
+      tpsSorted: tpSorted,
+      tpsData: tpData,
+      tokensSorted: tokSorted,
+      tokensData: tokData,
+    };
+  }, [validResults, labels, fullLabels, baseBgColors, baseBorderColors, descending]);
+
+  // Bolt Optimization: Stable chart options references prevent Chart.js from unnecessary re-initialization
+  const latencyOptions = useMemo(
+    () => createChartOptions(theme, 'Total Response Time (ms)', latencySorted.full),
+    [theme, latencySorted.full]
+  );
+  const tpsOptions = useMemo(
+    () => createChartOptions(theme, 'Output Tokens per Second (TPS)', tpsSorted.full),
+    [theme, tpsSorted.full]
+  );
+  const ttftOptions = useMemo(
+    () => createChartOptions(theme, 'Time To First Token (ms)', ttftSorted.full),
+    [theme, ttftSorted.full]
+  );
+  const tokensOptions = useMemo(
+    () => createChartOptions(theme, 'Output Tokens', tokensSorted.full),
+    [theme, tokensSorted.full]
+  );
 
   const chartHeight = useMemo(() => {
     // Height per chart (not the whole grid). Keep compact but readable.
@@ -164,197 +264,21 @@ const ComparisonCharts: React.FC<ComparisonChartsProps> = ({ results }) => {
       </div>
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4" role="region" aria-label="Performance comparison charts">
         <div style={{ height: chartHeight }} role="img" aria-label="Bar chart showing total response time in milliseconds for each AI model">
-          <Bar
-            options={{
-              responsive: true,
-              maintainAspectRatio: false,
-              indexAxis: 'y' as const,
-              scales: {
-                y: {
-                  beginAtZero: true,
-                  ticks: { color: theme.muted, font: { size: 11 } },
-                  grid: { color: theme.divider },
-                  border: { display: false },
-                },
-                x: {
-                  beginAtZero: true,
-                  ticks: {
-                    color: theme.muted,
-                    font: { size: 11 },
-                    callback: (val: unknown) => formatNumber(Number(val)),
-                  },
-                  grid: { color: theme.divider },
-                  border: { display: false },
-                },
-              },
-              elements: baseElements,
-              plugins: {
-                legend: { display: false },
-                title: { display: true, color: theme.text, text: 'Total Response Time (ms)', font: { size: 15, weight: 600 }, padding: { top: 8, bottom: 8 }, align: 'center' },
-                tooltip: {
-                  backgroundColor: 'rgba(7,9,13,0.92)',
-                  titleColor: theme.text,
-                  bodyColor: theme.text,
-                  borderColor: 'rgba(255,255,255,0.08)',
-                  borderWidth: 1,
-                  displayColors: false,
-                  callbacks: {
-                    title: (items: any[]) => items.map(i => latencySorted.full[i.dataIndex]),
-                    label: (ctx: any) => `${formatNumber(Number(ctx.raw))}`
-                  }
-                },
-              },
-              layout: { padding: { left: 4, right: 8, top: 4, bottom: 4 } },
-              animation: { duration: 450, easing: 'easeOutCubic' },
-            }}
-            data={latencyData}
-          />
+          <Bar options={latencyOptions} data={latencyData} />
         </div>
         <div style={{ height: chartHeight }} role="img" aria-label="Bar chart showing output tokens per second for each AI model">
-          <Bar
-            options={{
-              responsive: true,
-              maintainAspectRatio: false,
-              indexAxis: 'y' as const,
-              scales: {
-                y: {
-                  beginAtZero: true,
-                  ticks: { color: theme.muted, font: { size: 11 } },
-                  grid: { color: theme.divider },
-                  border: { display: false },
-                },
-                x: {
-                  beginAtZero: true,
-                  ticks: {
-                    color: theme.muted,
-                    font: { size: 11 },
-                    callback: (val: unknown) => formatNumber(Number(val)),
-                  },
-                  grid: { color: theme.divider },
-                  border: { display: false },
-                },
-              },
-              elements: baseElements,
-              plugins: {
-                legend: { display: false },
-                title: { display: true, color: theme.text, text: 'Output Tokens per Second (TPS)', font: { size: 15, weight: 600 }, padding: { top: 8, bottom: 8 }, align: 'center' },
-                tooltip: {
-                  backgroundColor: 'rgba(7,9,13,0.92)',
-                  titleColor: theme.text,
-                  bodyColor: theme.text,
-                  borderColor: 'rgba(255,255,255,0.08)',
-                  borderWidth: 1,
-                  displayColors: false,
-                  callbacks: {
-                    title: (items: any[]) => items.map(i => tpsSorted.full[i.dataIndex]),
-                    label: (ctx: any) => `${formatNumber(Number(ctx.raw))}`
-                  }
-                },
-              },
-              layout: { padding: { left: 4, right: 8, top: 4, bottom: 4 } },
-              animation: { duration: 450, easing: 'easeOutCubic' },
-            }}
-            data={tpsData}
-          />
+          <Bar options={tpsOptions} data={tpsData} />
         </div>
         <div style={{ height: chartHeight }} role="img" aria-label="Bar chart showing time to first token in milliseconds for each AI model">
-          <Bar
-            options={{
-              responsive: true,
-              maintainAspectRatio: false,
-              indexAxis: 'y' as const,
-              scales: {
-                y: {
-                  beginAtZero: true,
-                  ticks: { color: theme.muted, font: { size: 11 } },
-                  grid: { color: theme.divider },
-                  border: { display: false },
-                },
-                x: {
-                  beginAtZero: true,
-                  ticks: {
-                    color: theme.muted,
-                    font: { size: 11 },
-                    callback: (val: unknown) => formatNumber(Number(val)),
-                  },
-                  grid: { color: theme.divider },
-                  border: { display: false },
-                },
-              },
-              elements: baseElements,
-              plugins: {
-                legend: { display: false },
-                title: { display: true, color: theme.text, text: 'Time To First Token (ms)', font: { size: 15, weight: 600 }, padding: { top: 8, bottom: 8 }, align: 'center' },
-                tooltip: {
-                  backgroundColor: 'rgba(7,9,13,0.92)',
-                  titleColor: theme.text,
-                  bodyColor: theme.text,
-                  borderColor: 'rgba(255,255,255,0.08)',
-                  borderWidth: 1,
-                  displayColors: false,
-                  callbacks: {
-                    title: (items: any[]) => items.map(i => ttftSorted.full[i.dataIndex]),
-                    label: (ctx: any) => `${formatNumber(Number(ctx.raw))}`
-                  }
-                },
-              },
-              layout: { padding: { left: 4, right: 8, top: 4, bottom: 4 } },
-              animation: { duration: 450, easing: 'easeOutCubic' },
-            }}
-            data={ttftData}
-          />
+          <Bar options={ttftOptions} data={ttftData} />
         </div>
         <div style={{ height: chartHeight }} role="img" aria-label="Bar chart showing total output tokens for each AI model">
-          <Bar
-            options={{
-              responsive: true,
-              maintainAspectRatio: false,
-              indexAxis: 'y' as const,
-              scales: {
-                y: {
-                  beginAtZero: true,
-                  ticks: { color: theme.muted, font: { size: 11 } },
-                  grid: { color: theme.divider },
-                  border: { display: false },
-                },
-                x: {
-                  beginAtZero: true,
-                  ticks: {
-                    color: theme.muted,
-                    font: { size: 11 },
-                    callback: (val: unknown) => formatNumber(Number(val)),
-                  },
-                  grid: { color: theme.divider },
-                  border: { display: false },
-                },
-              },
-              elements: baseElements,
-              plugins: {
-                legend: { display: false },
-                title: { display: true, color: theme.text, text: 'Output Tokens', font: { size: 15, weight: 600 }, padding: { top: 8, bottom: 8 }, align: 'center' },
-                tooltip: {
-                  backgroundColor: 'rgba(7,9,13,0.92)',
-                  titleColor: theme.text,
-                  bodyColor: theme.text,
-                  borderColor: 'rgba(255,255,255,0.08)',
-                  borderWidth: 1,
-                  displayColors: false,
-                  callbacks: {
-                    title: (items: any[]) => items.map(i => tokensSorted.full[i.dataIndex]),
-                    label: (ctx: any) => `${formatNumber(Number(ctx.raw))}`
-                  }
-                },
-              },
-              layout: { padding: { left: 4, right: 8, top: 4, bottom: 4 } },
-              animation: { duration: 450, easing: 'easeOutCubic' },
-            }}
-            data={tokensData}
-          />
+          <Bar options={tokensOptions} data={tokensData} />
         </div>
       </div>
     </GlassCard>
   );
 };
 
-export default ComparisonCharts;
-
+// Bolt Optimization: Prevent component re-renders when parent state updates with un-changed results
+export default React.memo(ComparisonCharts);
