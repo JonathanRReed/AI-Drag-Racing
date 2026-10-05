@@ -1,6 +1,6 @@
 export const config = { runtime: 'edge' };
 
-import { corsHeadersForRequest, readJsonBodyWithLimit, sanitizeApiKey } from '../../utils/requestSecurity';
+import { corsHeadersForRequest, readJsonBodyWithLimit, redactCredentials, sanitizeApiKey } from '../../utils/requestSecurity';
 
 type ModelResponse = {
     data: string[];
@@ -304,8 +304,9 @@ export default async function handler(req: Request): Promise<Response> {
         return jsonResponse({ data: ids }, corsHeaders);
 
     } catch (error: any) {
+        const redactedMsg = redactCredentials(error?.message, apiKey);
         console.error(`[Proxy Error] Provider: ${providerId}`);
-        console.error(`[Proxy Error] Message: ${error.message}`);
+        console.error(`[Proxy Error] Message: ${redactedMsg}`);
 
         // Return fallback data instead of error when possible
         const fallback = STATIC_FALLBACKS[providerId];

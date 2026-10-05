@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { boundedNumber, corsHeadersForRequest, isAllowedRequestOrigin, readJsonBodyWithLimit, sanitizeApiKey, validateRaceRequestBody } from './requestSecurity';
+import { boundedNumber, corsHeadersForRequest, isAllowedRequestOrigin, readJsonBodyWithLimit, redactCredentials, sanitizeApiKey, validateRaceRequestBody } from './requestSecurity';
 
 function request(url: string, origin?: string) {
   return new Request(url, { headers: origin ? { origin } : {} });
@@ -61,5 +61,17 @@ describe('pasted API key boundaries', () => {
     expect(sanitizeApiKey('\x00 "sk-test-only" \x7F')).toBe('sk-test-only');
     expect(sanitizeApiKey('"sk-test-only"\x00')).toBe('sk-test-only');
     expect(sanitizeApiKey('\x00   \x7F')).toBe('');
+  });
+});
+
+describe('redactCredentials', () => {
+  it('redacts explicit API keys and known credential patterns', () => {
+    expect(redactCredentials('Error with key sk-1234567890abcdef')).toBe('Error with key [REDACTED]');
+    expect(redactCredentials('Groq error: gsk_abcdef123456')).toBe('Groq error: [REDACTED]');
+    expect(redactCredentials('AWS error AKIAIOSFODNN7EXAMPLE details')).toBe('AWS error [REDACTED] details');
+    expect(redactCredentials('Header Authorization: Bearer secret-token-123')).toBe('Header Authorization: Bearer [REDACTED]');
+    expect(redactCredentials('Custom secret error my-secret-api-key-xyz', 'my-secret-api-key-xyz')).toBe('Custom secret error [REDACTED]');
+    expect(redactCredentials(new Error('Failed with sk-proj-123'))).toBe('Failed with [REDACTED]');
+    expect(redactCredentials(null)).toBe('');
   });
 });

@@ -7,6 +7,7 @@ import {
   boundedNumber,
   corsHeadersForRequest,
   readJsonBodyWithLimit,
+  redactCredentials,
   validateRaceRequestBody,
 } from '../../../../utils/requestSecurity';
 // Side-effect imports to register provider services (exclude Bedrock for Edge)
@@ -136,7 +137,8 @@ export default async function handler(req: Request): Promise<Response> {
     } catch (error) {
       // Emit error to client unless already aborted
       if (!aborted) {
-        const message = (error instanceof Error) ? error.message : String(error);
+        const rawMessage = (error instanceof Error) ? error.message : String(error);
+        const message = redactCredentials(rawMessage, apiKey);
         try { await writeEvent({ type: 'error', message }); } catch {}
       }
     } finally {
