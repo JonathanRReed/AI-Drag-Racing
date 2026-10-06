@@ -49,106 +49,130 @@ const formatNumber = (v: number) => {
 
 const ComparisonCharts: React.FC<ComparisonChartsProps> = ({ results }) => {
   const theme = useThemeColors();
-  const validResults = results.filter(r => r.metrics && !r.isLoading && !r.error);
-
-  const fullLabels = validResults.map(r => `${r.providerName} (${r.modelName})`);
-  const ellipsize = (s: string, max = 28) => (s.length > max ? s.slice(0, max - 1) + '…' : s);
-  const labels = fullLabels.map(l => ellipsize(l));
-  const baseBgColors = validResults.map(r => getProviderColor(r.providerName).soft);
-  const baseBorderColors = validResults.map(r => getProviderColor(r.providerName).solid);
 
   // Sort toggle: High → Low (default), can flip to Low → High
   const [descending, setDescending] = useState(true);
 
-  // Helper to sort arrays consistently for a given metric
-  const sortForChart = (vals: number[]) => {
-    const idx = vals.map((v, i) => i);
-    idx.sort((a, b) => (descending ? vals[b] - vals[a] : vals[a] - vals[b]));
-    return {
-      labels: idx.map(i => labels[i]),
-      full: idx.map(i => fullLabels[i]),
-      values: idx.map(i => vals[i]),
-      bg: idx.map(i => baseBgColors[i]),
-      border: idx.map(i => baseBorderColors[i]),
+  // Bolt optimization: Memoize chart metric extractions and Chart.js dataset constructions
+  // with useMemo to prevent unnecessary array allocations, sorting, and Chart.js data object
+  // re-creations on unrelated component state updates or parent re-renders.
+  const {
+    chartHeight,
+    latencySorted,
+    latencyData,
+    ttftSorted,
+    ttftData,
+    tpsSorted,
+    tpsData,
+    tokensSorted,
+    tokensData,
+  } = useMemo(() => {
+    const validResults = results.filter(r => r.metrics && !r.isLoading && !r.error);
+
+    const fullLabels = validResults.map(r => `${r.providerName} (${r.modelName})`);
+    const ellipsize = (s: string, max = 28) => (s.length > max ? s.slice(0, max - 1) + '…' : s);
+    const labels = fullLabels.map(l => ellipsize(l));
+    const baseBgColors = validResults.map(r => getProviderColor(r.providerName).soft);
+    const baseBorderColors = validResults.map(r => getProviderColor(r.providerName).solid);
+
+    const sortForChart = (vals: number[]) => {
+      const idx = vals.map((v, i) => i);
+      idx.sort((a, b) => (descending ? vals[b] - vals[a] : vals[a] - vals[b]));
+      return {
+        labels: idx.map(i => labels[i]),
+        full: idx.map(i => fullLabels[i]),
+        values: idx.map(i => vals[i]),
+        bg: idx.map(i => baseBgColors[i]),
+        border: idx.map(i => baseBorderColors[i]),
+      };
     };
-  };
 
-  const latencyVals = validResults.map(r => r.metrics!.finishTime - r.metrics!.startTime);
-  const latencySorted = sortForChart(latencyVals);
-  const latencyData = {
-    labels: latencySorted.labels,
-    datasets: [{
-      label: 'Total Time (ms)',
-      data: latencySorted.values,
-      backgroundColor: latencySorted.bg,
-      borderColor: latencySorted.border,
-      borderWidth: 1,
-      barThickness: 20,
-    }],
-  };
+    const latencyVals = validResults.map(r => r.metrics!.finishTime - r.metrics!.startTime);
+    const latencySorted = sortForChart(latencyVals);
+    const latencyData = {
+      labels: latencySorted.labels,
+      datasets: [{
+        label: 'Total Time (ms)',
+        data: latencySorted.values,
+        backgroundColor: latencySorted.bg,
+        borderColor: latencySorted.border,
+        borderWidth: 1,
+        barThickness: 20,
+      }],
+    };
 
-  const ttftVals = validResults.map(r => {
-    const m = r.metrics!;
-    return m.firstTokenTime ? (m.firstTokenTime - m.startTime) : 0;
-  });
-  const ttftSorted = sortForChart(ttftVals);
-  const ttftData = {
-    labels: ttftSorted.labels,
-    datasets: [{
-      label: 'TTFT (ms)',
-      data: ttftSorted.values,
-      backgroundColor: ttftSorted.bg,
-      borderColor: ttftSorted.border,
-      borderWidth: 1,
-      barThickness: 20,
-    }],
-  };
+    const ttftVals = validResults.map(r => {
+      const m = r.metrics!;
+      return m.firstTokenTime ? (m.firstTokenTime - m.startTime) : 0;
+    });
+    const ttftSorted = sortForChart(ttftVals);
+    const ttftData = {
+      labels: ttftSorted.labels,
+      datasets: [{
+        label: 'TTFT (ms)',
+        data: ttftSorted.values,
+        backgroundColor: ttftSorted.bg,
+        borderColor: ttftSorted.border,
+        borderWidth: 1,
+        barThickness: 20,
+      }],
+    };
 
-  const tpsVals = validResults.map(r => {
-    const { metrics } = r;
-    if (!metrics || !metrics.finishTime || !metrics.firstTokenTime) return 0;
-    const duration = (metrics.finishTime - metrics.firstTokenTime) / 1000;
-    const out = typeof metrics.outputTokens === 'number' ? metrics.outputTokens : metrics.tokenCount;
-    return duration > 0 ? out / duration : 0;
-  });
-  const tpsSorted = sortForChart(tpsVals);
-  const tpsData = {
-    labels: tpsSorted.labels,
-    datasets: [{
-      label: 'Output Tokens per Second',
-      data: tpsSorted.values,
-      backgroundColor: tpsSorted.bg,
-      borderColor: tpsSorted.border,
-      borderWidth: 1,
-      barThickness: 20,
-    }],
-  };
+    const tpsVals = validResults.map(r => {
+      const { metrics } = r;
+      if (!metrics || !metrics.finishTime || !metrics.firstTokenTime) return 0;
+      const duration = (metrics.finishTime - metrics.firstTokenTime) / 1000;
+      const out = typeof metrics.outputTokens === 'number' ? metrics.outputTokens : metrics.tokenCount;
+      return duration > 0 ? out / duration : 0;
+    });
+    const tpsSorted = sortForChart(tpsVals);
+    const tpsData = {
+      labels: tpsSorted.labels,
+      datasets: [{
+        label: 'Output Tokens per Second',
+        data: tpsSorted.values,
+        backgroundColor: tpsSorted.bg,
+        borderColor: tpsSorted.border,
+        borderWidth: 1,
+        barThickness: 20,
+      }],
+    };
 
-  const tokensVals = validResults.map(r => {
-    const m = r.metrics;
-    if (!m) return 0;
-    return typeof m.outputTokens === 'number' ? m.outputTokens : 0;
-  });
-  const tokensSorted = sortForChart(tokensVals);
-  const tokensData = {
-    labels: tokensSorted.labels,
-    datasets: [{
-      label: 'Output Tokens',
-      data: tokensSorted.values,
-      backgroundColor: tokensSorted.bg,
-      borderColor: tokensSorted.border,
-      borderWidth: 1,
-      barThickness: 20,
-    }],
-  };
+    const tokensVals = validResults.map(r => {
+      const m = r.metrics;
+      if (!m) return 0;
+      return typeof m.outputTokens === 'number' ? m.outputTokens : 0;
+    });
+    const tokensSorted = sortForChart(tokensVals);
+    const tokensData = {
+      labels: tokensSorted.labels,
+      datasets: [{
+        label: 'Output Tokens',
+        data: tokensSorted.values,
+        backgroundColor: tokensSorted.bg,
+        borderColor: tokensSorted.border,
+        borderWidth: 1,
+        barThickness: 20,
+      }],
+    };
 
-  const chartHeight = useMemo(() => {
-    // Height per chart (not the whole grid). Keep compact but readable.
     const perBar = 28; // px per category bar
     const base = 72;   // title + paddings
     const h = base + labels.length * perBar;
-    return Math.max(160, Math.min(400, h));
-  }, [labels.length]);
+    const chartHeight = Math.max(160, Math.min(400, h));
+
+    return {
+      chartHeight,
+      latencySorted,
+      latencyData,
+      ttftSorted,
+      ttftData,
+      tpsSorted,
+      tpsData,
+      tokensSorted,
+      tokensData,
+    };
+  }, [results, descending]);
 
   return (
     <GlassCard className="p-4">
