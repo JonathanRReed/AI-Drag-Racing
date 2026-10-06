@@ -81,6 +81,8 @@ const ProviderListItem: React.FC<ProviderListItemProps> = ({ provider, hasApiKey
           <button
             onClick={onClearKey}
             className="provider-clear"
+            aria-label={`Clear API key for ${provider.displayName}`}
+            title={`Clear API key for ${provider.displayName}`}
           >
             Clear Key
           </button>
@@ -415,6 +417,8 @@ const ProviderList: React.FC<ProviderListProps> = ({
                   type="button"
                   onClick={() => retryModelsForProvider(provider.id)}
                   className="mt-1 inline-flex min-h-[var(--control-h)] items-center rounded-md border border-white/10 px-3 text-xs text-gray-200 hover:border-white/20"
+                  aria-label={`Retry loading model list for ${provider.displayName}`}
+                  title={`Retry loading model list for ${provider.displayName}`}
                 >
                   Retry model list
                 </button>
