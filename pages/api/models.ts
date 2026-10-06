@@ -1,6 +1,6 @@
 export const config = { runtime: 'edge' };
 
-import { corsHeadersForRequest, readJsonBodyWithLimit, sanitizeApiKey } from '../../utils/requestSecurity';
+import { corsHeadersForRequest, readJsonBodyWithLimit, redactCredentials, sanitizeApiKey } from '../../utils/requestSecurity';
 
 type ModelResponse = {
     data: string[];
@@ -167,9 +167,9 @@ export default async function handler(req: Request): Promise<Response> {
         return jsonResponse({ data: [], error: 'API key required' }, corsHeaders, 400);
     }
 
+    let ids: string[] = [];
 
     try {
-        let ids: string[] = [];
         const timeout = 8000; // 8 second timeout
 
         if (providerId === 'anthropic') {
@@ -304,8 +304,9 @@ export default async function handler(req: Request): Promise<Response> {
         return jsonResponse({ data: ids }, corsHeaders);
 
     } catch (error: any) {
+        const safeMessage = redactCredentials(error, apiKey);
         console.error(`[Proxy Error] Provider: ${providerId}`);
-        console.error(`[Proxy Error] Message: ${error.message}`);
+        console.error(`[Proxy Error] Message: ${safeMessage}`);
 
         // Return fallback data instead of error when possible
         const fallback = STATIC_FALLBACKS[providerId];

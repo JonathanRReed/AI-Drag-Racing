@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { boundedNumber, corsHeadersForRequest, isAllowedRequestOrigin, readJsonBodyWithLimit, sanitizeApiKey, validateRaceRequestBody } from './requestSecurity';
+import { boundedNumber, corsHeadersForRequest, isAllowedRequestOrigin, readJsonBodyWithLimit, redactCredentials, sanitizeApiKey, validateRaceRequestBody } from './requestSecurity';
 
 function request(url: string, origin?: string) {
   return new Request(url, { headers: origin ? { origin } : {} });
@@ -61,5 +61,29 @@ describe('pasted API key boundaries', () => {
     expect(sanitizeApiKey('\x00 "sk-test-only" \x7F')).toBe('sk-test-only');
     expect(sanitizeApiKey('"sk-test-only"\x00')).toBe('sk-test-only');
     expect(sanitizeApiKey('\x00   \x7F')).toBe('');
+  });
+});
+
+describe('redactCredentials', () => {
+  it('redacts explicit API keys', () => {
+    expect(redactCredentials('Error connecting with key my-secret-api-key-1234', 'my-secret-api-key-1234'))
+      .toBe('Error connecting with key [REDACTED]');
+  });
+
+  it('redacts sk-*, AKIA*, and Bearer tokens via pattern matching', () => {
+    expect(redactCredentials('Failed with sk-proj1234567890abcdef'))
+      .toBe('Failed with [REDACTED]');
+    expect(redactCredentials('AWS auth failed for AKIAIOSFODNN7EXAMPLE'))
+      .toBe('AWS auth failed for [REDACTED]');
+    expect(redactCredentials('Header Authorization: Bearer secrettoken123456'))
+      .toBe('Header Authorization: Bearer [REDACTED]');
+  });
+
+  it('handles Error objects and plain objects', () => {
+    const err = new Error('HTTP 401 with sk-1234567890');
+    expect(redactCredentials(err)).toBe('HTTP 401 with [REDACTED]');
+
+    const obj = { message: 'Failed Bearer abc123def456' };
+    expect(redactCredentials(obj)).toBe('{"message":"Failed Bearer [REDACTED]"}');
   });
 });
