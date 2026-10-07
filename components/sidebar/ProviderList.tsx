@@ -172,6 +172,17 @@ const ProviderList: React.FC<ProviderListProps> = ({
   // Providers that are wired up server-side for streaming right now
   const SUPPORTED_FOR_STREAM = useMemo(() => new Set<string>(RACEABLE_PROVIDER_IDS), []);
 
+  // Bolt optimization: Memoize a lookup set for selected provider/model pairs
+  // to convert O(N * M) array searches during model rendering into O(1) set checks.
+  const selectedSet = useMemo(() => {
+    const set = new Set<string>();
+    for (let i = 0; i < selectedPairs.length; i++) {
+      const p = selectedPairs[i];
+      set.add(`${p.providerId}:${p.modelId}`);
+    }
+    return set;
+  }, [selectedPairs]);
+
   const loadModelsForProvider = React.useCallback(async (providerId: string, key: string) => {
     if (!SUPPORTED_FOR_STREAM.has(providerId)) return;
     attemptedRef.current.add(providerId);
@@ -363,7 +374,8 @@ const ProviderList: React.FC<ProviderListProps> = ({
                       );
                     }
                     return filtered.map((m) => {
-                      const checked = selectedPairs.some(p => p.providerId === provider.id && p.modelId === m);
+                      // O(1) set lookup replacing O(M) array search per model item
+                      const checked = selectedSet.has(`${provider.id}:${m}`);
                       const brandSlugs = brandSlugsForModel(provider.id, m);
                       const slugs = brandSlugs?.length ? brandSlugs : providerSlugs(provider.id);
                       return (
