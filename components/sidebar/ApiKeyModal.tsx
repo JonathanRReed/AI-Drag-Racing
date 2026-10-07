@@ -115,14 +115,16 @@ const ApiKeyModal: React.FC<ApiKeyModalProps> = ({
         />
         <div className="flex justify-end space-x-4 mt-6">
           <button
+            type="button"
             onClick={onClose}
-            className="px-4 py-2 rounded-md text-gray-300 hover:bg-white/10 transition-colors"
+            className="px-4 py-2 rounded-md text-gray-300 hover:bg-white/10 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400"
           >
             Cancel
           </button>
           <button
+            type="button"
             onClick={handleSave}
-            className="px-4 py-2 rounded-md bg-cyan-500 text-white font-semibold hover:bg-cyan-600 transition-colors"
+            className="px-4 py-2 rounded-md bg-cyan-500 text-white font-semibold hover:bg-cyan-600 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400"
           >
             Save Key
           </button>

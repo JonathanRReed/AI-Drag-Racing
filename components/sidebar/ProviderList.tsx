@@ -79,15 +79,18 @@ const ProviderListItem: React.FC<ProviderListItemProps> = ({ provider, hasApiKey
       <div className="provider-actions">
         {hasApiKey && (
           <button
+            type="button"
             onClick={onClearKey}
-            className="provider-clear"
+            className="provider-clear focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400"
+            aria-label={`Clear API key for ${provider.displayName}`}
           >
             Clear Key
           </button>
         )}
         <button
+          type="button"
           onClick={onAddKey}
-          className="provider-key-button"
+          className="provider-key-button focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400"
           aria-label={`${hasApiKey ? 'Edit' : 'Add'} API key for ${provider.displayName}`}
           title={`${hasApiKey ? 'Edit' : 'Add'} API key for ${provider.displayName}`}
         />
