@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { boundedNumber, corsHeadersForRequest, isAllowedRequestOrigin, readJsonBodyWithLimit, sanitizeApiKey, validateRaceRequestBody } from './requestSecurity';
+import { boundedNumber, corsHeadersForRequest, isAllowedRequestOrigin, readJsonBodyWithLimit, redactCredentials, sanitizeApiKey, validateRaceRequestBody } from './requestSecurity';
 
 function request(url: string, origin?: string) {
   return new Request(url, { headers: origin ? { origin } : {} });
@@ -61,5 +61,24 @@ describe('pasted API key boundaries', () => {
     expect(sanitizeApiKey('\x00 "sk-test-only" \x7F')).toBe('sk-test-only');
     expect(sanitizeApiKey('"sk-test-only"\x00')).toBe('sk-test-only');
     expect(sanitizeApiKey('\x00   \x7F')).toBe('');
+  });
+});
+
+describe('redactCredentials', () => {
+  it('redacts explicit API keys from messages and error objects', () => {
+    const key = 'secret-user-key-999';
+    expect(redactCredentials(`Error calling API with ${key}`, key)).toBe('Error calling API with [REDACTED]');
+    expect(redactCredentials(new Error(`Failed with ${key}`), key)).toBe('Failed with [REDACTED]');
+  });
+
+  it('redacts common credential patterns automatically', () => {
+    expect(redactCredentials('Failed: sk-proj-1234567890abcdef')).toBe('Failed: [REDACTED]');
+    expect(redactCredentials('AWS key AKIAIOSFODNN7EXAMPLE in output')).toBe('AWS key [REDACTED] in output');
+    expect(redactCredentials('Auth: Bearer secret-token-value')).toBe('Auth: Bearer [REDACTED]');
+  });
+
+  it('handles empty or null inputs gracefully', () => {
+    expect(redactCredentials(null)).toBe('');
+    expect(redactCredentials(undefined)).toBe('');
   });
 });
