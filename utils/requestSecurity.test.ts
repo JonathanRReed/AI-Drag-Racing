@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { boundedNumber, corsHeadersForRequest, isAllowedRequestOrigin, readJsonBodyWithLimit, sanitizeApiKey, validateRaceRequestBody } from './requestSecurity';
+import { boundedNumber, corsHeadersForRequest, isAllowedRequestOrigin, readJsonBodyWithLimit, redactCredentials, sanitizeApiKey, validateRaceRequestBody } from './requestSecurity';
 
 function request(url: string, origin?: string) {
   return new Request(url, { headers: origin ? { origin } : {} });
@@ -61,5 +61,16 @@ describe('pasted API key boundaries', () => {
     expect(sanitizeApiKey('\x00 "sk-test-only" \x7F')).toBe('sk-test-only');
     expect(sanitizeApiKey('"sk-test-only"\x00')).toBe('sk-test-only');
     expect(sanitizeApiKey('\x00   \x7F')).toBe('');
+  });
+});
+
+describe('redact credentials', () => {
+  it('redacts explicit API keys and pattern-matched keys from strings and errors', () => {
+    const customKey = 'custom-secret-key-12345';
+    expect(redactCredentials(`Error using key ${customKey}`, customKey)).toBe('Error using key [REDACTED]');
+    expect(redactCredentials('Failed with sk-proj-1234567890abcdef')).toBe('Failed with [REDACTED]');
+    expect(redactCredentials('AWS error with AKIAIOSFODNN7EXAMPLE')).toBe('AWS error with [REDACTED]');
+    expect(redactCredentials('Auth failed Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9')).toBe('Auth failed Bearer [REDACTED]');
+    expect(redactCredentials(new Error(`Failed with ${customKey}`), customKey)).toBe('Failed with [REDACTED]');
   });
 });
