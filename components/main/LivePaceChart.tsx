@@ -104,12 +104,20 @@ function updateLaneSVG(
   // Reuse outBuffer to avoid array allocation per frame; use fast numeric rounding instead of .toFixed(1)
   const pts = decimate(b.samples, 180, outBuffer);
   let d = '';
-  for (let i = 0; i < pts.length; i++) {
-    const px = Math.round(x(pts[i].t) * 10) / 10;
-    const py = Math.round(y(pts[i].chars) * 10) / 10;
-    d += i === 0 ? `M${px},${py} ` : `L${px},${py} `;
+  const len = pts.length;
+  if (len > 0) {
+    const p0 = pts[0];
+    const px0 = Math.round(x(p0.t) * 10) / 10;
+    const py0 = Math.round(y(p0.chars) * 10) / 10;
+    d = `M${px0},${py0}`;
+    for (let i = 1; i < len; i++) {
+      const pt = pts[i];
+      const px = Math.round(x(pt.t) * 10) / 10;
+      const py = Math.round(y(pt.chars) * 10) / 10;
+      d += `L${px},${py}`;
+    }
   }
-  const pathD = d.trim();
+  const pathD = d;
 
   // Bolt optimization: Guard DOM attribute writes to avoid triggering unnecessary SVG path re-parsing
   // and style recalculations on unchanged values during 60fps rAF animation loops.
