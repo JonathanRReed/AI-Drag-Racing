@@ -45,10 +45,10 @@ const PromptInput: React.FC<PromptInputProps> = ({
 
   const buttonTitle = !prompt.trim()
     ? 'Enter a prompt to start'
-    : disabled
-      ? 'No racers selected'
-      : isLoading
-        ? 'Race in progress'
+    : isLoading
+      ? 'Race in progress'
+      : disabled
+        ? 'No racers selected'
         : 'Start race with prompt';
 
   return (

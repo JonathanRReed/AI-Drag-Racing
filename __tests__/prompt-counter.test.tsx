@@ -1,10 +1,19 @@
+// @vitest-environment happy-dom
 import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import PromptInput from '../components/main/PromptInput';
 import { measurePromptCharacters } from '../utils/promptCharacters';
+import { click, mount } from './reactDom';
 
-afterEach(() => vi.unstubAllGlobals());
+let view: ReturnType<typeof mount> | undefined;
+beforeEach(() => { vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT', true); });
+afterEach(() => {
+  view?.unmount();
+  view = undefined;
+  document.body.innerHTML = '';
+  vi.unstubAllGlobals();
+});
 
 describe('prompt character counter', () => {
   it.each(['🤖', 'e\u0301', '👨‍👩‍👧‍👦', '🇺🇸'])('counts %s as one visible character', (prompt) => {
@@ -23,7 +32,7 @@ describe('prompt character counter', () => {
     expect(html).not.toMatch(/aria-label="\d+ characters?"/);
   });
 
-  it('renders start button with contextual tooltip when disabled', () => {
+  it('renders start button with contextual tooltip when disabled or loading', () => {
     const htmlNoPrompt = renderToStaticMarkup(
       <PromptInput prompt="" onPromptChange={() => {}} onSubmit={() => {}} isLoading={false} />
     );
@@ -42,10 +51,30 @@ describe('prompt character counter', () => {
     expect(htmlLoading).toContain('title="Race in progress"');
     expect(htmlLoading).toContain('disabled=""');
 
+    const htmlBothDisabledAndLoading = renderToStaticMarkup(
+      <PromptInput prompt="Hello" onPromptChange={() => {}} onSubmit={() => {}} isLoading={true} disabled={true} />
+    );
+    expect(htmlBothDisabledAndLoading).toContain('title="Race in progress"');
+
     const htmlReady = renderToStaticMarkup(
       <PromptInput prompt="Hello" onPromptChange={() => {}} onSubmit={() => {}} isLoading={false} disabled={false} />
     );
     expect(htmlReady).toContain('title="Start race with prompt"');
     expect(htmlReady).not.toContain('disabled=""');
+  });
+
+  it('submits once when ready and never when disabled', () => {
+    const onSubmit = vi.fn();
+    view = mount(<PromptInput prompt="Hello" onPromptChange={() => {}} onSubmit={onSubmit} isLoading={false} disabled={true} />);
+
+    const startBtn = view.container.querySelector('button[aria-label="Start Race"]') as HTMLButtonElement;
+    expect(startBtn.disabled).toBe(true);
+    click(startBtn);
+    expect(onSubmit).not.toHaveBeenCalled();
+
+    view.rerender(<PromptInput prompt="Hello" onPromptChange={() => {}} onSubmit={onSubmit} isLoading={false} disabled={false} />);
+    expect(startBtn.disabled).toBe(false);
+    click(startBtn);
+    expect(onSubmit).toHaveBeenCalledTimes(1);
   });
 });
