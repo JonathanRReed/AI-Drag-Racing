@@ -107,3 +107,65 @@ export function boundedNumber(value: unknown, fallback: number, min: number, max
   if (typeof value !== 'number' || !Number.isFinite(value)) return fallback;
   return Math.min(max, Math.max(min, value));
 }
+
+/** Sanitize diagnostics only. Never serialize a whole upstream error/request. */
+export function redactCredentials(input: unknown, keysToRedact?: string | readonly string[]): string {
+  if (input == null) return '';
+  let message = 'Unknown error';
+  try {
+    if (typeof input === 'string') {
+      message = input;
+    } else if (typeof input === 'object' && 'message' in input) {
+      const value = (input as { message: unknown }).message;
+      if (typeof value === 'string') message = value;
+    }
+  } catch {
+    // Accessors/proxies and circular error objects must not break the error path.
+  }
+
+  // Locate secrets in the original message, then replace the union of ranges.
+  // This avoids partial tokens, overlapping keys, and trusting incoming markers.
+  const ranges: { start: number; end: number }[] = [];
+  const patterns = [
+    /\b(?:sk-|gsk[_-]|tvly-|xai-|ai21-|cls-|csk-)[A-Za-z0-9_.-]+/gi,
+    /\b(?:AKIA|ASIA)[0-9A-Z]{16}\b/g,
+    /\b(Bearer\s+)[A-Za-z0-9._~+/-]+=*/gi,
+    /\b((?:(?:x[-_])?api[-_]?key|access[-_]?token|session[-_]?token|(?:aws[-_]?)?secret[-_]?access[-_]?key|key)["']?\s*[:=]\s*)(?:"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'|[^\s"'&,;}\]]+)/gi,
+  ];
+  for (const pattern of patterns) {
+    for (const match of message.matchAll(pattern)) {
+      ranges.push({ start: match.index + (match[1]?.length ?? 0), end: match.index + match[0].length });
+    }
+  }
+
+  const keys = typeof keysToRedact === 'string' ? [keysToRedact] : keysToRedact ?? [];
+  const variants = new Set<string>();
+  for (const key of keys) {
+    // Every nonempty accepted key is sensitive, including one-character keys.
+    for (const value of [key, sanitizeApiKey(key)]) {
+      if (!value) continue;
+      variants.add(value);
+      variants.add(JSON.stringify(value).slice(1, -1));
+      try { variants.add(encodeURIComponent(value)); } catch {}
+    }
+  }
+  for (const value of variants) {
+    for (let index = message.indexOf(value); index !== -1; index = message.indexOf(value, index + 1)) {
+      ranges.push({ start: index, end: index + value.length });
+    }
+  }
+  ranges.sort((a, b) => a.start - b.start || b.end - a.end);
+  const merged: typeof ranges = [];
+  for (const range of ranges) {
+    const previous = merged.at(-1);
+    if (previous && range.start <= previous.end) previous.end = Math.max(previous.end, range.end);
+    else merged.push({ ...range });
+  }
+  let result = '';
+  let cursor = 0;
+  for (const range of merged) {
+    result += message.slice(cursor, range.start) + '[REDACTED]';
+    cursor = range.end;
+  }
+  return result + message.slice(cursor);
+}

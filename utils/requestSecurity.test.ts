@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { boundedNumber, corsHeadersForRequest, isAllowedRequestOrigin, readJsonBodyWithLimit, sanitizeApiKey, validateRaceRequestBody } from './requestSecurity';
+import { boundedNumber, corsHeadersForRequest, isAllowedRequestOrigin, readJsonBodyWithLimit, redactCredentials, sanitizeApiKey, validateRaceRequestBody } from './requestSecurity';
 
 function request(url: string, origin?: string) {
   return new Request(url, { headers: origin ? { origin } : {} });
@@ -61,5 +61,68 @@ describe('pasted API key boundaries', () => {
     expect(sanitizeApiKey('\x00 "sk-test-only" \x7F')).toBe('sk-test-only');
     expect(sanitizeApiKey('"sk-test-only"\x00')).toBe('sk-test-only');
     expect(sanitizeApiKey('\x00   \x7F')).toBe('');
+  });
+});
+
+describe('credential redaction', () => {
+  it.each(['k', 'xy', 'abc', 'synthetic-key', 'a.*+$[x]'])('redacts every occurrence of an explicit key regardless of length (%s)', (key) => {
+    expect(redactCredentials(`Rejected ${key}; repeated ${key}`, key))
+      .toBe('Rejected [REDACTED]; repeated [REDACTED]');
+  });
+
+  it('redacts the normalized, JSON-escaped, and URL-encoded forms of a pasted key', () => {
+    const key = 'synthetic/+"\\key';
+    const pasted = ` \x00'${key}'\r\n `;
+    const message = [key, JSON.stringify(key).slice(1, -1), encodeURIComponent(key)].join(' ');
+    expect(redactCredentials(message, pasted)).toBe('[REDACTED] [REDACTED] [REDACTED]');
+  });
+
+  it('redacts multiple explicit keys without exposing the suffix of an overlapping key', () => {
+    expect(redactCredentials('short-key and short', ['short', 'short-key']))
+      .toBe('[REDACTED] and [REDACTED]');
+  });
+
+  it('does not treat placeholders in the original message as trusted redactions', () => {
+    const key = 'synthetic[REDACTED]key';
+    expect(redactCredentials(`Rejected ${key}`, key)).toBe('Rejected [REDACTED]');
+  });
+
+  it.each([
+    ['sk-proj-synthetic_123', '[REDACTED]'],
+    ['gsk_synthetic_123', '[REDACTED]'],
+    ['xai-synthetic_123', '[REDACTED]'],
+    ['AKIAIOSFODNN7EXAMPLE', '[REDACTED]'],
+    ['ASIAIOSFODNN7EXAMPLE', '[REDACTED]'],
+    ['Authorization: bEaReR x', 'Authorization: bEaReR [REDACTED]'],
+    ['Bearer synthetic._~+/-==', 'Bearer [REDACTED]'],
+    ['api_key="synthetic/+key=" failed', 'api_key=[REDACTED] failed'],
+    ['{"x-api-key":"synthetic-key"}', '{"x-api-key":[REDACTED]}'],
+    ['?key=synthetic%2Bkey&model=m', '?key=[REDACTED]&model=m'],
+    ['access_token=synthetic-token', 'access_token=[REDACTED]'],
+  ])('scrubs recognizable credential syntax (%s)', (message, expected) => {
+    expect(redactCredentials(message)).toBe(expected);
+  });
+
+  it('handles errors and plain thrown message objects without serializing other fields', () => {
+    expect(redactCredentials(new Error('Rejected synthetic-key'), 'synthetic-key')).toBe('Rejected [REDACTED]');
+    expect(redactCredentials({ message: 'Rejected abc', request: { password: 'private' } }, 'abc'))
+      .toBe('Rejected [REDACTED]');
+  });
+
+  it('fails closed for unprintable and non-message objects', () => {
+    const circular: Record<string, unknown> = { credential: 'synthetic-key' };
+    circular.self = circular;
+    expect(redactCredentials(circular)).toBe('Unknown error');
+    expect(redactCredentials(Object.create(null))).toBe('Unknown error');
+    expect(redactCredentials({ get message() { throw new Error('private'); } })).toBe('Unknown error');
+    expect(redactCredentials({ toString() { return 'private'; } })).toBe('Unknown error');
+    expect(redactCredentials({ message: 401 })).toBe('Unknown error');
+  });
+
+  it('preserves harmless diagnostics and safely handles absent inputs', () => {
+    expect(redactCredentials('HTTP 429: retry later')).toBe('HTTP 429: retry later');
+    expect(redactCredentials(null)).toBe('');
+    expect(redactCredentials(undefined)).toBe('');
+    expect(redactCredentials('', '')).toBe('');
   });
 });

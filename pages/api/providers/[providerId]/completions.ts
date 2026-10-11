@@ -7,6 +7,7 @@ import {
   boundedNumber,
   corsHeadersForRequest,
   readJsonBodyWithLimit,
+  redactCredentials,
   validateRaceRequestBody,
 } from '../../../../utils/requestSecurity';
 // Side-effect imports to register provider services (exclude Bedrock for Edge)
@@ -129,6 +130,8 @@ export default async function handler(req: Request): Promise<Response> {
               timingSource: result.data.timingSource ?? 'edge-measured',
             },
           });
+        } else if (result.type === 'error') {
+          await writeEvent({ type: 'error', message: redactCredentials(result.message, apiKey) });
         } else {
           await writeEvent(result);
         }
@@ -136,7 +139,7 @@ export default async function handler(req: Request): Promise<Response> {
     } catch (error) {
       // Emit error to client unless already aborted
       if (!aborted) {
-        const message = (error instanceof Error) ? error.message : String(error);
+        const message = redactCredentials(error, apiKey) || 'Unknown error';
         try { await writeEvent({ type: 'error', message }); } catch {}
       }
     } finally {
