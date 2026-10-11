@@ -97,6 +97,49 @@ describe('credential redaction', () => {
       .toBe('prefix %aB: [REDACTED] suffix %cD');
   });
 
+  it.each([
+    ['synthetic-key', 'synthetic%2Dkey'],
+    ['synthetic/+key', 'synthetic%2F+key'],
+    ['synthetic/+key', '%73ynthetic/%2bkey'],
+    ['k', '%6b'],
+    ['synthetic-key', '%73%79%6e%74%68%65%74%69%63%2d%6b%65%79'],
+    ['Synthetic/éKey', 'Synthetic/%c3%A9Key'],
+  ])('redacts selectively encoded and unreserved credential bytes (%s)', (key, encoded) => {
+    expect(redactCredentials(`Rejected ${encoded}; repeated ${encoded}`, key))
+      .toBe('Rejected [REDACTED]; repeated [REDACTED]');
+  });
+
+  it('maps UTF-8 surrogate pairs back to full original spans beside malformed escapes', () => {
+    expect(redactCredentials('prefix %FF: synthetic%2D%f0%9F%94%90key tail %e0%80', 'synthetic-🔐key'))
+      .toBe('prefix %FF: [REDACTED] tail %e0%80');
+  });
+
+  it.each(['%e0%80', '%ed%a0%80', '%f0%9f', '%c0%af', '%ff'])('preserves invalid UTF-8 before a valid encoded credential (%s)', (invalid) => {
+    const encoded = '%73%79%6e%74%68%65%74%69%63%2d%6b%65%79';
+    expect(redactCredentials(`prefix ${invalid}${encoded} suffix`, 'synthetic-key'))
+      .toBe(`prefix ${invalid}[REDACTED] suffix`);
+  });
+
+  it('does not consume a valid Unicode credential after a truncated UTF-8 prefix', () => {
+    expect(redactCredentials('Rejected %c3%c3%a9key', 'ékey')).toBe('Rejected %c3[REDACTED]');
+  });
+
+  it('decodes once and preserves case inside a literal percent-containing key', () => {
+    expect(redactCredentials('Rejected %252f%2Dkey', '%2f-key')).toBe('Rejected [REDACTED]');
+    expect(redactCredentials('Rejected %252F%2Dkey', '%2f-key')).toBe('Rejected %252F%2Dkey');
+    expect(redactCredentials('Rejected synthetic%252Dkey', 'synthetic-key')).toBe('Rejected synthetic%252Dkey');
+  });
+
+  it('preserves malformed percent escapes that are not a representation of the key', () => {
+    expect(redactCredentials('Rejected synthetic%2Gkey; trailing %', 'synthetic-key'))
+      .toBe('Rejected synthetic%2Gkey; trailing %');
+  });
+
+  it('merges selectively encoded overlapping credentials over their original spans', () => {
+    expect(redactCredentials('Rejected synthetic%2Dkey', ['synthetic-', 'synthetic-key']))
+      .toBe('Rejected [REDACTED]');
+  });
+
   it('redacts multiple explicit keys without exposing the suffix of an overlapping key', () => {
     expect(redactCredentials('short-key and short', ['short', 'short-key']))
       .toBe('[REDACTED] and [REDACTED]');

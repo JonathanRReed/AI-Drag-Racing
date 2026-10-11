@@ -28,9 +28,14 @@ describe('completion stream credential boundaries', () => {
     expect(received[1]).toEqual({ type: 'error', message: 'OpenAI API error: 401 Rejected [REDACTED]; Bearer [REDACTED]' });
   });
 
-  it.each(['synthetic%2f%2bkey', 'synthetic%2F%2bkey'])('redacts percent-triplet case variants in SSE errors (%s)', async (encoded) => {
+  it.each([
+    ['synthetic/+key', 'synthetic%2f%2bkey'],
+    ['synthetic/+key', 'synthetic%2F%2bkey'],
+    ['synthetic-key', 'synthetic%2Dkey'],
+    ['synthetic/+key', 'synthetic%2F+key'],
+  ])('redacts percent-encoded credentials in SSE errors (%s)', async (key, encoded) => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(`Rejected ${encoded}`, { status: 401 })));
-    const received = await events(await handler(request('openai', 'synthetic/+key')));
+    const received = await events(await handler(request('openai', key)));
     expect(received[1]).toEqual({ type: 'error', message: 'OpenAI API error: 401 Rejected [REDACTED]' });
   });
 

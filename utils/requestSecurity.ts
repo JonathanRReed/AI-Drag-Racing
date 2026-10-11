@@ -108,6 +108,38 @@ export function boundedNumber(value: unknown, fallback: number, min: number, max
   return Math.min(max, Math.max(min, value));
 }
 
+/** Decode valid UTF-8 percent sequences once, retaining original UTF-16 spans. */
+function percentDecodedDiagnostic(message: string) {
+  const characters: string[] = [];
+  const starts: number[] = [];
+  const ends: number[] = [];
+  for (let start = 0; start < message.length;) {
+    let value = message[start];
+    let end = start + 1;
+    if (message[start] === '%' && /^[0-9a-f]{2}$/i.test(message.slice(start + 1, start + 3))) {
+      const byte = Number.parseInt(message.slice(start + 1, start + 3), 16);
+      const byteLength = byte < 0x80 ? 1 : byte >= 0xc2 && byte <= 0xdf ? 2
+        : byte >= 0xe0 && byte <= 0xef ? 3 : byte >= 0xf0 && byte <= 0xf4 ? 4 : 0;
+      const encoded = message.slice(start, start + byteLength * 3);
+      if (byteLength && encoded.length === byteLength * 3 && /^(?:%[0-9a-f]{2}){1,4}$/i.test(encoded)) {
+        try {
+          value = decodeURIComponent(encoded);
+          end = start + encoded.length;
+        } catch {
+          // Preserve invalid/truncated UTF-8 rather than consume a later valid span.
+        }
+      }
+    }
+    characters.push(value);
+    for (let index = 0; index < value.length; index++) {
+      starts.push(start);
+      ends.push(end);
+    }
+    start = end;
+  }
+  return { text: characters.join(''), starts, ends };
+}
+
 /** Sanitize diagnostics only. Never serialize a whole upstream error/request. */
 export function redactCredentials(input: unknown, keysToRedact?: string | readonly string[]): string {
   if (input == null) return '';
@@ -143,17 +175,12 @@ export function redactCredentials(input: unknown, keysToRedact?: string | readon
 
   const keys = typeof keysToRedact === 'string' ? [keysToRedact] : keysToRedact ?? [];
   const variants = new Set<string>();
-  const encodedVariants = new Set<string>();
   for (const key of keys) {
     // Every nonempty accepted key is sensitive, including one-character keys.
     for (const value of [key, sanitizeApiKey(key)]) {
       if (!value) continue;
       variants.add(value);
       variants.add(JSON.stringify(value).slice(1, -1));
-      try {
-        const encoded = encodeURIComponent(value);
-        if (encoded !== value) encodedVariants.add(encoded);
-      } catch {}
     }
   }
   for (const value of variants) {
@@ -161,13 +188,11 @@ export function redactCredentials(input: unknown, keysToRedact?: string | readon
       ranges.push({ start: index, end: index + value.length });
     }
   }
-  if (encodedVariants.size) {
-    // Percent-triplet hex is case-insensitive. This same-length view preserves
-    // original offsets and keeps every literal credential character case-sensitive.
-    const encodedMessage = message.replace(/%[0-9a-f]{2}/gi, triplet => triplet.toUpperCase());
-    for (const value of encodedVariants) {
-      for (let index = encodedMessage.indexOf(value); index !== -1; index = encodedMessage.indexOf(value, index + 1)) {
-        ranges.push({ start: index, end: index + value.length });
+  if (variants.size && /%[0-9a-f]{2}/i.test(message)) {
+    const decoded = percentDecodedDiagnostic(message);
+    for (const value of variants) {
+      for (let index = decoded.text.indexOf(value); index !== -1; index = decoded.text.indexOf(value, index + 1)) {
+        ranges.push({ start: decoded.starts[index], end: decoded.ends[index + value.length - 1] });
       }
     }
   }
