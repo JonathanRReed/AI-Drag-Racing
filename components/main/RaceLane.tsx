@@ -32,39 +32,40 @@ function calcTps(metrics: CompletionMetrics | null): string {
   return (out / duration).toFixed(2);
 }
 
+const STATUS_CONFIG: Record<LaneStatus, { bg: string; border: string; text: string; dot: string; label: string }> = {
+  staging: {
+    bg: 'bg-amber-500/20',
+    border: 'border-amber-500/40',
+    text: 'text-amber-400',
+    dot: 'bg-amber-400',
+    label: 'Staging'
+  },
+  green: {
+    bg: 'bg-emerald-500/20',
+    border: 'border-emerald-500/40',
+    text: 'text-emerald-400',
+    dot: 'bg-emerald-400 animate-pulse',
+    label: 'Racing'
+  },
+  finish: {
+    bg: 'bg-white/10',
+    border: 'border-white/20',
+    text: 'text-zinc-200',
+    dot: 'bg-zinc-200',
+    label: 'Finished'
+  },
+  error: {
+    bg: 'bg-red-500/20',
+    border: 'border-red-500/40',
+    text: 'text-red-400',
+    dot: 'bg-red-400',
+    label: 'Error'
+  },
+};
+
 // Status badge component with better visuals
 const StatusBadge: React.FC<{ status: LaneStatus }> = ({ status }) => {
-  const config = {
-    staging: {
-      bg: 'bg-amber-500/20',
-      border: 'border-amber-500/40',
-      text: 'text-amber-400',
-      dot: 'bg-amber-400',
-      label: 'Staging'
-    },
-    green: {
-      bg: 'bg-emerald-500/20',
-      border: 'border-emerald-500/40',
-      text: 'text-emerald-400',
-      dot: 'bg-emerald-400 animate-pulse',
-      label: 'Racing'
-    },
-    finish: {
-      bg: 'bg-white/10',
-      border: 'border-white/20',
-      text: 'text-zinc-200',
-      dot: 'bg-zinc-200',
-      label: 'Finished'
-    },
-    error: {
-      bg: 'bg-red-500/20',
-      border: 'border-red-500/40',
-      text: 'text-red-400',
-      dot: 'bg-red-400',
-      label: 'Error'
-    },
-  };
-  const c = config[status];
+  const c = STATUS_CONFIG[status];
 
   return (
     <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-medium ${c.bg} ${c.border} ${c.text} border`}>
