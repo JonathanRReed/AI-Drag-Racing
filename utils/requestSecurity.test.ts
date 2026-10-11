@@ -125,4 +125,8 @@ describe('credential redaction', () => {
     expect(redactCredentials(undefined)).toBe('');
     expect(redactCredentials('', '')).toBe('');
   });
+
+  it('drops oversized diagnostics before collecting matches for short keys', () => {
+    expect(redactCredentials('k'.repeat(16_385), 'k')).toBe('Error details exceeded the diagnostic limit');
+  });
 });

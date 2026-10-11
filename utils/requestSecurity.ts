@@ -122,6 +122,9 @@ export function redactCredentials(input: unknown, keysToRedact?: string | readon
   } catch {
     // Accessors/proxies and circular error objects must not break the error path.
   }
+  // Drop oversized diagnostics rather than truncate through a possible secret.
+  // This also bounds match storage when the accepted key is only one character.
+  if (message.length > 16_384) return 'Error details exceeded the diagnostic limit';
 
   // Locate secrets in the original message, then replace the union of ranges.
   // This avoids partial tokens, overlapping keys, and trusting incoming markers.
