@@ -12,8 +12,9 @@
     "lint": "eslint . --ext .js,.cjs,.mjs,.jsx,.ts,.tsx",
     "lint:fix": "eslint . --ext .js,.cjs,.mjs,.jsx,.ts,.tsx --fix",
     "test": "vitest run",
-    "build:pages": "bun run build:theme && bun scripts/verify-share-config.mjs && next-on-pages && bun scripts/patch-routes.js",
-    "build:cf": "bun run build:theme && next-on-pages",
+    "audit:dependencies": "bun scripts/dependency-audit.cjs audit",
+    "build:pages": "bun run build:theme && bun scripts/verify-share-config.mjs && bun run audit:dependencies && bun scripts/dependency-audit.cjs prepare && node --require ./scripts/record-adapter-runtime.cjs ./node_modules/@cloudflare/next-on-pages/bin/index.js && bun scripts/patch-routes.js && bun scripts/dependency-audit.cjs verify",
+    "build:cf": "bun run build:theme && bun run audit:dependencies && bun scripts/dependency-audit.cjs prepare && node --require ./scripts/record-adapter-runtime.cjs ./node_modules/@cloudflare/next-on-pages/bin/index.js && bun scripts/dependency-audit.cjs verify",
     "postbuild:cf": "bun scripts/patch-routes.js",
     "deploy:cf": "wrangler pages deploy .vercel/output/static --branch production",
     "llms:full": "bun scripts/generate-llms-full.ts"
@@ -27,7 +28,7 @@
     "cn": "^0.2.6",
     "lucide-react": "^1.41.0",
     "motion": "^13.2.0",
-    "next": "15.5.25",
+    "next": "15.5.27",
     "postcss": "^8.5.26",
     "radix-ui": "^1.6.7",
     "react": "^19.2.8",
@@ -49,12 +50,12 @@
     "@typescript-eslint/parser": "^8.69.0",
     "babel-plugin-react-compiler": "^19.1.0-rc.1-rc-af1b7da-20250421",
     "eslint": "^9.39.5",
-    "eslint-config-next": "15.5.25",
+    "eslint-config-next": "15.5.27",
     "eslint-plugin-react": "^7.37.5",
     "eslint-plugin-react-hooks": "^5.2.0",
     "eslint-plugin-unused-imports": "^4.4.1",
     "happy-dom": "20.10.6",
-    "sharp": "^0.35.4",
+    "sharp": "^0.35.5",
     "typescript-eslint": "^8.69.0",
     "vitest": "^4.1.11"
   },
@@ -68,10 +69,13 @@
     "@tootallnate/once": "^2.0.1",
     "ajv@8": "^8.20.0",
     "postcss": "^8.5.26",
-    "sharp": "^0.35.4",
+    "sharp": "^0.35.5",
     "tar": "^7.5.21",
     "ws": "^8.21.0",
-    "wrangler": "4.128.0"
+    "wrangler": "4.128.0",
+    "@modelcontextprotocol/sdk": "1.31.0",
+    "proxy-addr": "2.0.8",
+    "source-map-js": "1.2.2"
   },
   "engines": {
     "node": ">=22.12.0"

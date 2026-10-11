@@ -1,6 +1,6 @@
 export const config = { runtime: 'edge' };
 
-import { corsHeadersForRequest, readJsonBodyWithLimit, sanitizeApiKey } from '../../utils/requestSecurity';
+import { corsHeadersForRequest, readJsonBodyWithLimit, redactCredentials, sanitizeApiKey } from '../../utils/requestSecurity';
 
 type ModelResponse = {
     data: string[];
@@ -303,19 +303,20 @@ export default async function handler(req: Request): Promise<Response> {
 
         return jsonResponse({ data: ids }, corsHeaders);
 
-    } catch (error: any) {
-        console.error(`[Proxy Error] Provider: ${providerId}`);
-        console.error(`[Proxy Error] Message: ${error.message}`);
+    } catch (error) {
+        // Upstream messages can include request metadata beyond recognizable keys.
+        console.error(`[Proxy Error] Provider: ${redactCredentials(providerId, [rawApiKey, apiKey])}`);
 
         // Return fallback data instead of error when possible
-        const fallback = STATIC_FALLBACKS[providerId];
+        const fallback = Object.hasOwn(STATIC_FALLBACKS, providerId) ? STATIC_FALLBACKS[providerId] : undefined;
         if (fallback && fallback.length > 0) {
             return jsonResponse({ data: fallback }, corsHeaders);
         }
 
+        const safeMessage = redactCredentials(error, [rawApiKey, apiKey]);
         return jsonResponse({
             data: [],
-            error: error.message?.includes('401') || error.message?.includes('403')
+            error: safeMessage.includes('401') || safeMessage.includes('403')
                 ? 'Invalid API Key'
                 : 'Failed to fetch models'
         }, corsHeaders, 500);
