@@ -22,4 +22,30 @@ describe('prompt character counter', () => {
     );
     expect(html).not.toMatch(/aria-label="\d+ characters?"/);
   });
+
+  it('renders start button with contextual tooltip when disabled', () => {
+    const htmlNoPrompt = renderToStaticMarkup(
+      <PromptInput prompt="" onPromptChange={() => {}} onSubmit={() => {}} isLoading={false} />
+    );
+    expect(htmlNoPrompt).toContain('title="Enter a prompt to start"');
+    expect(htmlNoPrompt).toContain('disabled=""');
+
+    const htmlDisabled = renderToStaticMarkup(
+      <PromptInput prompt="Hello" onPromptChange={() => {}} onSubmit={() => {}} isLoading={false} disabled={true} />
+    );
+    expect(htmlDisabled).toContain('title="No racers selected"');
+    expect(htmlDisabled).toContain('disabled=""');
+
+    const htmlLoading = renderToStaticMarkup(
+      <PromptInput prompt="Hello" onPromptChange={() => {}} onSubmit={() => {}} isLoading={true} />
+    );
+    expect(htmlLoading).toContain('title="Race in progress"');
+    expect(htmlLoading).toContain('disabled=""');
+
+    const htmlReady = renderToStaticMarkup(
+      <PromptInput prompt="Hello" onPromptChange={() => {}} onSubmit={() => {}} isLoading={false} disabled={false} />
+    );
+    expect(htmlReady).toContain('title="Start race with prompt"');
+    expect(htmlReady).not.toContain('disabled=""');
+  });
 });
