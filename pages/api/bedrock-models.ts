@@ -20,7 +20,7 @@ export default async function handler(req: Request): Promise<Response> {
   if (!corsHeaders) {
     return new Response(JSON.stringify({ error: 'Origin not allowed' }), {
       status: 403,
-      headers: { 'Content-Type': 'application/json', Vary: 'Origin' },
+      headers: { 'Content-Type': 'application/json', 'X-Content-Type-Options': 'nosniff', Vary: 'Origin' },
     });
   }
 
@@ -31,7 +31,7 @@ export default async function handler(req: Request): Promise<Response> {
   if (req.method !== 'POST') {
     return new Response(JSON.stringify({ error: 'Method not allowed' }), {
       status: 405,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      headers: { ...corsHeaders, 'Content-Type': 'application/json', 'X-Content-Type-Options': 'nosniff' },
     });
   }
 
@@ -39,12 +39,12 @@ export default async function handler(req: Request): Promise<Response> {
   try {
     return new Response(JSON.stringify({ models: STATIC_BEDROCK_MODELS }), {
       status: 200,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      headers: { ...corsHeaders, 'Content-Type': 'application/json', 'X-Content-Type-Options': 'nosniff' },
     });
   } catch (e: any) {
     return new Response(JSON.stringify({ error: e?.message || 'Failed to list Bedrock models' }), {
       status: 500,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      headers: { ...corsHeaders, 'Content-Type': 'application/json', 'X-Content-Type-Options': 'nosniff' },
     });
   }
 }

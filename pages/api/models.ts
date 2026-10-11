@@ -128,7 +128,7 @@ const STATIC_FALLBACKS: Record<string, string[]> = {
 function jsonResponse(data: ModelResponse, corsHeaders: Record<string, string>, status = 200): Response {
     return new Response(JSON.stringify(data), {
         status,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        headers: { ...corsHeaders, 'Content-Type': 'application/json', 'X-Content-Type-Options': 'nosniff' },
     });
 }
 
@@ -137,7 +137,7 @@ export default async function handler(req: Request): Promise<Response> {
     if (!corsHeaders) {
         return new Response(JSON.stringify({ data: [], error: 'Origin not allowed' }), {
             status: 403,
-            headers: { 'Content-Type': 'application/json', 'Vary': 'Origin' },
+            headers: { 'Content-Type': 'application/json', 'X-Content-Type-Options': 'nosniff', 'Vary': 'Origin' },
         });
     }
     if (req.method === 'OPTIONS') {
