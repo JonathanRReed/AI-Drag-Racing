@@ -42,7 +42,7 @@ describe('prompt character counter', () => {
     const htmlDisabled = renderToStaticMarkup(
       <PromptInput prompt="Hello" onPromptChange={() => {}} onSubmit={() => {}} isLoading={false} disabled={true} />
     );
-    expect(htmlDisabled).toContain('title="No racers selected"');
+    expect(htmlDisabled).toContain('title="Select a model and add its API key"');
     expect(htmlDisabled).toContain('disabled=""');
 
     const htmlLoading = renderToStaticMarkup(

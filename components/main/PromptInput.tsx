@@ -48,7 +48,7 @@ const PromptInput: React.FC<PromptInputProps> = ({
     : isLoading
       ? 'Race in progress'
       : disabled
-        ? 'No racers selected'
+        ? 'Select a model and add its API key'
         : 'Start race with prompt';
 
   return (
