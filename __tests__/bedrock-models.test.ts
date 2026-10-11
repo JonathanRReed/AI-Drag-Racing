@@ -48,7 +48,7 @@ describe('pages/api/bedrock-models', () => {
     expect(body).toEqual({ error: 'Method not allowed' });
   });
 
-  it('returns model list for valid POST request from allowed origin', async () => {
+  it('returns model list for valid POST request from allowed origin with nosniff header', async () => {
     const req = new Request('https://ai-dragrace.jonathanrreed.com/api/bedrock-models', {
       method: 'POST',
       headers: { Origin: 'https://ai-dragrace.jonathanrreed.com' },
@@ -56,6 +56,7 @@ describe('pages/api/bedrock-models', () => {
     const res = await handler(req);
     expect(res.status).toBe(200);
     expect(res.headers.get('Access-Control-Allow-Origin')).toBe('https://ai-dragrace.jonathanrreed.com');
+    expect(res.headers.get('X-Content-Type-Options')).toBe('nosniff');
     const body = await res.json();
     expect(Array.isArray(body.models)).toBe(true);
     expect(body.models.length).toBeGreaterThan(0);
