@@ -1,0 +1,76 @@
+// @vitest-environment happy-dom
+import React from 'react';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import ComparisonCharts from '../components/ComparisonCharts';
+import { type ResultState } from '../components/main/ResultsDisplay';
+import { getProviderColor } from '../utils/providerColors';
+import { click, mount } from './reactDom';
+
+const { chartRender } = vi.hoisted(() => ({ chartRender: vi.fn() }));
+vi.mock('react-chartjs-2', () => ({ Bar: (props: any) => {
+  chartRender(props);
+  return <div data-testid="chart" data-values={JSON.stringify(props.data.datasets[0].data)} />;
+} }));
+vi.mock('../utils/providerColors', async importOriginal => {
+  const actual = await importOriginal<typeof import('../utils/providerColors')>();
+  return { ...actual, getProviderColor: vi.fn(actual.getProviderColor) };
+});
+let view: ReturnType<typeof mount>;
+beforeEach(() => { vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT', true); vi.clearAllMocks(); });
+afterEach(() => { view?.unmount(); document.body.innerHTML = ''; vi.unstubAllGlobals(); });
+function result(id: string, firstTokenTime: number, finishTime: number, outputTokens?: number): ResultState {
+  return { id, providerName: id, modelName: 'long-model-name-that-needs-an-ellipsis', responseText: 'test',
+    metrics: { startTime: 100, firstTokenTime, finishTime, tokenCount: 20, outputTokens },
+    error: null, isLoading: false, browserTiming: null, edgeRegion: null };
+}
+const fixtures = [result('OpenAI', 200, 600, 100), result('Anthropic', 400, 1100, 200),
+  { ...result('Groq', 150, 700), isLoading: true }, { ...result('Cohere', 180, 800), error: 'failed' }];
+const charts = () => chartRender.mock.calls.slice(-4).map(call => call[0]);
+
+describe('comparison charts', () => {
+  it('sorts all four metrics together with provider colors and full tooltip labels', () => {
+    view = mount(<ComparisonCharts results={fixtures} />);
+    const [latency, tps, ttft, tokens] = charts();
+    expect(latency.data.datasets[0].data).toEqual([1000, 500]);
+    expect(ttft.data.datasets[0].data).toEqual([300, 100]);
+    expect(tokens.data.datasets[0].data).toEqual([200, 100]);
+    expect(tps.data.datasets[0].data).toEqual([200 / .7, 100 / .4]);
+    for (const chart of charts()) {
+      expect(chart.data.labels).toHaveLength(2);
+      expect(chart.data.labels[0].endsWith('…')).toBe(true);
+      expect(chart.options.plugins.tooltip.callbacks.title([{ dataIndex: 0 }])).toEqual(['Anthropic (long-model-name-that-needs-an-ellipsis)']);
+      expect(chart.data.datasets[0].backgroundColor[0]).toBe(getProviderColor('Anthropic').soft);
+    }
+    click(view.container.querySelector('button')!);
+    expect(view.container.textContent).toContain('Sort: Low → High');
+    expect(charts()[0].data.datasets[0].data).toEqual([500, 1000]);
+    expect(charts()[0].options.plugins.tooltip.callbacks.title([{ dataIndex: 0 }])).toEqual(['OpenAI (long-model-name-that-needs-an-ellipsis)']);
+  });
+
+  it('skips chart preparation and renders when results identity is unchanged', () => {
+    view = mount(<ComparisonCharts results={fixtures} />);
+    vi.mocked(getProviderColor).mockClear(); chartRender.mockClear();
+    view.rerender(<ComparisonCharts results={fixtures} />);
+    expect(getProviderColor).not.toHaveBeenCalled();
+    expect(chartRender).not.toHaveBeenCalled();
+  });
+
+  it('updates datasets and tooltip closures when immutable results change', () => {
+    view = mount(<ComparisonCharts results={fixtures} />);
+    const previous = charts()[0];
+    const replacement = [result('Groq', 150, 300, 80)];
+    view.rerender(<ComparisonCharts results={replacement} />);
+    const next = charts()[0];
+    expect(next.data).not.toBe(previous.data);
+    expect(next.data.datasets[0].data).toEqual([200]);
+    expect(next.options.plugins.tooltip.callbacks.title([{ dataIndex: 0 }])).toEqual(['Groq (long-model-name-that-needs-an-ellipsis)']);
+  });
+
+  it('keeps the existing zero/missing-token metric fallbacks', () => {
+    view = mount(<ComparisonCharts results={[result('OpenAI', 0, 500)]} />);
+    const [, tps, ttft, tokens] = charts();
+    expect(tps.data.datasets[0].data).toEqual([0]);
+    expect(ttft.data.datasets[0].data).toEqual([0]);
+    expect(tokens.data.datasets[0].data).toEqual([0]);
+  });
+});

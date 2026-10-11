@@ -14,6 +14,7 @@
 
 import React, { useEffect, useRef } from 'react';
 import { applyPaceFilter } from '../../utils/paceSvg';
+import { applyRaceStyle } from '../../utils/raceDom';
 import { LaneBuffer, LaneSample, decimate, recentCharsPerSec } from '../../utils/raceBuffers';
 
 export interface PaceLane {
@@ -219,7 +220,10 @@ const LivePaceChart: React.FC<LivePaceChartProps> = ({
       const x = (t: number) => PAD.l + (t / xMax) * PLOT_W;
       const y = (chars: number) => PAD.t + PLOT_H - (Math.min(chars, yDenom) / yDenom) * PLOT_H;
 
-      if (emptyEl.current) emptyEl.current.style.opacity = anyData ? '0' : '1';
+      if (emptyEl.current) {
+        const emptyOpacity = anyData ? '0' : '1';
+        applyRaceStyle(emptyEl.current.style, 'opacity', emptyOpacity);
+      }
 
       for (const lane of ls) {
         updateLaneSVG(
@@ -242,17 +246,21 @@ const LivePaceChart: React.FC<LivePaceChartProps> = ({
       // Sweeping NOW cursor + axis labels.
       if (cursorEl.current) {
         if (running && !reducedMotion && anyData) {
-          const cx = x(liveT);
-          cursorEl.current.setAttribute('x1', cx.toFixed(1));
-          cursorEl.current.setAttribute('x2', cx.toFixed(1));
-          cursorEl.current.setAttribute('opacity', '0.5');
+          const cxStr = x(liveT).toFixed(1);
+          if (cursorEl.current.getAttribute('x1') !== cxStr) cursorEl.current.setAttribute('x1', cxStr);
+          if (cursorEl.current.getAttribute('x2') !== cxStr) cursorEl.current.setAttribute('x2', cxStr);
+          if (cursorEl.current.getAttribute('opacity') !== '0.5') cursorEl.current.setAttribute('opacity', '0.5');
         } else {
-          cursorEl.current.setAttribute('opacity', '0');
+          if (cursorEl.current.getAttribute('opacity') !== '0') cursorEl.current.setAttribute('opacity', '0');
         }
       }
-      if (xLabelEl.current) xLabelEl.current.textContent = `${(xMax / 1000).toFixed(1)}s`;
+      if (xLabelEl.current) {
+        const xText = `${(xMax / 1000).toFixed(1)}s`;
+        if (xLabelEl.current.textContent !== xText) xLabelEl.current.textContent = xText;
+      }
       if (yLabelEl.current) {
-        yLabelEl.current.textContent = normalizeRef.current ? '% of most output' : `${compact(yDenom)} chars`;
+        const yText = normalizeRef.current ? '% of most output' : `${compact(yDenom)} chars`;
+        if (yLabelEl.current.textContent !== yText) yLabelEl.current.textContent = yText;
       }
     };
 
