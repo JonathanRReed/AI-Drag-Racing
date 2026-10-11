@@ -143,18 +143,32 @@ export function redactCredentials(input: unknown, keysToRedact?: string | readon
 
   const keys = typeof keysToRedact === 'string' ? [keysToRedact] : keysToRedact ?? [];
   const variants = new Set<string>();
+  const encodedVariants = new Set<string>();
   for (const key of keys) {
     // Every nonempty accepted key is sensitive, including one-character keys.
     for (const value of [key, sanitizeApiKey(key)]) {
       if (!value) continue;
       variants.add(value);
       variants.add(JSON.stringify(value).slice(1, -1));
-      try { variants.add(encodeURIComponent(value)); } catch {}
+      try {
+        const encoded = encodeURIComponent(value);
+        if (encoded !== value) encodedVariants.add(encoded);
+      } catch {}
     }
   }
   for (const value of variants) {
     for (let index = message.indexOf(value); index !== -1; index = message.indexOf(value, index + 1)) {
       ranges.push({ start: index, end: index + value.length });
+    }
+  }
+  if (encodedVariants.size) {
+    // Percent-triplet hex is case-insensitive. This same-length view preserves
+    // original offsets and keeps every literal credential character case-sensitive.
+    const encodedMessage = message.replace(/%[0-9a-f]{2}/gi, triplet => triplet.toUpperCase());
+    for (const value of encodedVariants) {
+      for (let index = encodedMessage.indexOf(value); index !== -1; index = encodedMessage.indexOf(value, index + 1)) {
+        ranges.push({ start: index, end: index + value.length });
+      }
     }
   }
   ranges.sort((a, b) => a.start - b.start || b.end - a.end);

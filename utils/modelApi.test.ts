@@ -20,6 +20,23 @@ describe('model API credential boundaries', () => {
     expect(result.output).toBeNull();
   });
 
+  it('redacts lowercase percent escapes in returned provider errors', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response('Rejected synthetic%2f%2bkey', { status: 401 })));
+    const result = await callModelApi({ ...params, apiKey: 'synthetic/+key' });
+    expect(result.error).toBe('HTTP 401: Rejected [REDACTED]');
+  });
+
+  it('redacts mixed percent escapes in thrown errors, logs and alerts', async () => {
+    const alertMock = vi.fn();
+    vi.stubGlobal('window', {});
+    vi.stubGlobal('alert', alertMock);
+    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('Rejected synthetic%2f%2Bkey')));
+    const result = await callModelApi({ ...params, apiKey: 'synthetic/+key' });
+    expect(result.error).toBe('Rejected [REDACTED]');
+    expect(console.error).toHaveBeenCalledExactlyOnceWith('Model API error:', 'Rejected [REDACTED]');
+    expect(alertMock).toHaveBeenCalledExactlyOnceWith('Model API error: Rejected [REDACTED]');
+  });
+
   it('redacts thrown failures in returned errors, logs, and browser alerts', async () => {
     const alertMock = vi.fn();
     vi.stubGlobal('window', {});

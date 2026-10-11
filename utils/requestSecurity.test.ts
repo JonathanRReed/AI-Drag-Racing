@@ -77,6 +77,26 @@ describe('credential redaction', () => {
     expect(redactCredentials(message, pasted)).toBe('[REDACTED] [REDACTED] [REDACTED]');
   });
 
+  it.each(['synthetic%2f%2bkey', 'synthetic%2F%2bkey', 'synthetic%2f%2Bkey'])('redacts case-insensitive percent triplets (%s)', (encoded) => {
+    expect(redactCredentials(`Rejected ${encoded}; repeated ${encoded}`, 'synthetic/+key'))
+      .toBe('Rejected [REDACTED]; repeated [REDACTED]');
+  });
+
+  it('redacts mixed-case UTF-8 escapes of a normalized pasted key', () => {
+    expect(redactCredentials('Rejected Synthetic%2f%c3%A9Key', " 'Synthetic/éKey' "))
+      .toBe('Rejected [REDACTED]');
+  });
+
+  it('keeps literal credential characters case-sensitive', () => {
+    expect(redactCredentials('Rejected synthetic%2f%2bkey', 'Synthetic/+Key'))
+      .toBe('Rejected synthetic%2f%2bkey');
+  });
+
+  it('keeps unmatched percent escapes unchanged while redacting encoded overlaps', () => {
+    expect(redactCredentials('prefix %aB: synthetic%2f%2bkey suffix %cD', ['synthetic/+', 'synthetic/+key']))
+      .toBe('prefix %aB: [REDACTED] suffix %cD');
+  });
+
   it('redacts multiple explicit keys without exposing the suffix of an overlapping key', () => {
     expect(redactCredentials('short-key and short', ['short', 'short-key']))
       .toBe('[REDACTED] and [REDACTED]');

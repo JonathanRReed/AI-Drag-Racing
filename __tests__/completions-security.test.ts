@@ -28,6 +28,12 @@ describe('completion stream credential boundaries', () => {
     expect(received[1]).toEqual({ type: 'error', message: 'OpenAI API error: 401 Rejected [REDACTED]; Bearer [REDACTED]' });
   });
 
+  it.each(['synthetic%2f%2bkey', 'synthetic%2F%2bkey'])('redacts percent-triplet case variants in SSE errors (%s)', async (encoded) => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(`Rejected ${encoded}`, { status: 401 })));
+    const received = await events(await handler(request('openai', 'synthetic/+key')));
+    expect(received[1]).toEqual({ type: 'error', message: 'OpenAI API error: 401 Rejected [REDACTED]' });
+  });
+
   it('redacts provider-yielded errors as well as thrown failures', async () => {
     registerProviderService({
       providerId: 'synthetic-error-provider',
