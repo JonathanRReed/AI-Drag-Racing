@@ -18,8 +18,8 @@ const CheckIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="provi
 interface ProviderListItemProps {
   provider: ProviderConfig;
   hasApiKey: boolean;
-  onAddKey: () => void;
-  onClearKey?: () => void;
+  onAddKey: (provider: ProviderConfig) => void;
+  onClearKey: (providerId: string) => void;
 }
 
 // Same-origin marks. Only slugs that exist in the vendored set are listed, so
@@ -56,7 +56,7 @@ const IconImg: React.FC<{
   );
 };
 
-const ProviderListItem: React.FC<ProviderListItemProps> = ({ provider, hasApiKey, onAddKey, onClearKey }) => {
+const ProviderListItem = React.memo(function ProviderListItem({ provider, hasApiKey, onAddKey, onClearKey }: ProviderListItemProps) {
   return (
     <div className="provider-row">
       <div className="provider-main">
@@ -79,22 +79,26 @@ const ProviderListItem: React.FC<ProviderListItemProps> = ({ provider, hasApiKey
       <div className="provider-actions">
         {hasApiKey && (
           <button
-            onClick={onClearKey}
-            className="provider-clear"
+            type="button"
+            onClick={() => onClearKey(provider.id)}
+            aria-label={`Clear API key for ${provider.displayName}`}
+            title={`Clear API key for ${provider.displayName}`}
+            className="provider-clear focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-cyan-400"
           >
             Clear Key
           </button>
         )}
         <button
-          onClick={onAddKey}
-          className="provider-key-button"
+          type="button"
+          onClick={() => onAddKey(provider)}
+          className="provider-key-button focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-cyan-400"
           aria-label={`${hasApiKey ? 'Edit' : 'Add'} API key for ${provider.displayName}`}
           title={`${hasApiKey ? 'Edit' : 'Add'} API key for ${provider.displayName}`}
         />
       </div>
     </div>
   );
-};
+});
 
 type ModelFetchState = { status: 'loading' } | { status: 'error'; message: string };
 
@@ -169,6 +173,12 @@ const ProviderList: React.FC<ProviderListProps> = ({
     ));
   }, [suggestedModel, suggestedProvider]);
 
+  // Provider IDs are fixed and contain no colon; model IDs may contain any text.
+  const selectedSet = useMemo(
+    () => new Set(selectedPairs.map(pair => `${pair.providerId}:${pair.modelId}`)),
+    [selectedPairs]
+  );
+
   // Providers that are wired up server-side for streaming right now
   const SUPPORTED_FOR_STREAM = useMemo(() => new Set<string>(RACEABLE_PROVIDER_IDS), []);
 
@@ -219,7 +229,7 @@ const ProviderList: React.FC<ProviderListProps> = ({
     }
   };
 
-  const handleClearKey = (providerId: string) => {
+  const handleClearKey = React.useCallback((providerId: string) => {
     // Clear the tab-scoped key and non-secret local preferences.
     sessionStorage.removeItem(`${providerId}_api_key`);
     localStorage.removeItem(`${providerId}_api_key`);
@@ -238,7 +248,7 @@ const ProviderList: React.FC<ProviderListProps> = ({
       return next;
     });
     localStorage.setItem(`${providerId}_enabled`, 'false');
-  };
+  }, [dispatch]);
 
   // On mount, load keys for this tab and remove any key left by older builds.
   React.useEffect(() => {
@@ -334,8 +344,8 @@ const ProviderList: React.FC<ProviderListProps> = ({
             <ProviderListItem
               provider={provider}
               hasApiKey={!!apiKeys[provider.id]}
-              onAddKey={() => setModalOpenFor(provider)}
-              onClearKey={() => handleClearKey(provider.id)}
+              onAddKey={setModalOpenFor}
+              onClearKey={handleClearKey}
             />
             {/* Model selector appears when key is present and provider is supported.
                 A key that cannot list models says so instead of showing nothing. */}
@@ -363,7 +373,7 @@ const ProviderList: React.FC<ProviderListProps> = ({
                       );
                     }
                     return filtered.map((m) => {
-                      const checked = selectedPairs.some(p => p.providerId === provider.id && p.modelId === m);
+                      const checked = selectedSet.has(`${provider.id}:${m}`);
                       const brandSlugs = brandSlugsForModel(provider.id, m);
                       const slugs = brandSlugs?.length ? brandSlugs : providerSlugs(provider.id);
                       return (
@@ -414,7 +424,9 @@ const ProviderList: React.FC<ProviderListProps> = ({
                 <button
                   type="button"
                   onClick={() => retryModelsForProvider(provider.id)}
-                  className="mt-1 inline-flex min-h-[var(--control-h)] items-center rounded-md border border-white/10 px-3 text-xs text-gray-200 hover:border-white/20"
+                  aria-label={`Retry model list for ${provider.displayName}`}
+                  title={`Retry model list for ${provider.displayName}`}
+                  className="mt-1 inline-flex min-h-[var(--control-h)] items-center rounded-md border border-white/10 px-3 text-xs text-gray-200 hover:border-white/20 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-cyan-400"
                 >
                   Retry model list
                 </button>
