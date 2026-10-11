@@ -43,6 +43,14 @@ const PromptInput: React.FC<PromptInputProps> = ({
 
   const canSubmit = !disabled && !isLoading && prompt.trim().length > 0;
 
+  const buttonTitle = !prompt.trim()
+    ? 'Enter a prompt to start'
+    : isLoading
+      ? 'Race in progress'
+      : disabled
+        ? 'Select a model and add its API key'
+        : 'Start race with prompt';
+
   return (
     <GlassCard className="prompt-card p-3" hover={false} spotlight={false}>
       <label htmlFor="prompt-input" className="mb-2 block text-xs font-medium text-zinc-500">
@@ -73,12 +81,27 @@ const PromptInput: React.FC<PromptInputProps> = ({
         dir="auto"
       />
       <div className="mt-2 flex items-center justify-between gap-2">
-        <span className="text-xs text-zinc-600">Enter starts the race when racers are ready. Shift+Enter adds a line.</span>
-        {counterReady && prompt.length > 0 && (
-          <span className="text-xs font-mono text-zinc-500 shrink-0" aria-label={counter.label}>
-            {counter.count.toLocaleString()} {counter.shortUnit}{counter.count === 1 ? '' : 's'}
-          </span>
-        )}
+        <span className="text-xs text-zinc-600 truncate">Enter starts race. Shift+Enter adds line.</span>
+        <div className="flex items-center gap-2 shrink-0">
+          {counterReady && prompt.length > 0 && (
+            <span className="text-xs font-mono text-zinc-500" aria-label={counter.label}>
+              {counter.count.toLocaleString()} {counter.shortUnit}{counter.count === 1 ? '' : 's'}
+            </span>
+          )}
+          <button
+            type="button"
+            onClick={onSubmit}
+            disabled={!canSubmit}
+            aria-label="Start Race"
+            title={buttonTitle}
+            className="inline-flex min-h-[var(--control-h)] items-center gap-1 rounded-md bg-cyan-500/20 px-2.5 py-1 text-xs font-semibold text-cyan-300 border border-cyan-500/40 hover:bg-cyan-500/30 disabled:opacity-40 disabled:cursor-not-allowed transition-colors focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-cyan-400"
+          >
+            <svg viewBox="0 0 24 24" className="w-3 h-3 fill-current" aria-hidden="true">
+              <path d="M5 3l14 9-14 9V3z" />
+            </svg>
+            <span>Start</span>
+          </button>
+        </div>
       </div>
     </GlassCard>
   );
