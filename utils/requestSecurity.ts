@@ -108,15 +108,15 @@ export function boundedNumber(value: unknown, fallback: number, min: number, max
   return Math.min(max, Math.max(min, value));
 }
 
-/** Decode valid UTF-8 percent sequences once, retaining original UTF-16 spans. */
-function percentDecodedDiagnostic(message: string) {
+/** Decode one URI or JSON representation, retaining original UTF-16 spans. */
+function decodedDiagnostic(message: string, format: 'percent' | 'json') {
   const characters: string[] = [];
   const starts: number[] = [];
   const ends: number[] = [];
   for (let start = 0; start < message.length;) {
     let value = message[start];
     let end = start + 1;
-    if (message[start] === '%' && /^[0-9a-f]{2}$/i.test(message.slice(start + 1, start + 3))) {
+    if (format === 'percent' && message[start] === '%' && /^[0-9a-f]{2}$/i.test(message.slice(start + 1, start + 3))) {
       const byte = Number.parseInt(message.slice(start + 1, start + 3), 16);
       const byteLength = byte < 0x80 ? 1 : byte >= 0xc2 && byte <= 0xdf ? 2
         : byte >= 0xe0 && byte <= 0xef ? 3 : byte >= 0xf0 && byte <= 0xf4 ? 4 : 0;
@@ -128,6 +128,19 @@ function percentDecodedDiagnostic(message: string) {
         } catch {
           // Preserve invalid/truncated UTF-8 rather than consume a later valid span.
         }
+      }
+    }
+    if (format === 'json' && message[start] === '\\') {
+      const escape = message[start + 1];
+      const shortEscapes: Record<string, string> = {
+        '"': '"', '\\': '\\', '/': '/', b: '\b', f: '\f', n: '\n', r: '\r', t: '\t',
+      };
+      if (Object.hasOwn(shortEscapes, escape)) {
+        value = shortEscapes[escape];
+        end = start + 2;
+      } else if (escape === 'u' && /^[0-9a-f]{4}$/i.test(message.slice(start + 2, start + 6))) {
+        value = String.fromCharCode(Number.parseInt(message.slice(start + 2, start + 6), 16));
+        end = start + 6;
       }
     }
     characters.push(value);
@@ -156,7 +169,7 @@ export function redactCredentials(input: unknown, keysToRedact?: string | readon
   }
   // Drop oversized diagnostics rather than truncate through a possible secret.
   // This also bounds match storage when the accepted key is only one character.
-  if (message.length > 16_384) return 'Error details exceeded the diagnostic limit';
+  if (message.length > 16_384) message = 'Error details exceeded the diagnostic limit';
 
   // Locate secrets in the original message, then replace the union of ranges.
   // This avoids partial tokens, overlapping keys, and trusting incoming markers.
@@ -188,8 +201,9 @@ export function redactCredentials(input: unknown, keysToRedact?: string | readon
       ranges.push({ start: index, end: index + value.length });
     }
   }
-  if (variants.size && /%[0-9a-f]{2}/i.test(message)) {
-    const decoded = percentDecodedDiagnostic(message);
+  for (const format of ['percent', 'json'] as const) {
+    if (!variants.size || (format === 'percent' ? !/%[0-9a-f]{2}/i.test(message) : !message.includes('\\'))) continue;
+    const decoded = decodedDiagnostic(message, format);
     for (const value of variants) {
       for (let index = decoded.text.indexOf(value); index !== -1; index = decoded.text.indexOf(value, index + 1)) {
         ranges.push({ start: decoded.starts[index], end: decoded.ends[index + value.length - 1] });
@@ -209,5 +223,8 @@ export function redactCredentials(input: unknown, keysToRedact?: string | readon
     result += message.slice(cursor, range.start) + '[REDACTED]';
     cursor = range.end;
   }
-  return result + message.slice(cursor);
+  result += message.slice(cursor);
+  // A marker or replacement boundary can itself contain a supplied credential.
+  // Suppress that diagnostic instead of repeatedly redacting replacement text.
+  return [...variants].some((value) => result.includes(value)) ? '' : result;
 }

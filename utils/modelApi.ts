@@ -46,7 +46,7 @@ export async function callModelApi({
       error: result.error === undefined ? undefined : redactCredentials(result.error, apiKey)
     };
   } catch (err) {
-    const message = redactCredentials(err, apiKey) || 'Unknown error';
+    const message = redactCredentials(err, apiKey);
     console.error('Model API error:', message);
     if (typeof window !== 'undefined') {
       alert('Model API error: ' + message);

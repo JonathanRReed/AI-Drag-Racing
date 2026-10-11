@@ -23,6 +23,8 @@ describe('model API credential boundaries', () => {
   it.each([
     ['synthetic/+key', 'synthetic%2f%2bkey'],
     ['synthetic-key', 'synthetic%2Dkey'],
+    ['synthetic/key', String.raw`synthetic\/key`],
+    ['synthetic-key', String.raw`synthetic\u002Dkey`],
     ['synthetic/+key', 'synthetic%2F+key'],
   ])('redacts percent encodings in returned provider errors (%s)', async (key, encoded) => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(`Rejected ${encoded}`, { status: 401 })));
@@ -33,6 +35,8 @@ describe('model API credential boundaries', () => {
   it.each([
     ['synthetic/+key', 'synthetic%2f%2Bkey'],
     ['synthetic-key', 'synthetic%2Dkey'],
+    ['synthetic/key', String.raw`synthetic\/key`],
+    ['synthetic-key', String.raw`synthetic\u002Dkey`],
     ['synthetic/+key', 'synthetic%2F+key'],
   ])('redacts percent encodings in thrown errors, logs and alerts (%s)', async (key, encoded) => {
     const alertMock = vi.fn();
@@ -54,6 +58,13 @@ describe('model API credential boundaries', () => {
     expect(result.error).toBe('Rejected [REDACTED]');
     expect(console.error).toHaveBeenCalledExactlyOnceWith('Model API error:', 'Rejected [REDACTED]');
     expect(alertMock).toHaveBeenCalledExactlyOnceWith('Model API error: Rejected [REDACTED]');
+  });
+
+  it('keeps an intentionally suppressed marker-collision diagnostic empty', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('Rejected [REDACTED]')));
+    const result = await callModelApi({ ...params, apiKey: '[REDACTED]' });
+    expect(result.error).toBe('');
+    expect(console.error).toHaveBeenCalledExactlyOnceWith('Model API error:', '');
   });
 
   it('preserves successful output and usage without treating completion text as an error', async () => {

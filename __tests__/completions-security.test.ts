@@ -32,11 +32,19 @@ describe('completion stream credential boundaries', () => {
     ['synthetic/+key', 'synthetic%2f%2bkey'],
     ['synthetic/+key', 'synthetic%2F%2bkey'],
     ['synthetic-key', 'synthetic%2Dkey'],
+    ['synthetic/key', String.raw`synthetic\/key`],
+    ['synthetic-key', String.raw`synthetic\u002Dkey`],
     ['synthetic/+key', 'synthetic%2F+key'],
   ])('redacts percent-encoded credentials in SSE errors (%s)', async (key, encoded) => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(`Rejected ${encoded}`, { status: 401 })));
     const received = await events(await handler(request('openai', key)));
     expect(received[1]).toEqual({ type: 'error', message: 'OpenAI API error: 401 Rejected [REDACTED]' });
+  });
+
+  it('keeps an intentionally suppressed marker-collision SSE diagnostic empty', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response('Rejected [REDACTED]', { status: 401 })));
+    const received = await events(await handler(request('openai', '[REDACTED]')));
+    expect(received[1]).toEqual({ type: 'error', message: '' });
   });
 
   it('redacts provider-yielded errors as well as thrown failures', async () => {

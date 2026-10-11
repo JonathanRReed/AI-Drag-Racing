@@ -139,7 +139,7 @@ export default async function handler(req: Request): Promise<Response> {
     } catch (error) {
       // Emit error to client unless already aborted
       if (!aborted) {
-        const message = redactCredentials(error, apiKey) || 'Unknown error';
+        const message = redactCredentials(error, apiKey);
         try { await writeEvent({ type: 'error', message }); } catch {}
       }
     } finally {

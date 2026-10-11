@@ -140,6 +140,49 @@ describe('credential redaction', () => {
       .toBe('Rejected [REDACTED]');
   });
 
+  it.each([
+    ['synthetic/key', String.raw`synthetic\/key`],
+    ['synthetic-key', String.raw`synthetic\u002Dkey`],
+    ['synthetic-key', String.raw`\u0073ynthetic\u002dkey`],
+    ['synthetic/éKey', String.raw`synthetic\/\u00e9Key`],
+    ['synthetic-🔐key', String.raw`synthetic-\uD83D\uDD10key`],
+    ['k', String.raw`\u006b`],
+    ['synthetic"\\key', String.raw`synthetic\u0022\u005ckey`],
+  ])('redacts valid noncanonical JSON escape forms (%s)', (key, encoded) => {
+    expect(redactCredentials(`Rejected ${encoded}; repeated ${encoded}`, key))
+      .toBe('Rejected [REDACTED]; repeated [REDACTED]');
+  });
+
+  it.each([String.raw`\u00GG`, String.raw`\u12`, String.raw`\x73`])('preserves invalid JSON escapes beside valid encoded secrets (%s)', (invalid) => {
+    expect(redactCredentials(`prefix ${invalid}${String.raw`synthetic\u002Dkey`} suffix`, 'synthetic-key'))
+      .toBe(`prefix ${invalid}[REDACTED] suffix`);
+  });
+
+  it('decodes JSON escapes once without treating escaped backslashes as nested escapes', () => {
+    expect(redactCredentials(String.raw`Rejected synthetic\\u002Dkey`, 'synthetic-key'))
+      .toBe(String.raw`Rejected synthetic\\u002Dkey`);
+    expect(redactCredentials(String.raw`Rejected synthetic\\u002Dkey`, String.raw`synthetic\u002Dkey`))
+      .toBe('Rejected [REDACTED]');
+  });
+
+  it('merges JSON-escaped overlapping keys over their original source spans', () => {
+    expect(redactCredentials(String.raw`Rejected synthetic\u002Dkey`, ['synthetic-', 'synthetic-key']))
+      .toBe('Rejected [REDACTED]');
+  });
+
+  it.each(['[REDACTED]', 'R', '[', 'D]'])('suppresses diagnostics when the marker would contain a supplied key (%s)', (key) => {
+    expect(redactCredentials(`Rejected ${key}`, key)).toBe('');
+  });
+
+  it('suppresses a supplied key created across a replacement boundary', () => {
+    expect(redactCredentials('synthetic-tail', ['synthetic', '[REDACTED]-tail'])).toBe('');
+  });
+
+  it('sanitizes the oversized diagnostic fallback with the same key policy', () => {
+    expect(redactCredentials('x'.repeat(16_385), 'Error')).not.toContain('Error');
+    expect(redactCredentials('x'.repeat(16_385), 'R')).toBe('Error details exceeded the diagnostic limit');
+  });
+
   it('redacts multiple explicit keys without exposing the suffix of an overlapping key', () => {
     expect(redactCredentials('short-key and short', ['short', 'short-key']))
       .toBe('[REDACTED] and [REDACTED]');
