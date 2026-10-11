@@ -2,13 +2,14 @@ import { describe, expect, it } from 'vitest';
 import handler from '../pages/api/bedrock-models';
 
 describe('pages/api/bedrock-models', () => {
-  it('rejects disallowed origins with 403', async () => {
+  it('rejects disallowed origins with 403 and includes nosniff header', async () => {
     const req = new Request('https://ai-dragrace.jonathanrreed.com/api/bedrock-models', {
       method: 'POST',
       headers: { Origin: 'https://attacker.example' },
     });
     const res = await handler(req);
     expect(res.status).toBe(403);
+    expect(res.headers.get('X-Content-Type-Options')).toBe('nosniff');
     const body = await res.json();
     expect(body).toEqual({ error: 'Origin not allowed' });
   });
@@ -37,13 +38,14 @@ describe('pages/api/bedrock-models', () => {
     expect(res.headers.get('Access-Control-Allow-Origin')).toBe('https://ai-dragrace.jonathanrreed.com');
   });
 
-  it('rejects non-POST methods for allowed origins with 405', async () => {
+  it('rejects non-POST methods for allowed origins with 405 and includes nosniff header', async () => {
     const req = new Request('https://ai-dragrace.jonathanrreed.com/api/bedrock-models', {
       method: 'GET',
       headers: { Origin: 'https://ai-dragrace.jonathanrreed.com' },
     });
     const res = await handler(req);
     expect(res.status).toBe(405);
+    expect(res.headers.get('X-Content-Type-Options')).toBe('nosniff');
     const body = await res.json();
     expect(body).toEqual({ error: 'Method not allowed' });
   });

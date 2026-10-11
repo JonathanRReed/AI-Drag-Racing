@@ -29,10 +29,34 @@ describe('models proxy error handling', () => {
     const response = await handler(request('openai'));
     expect(fetchMock).toHaveBeenCalledOnce();
     expect(response.status).toBe(200);
+    expect(response.headers.get('X-Content-Type-Options')).toBe('nosniff');
     expect((await response.json()).data.length).toBeGreaterThan(0);
     expect(console.warn).toHaveBeenCalled();
     expect(console.error).not.toHaveBeenCalled();
     expect(vi.mocked(console.warn).mock.calls.flat().join(' ')).not.toContain(PRIVATE_DETAIL);
+  });
+
+  it('rejects disallowed origins with 403 and includes nosniff header', async () => {
+    const req = new Request(ORIGIN + '/api/models', {
+      method: 'POST',
+      headers: { origin: 'https://attacker.example' },
+      body: JSON.stringify({ providerId: 'openai', apiKey: 'synthetic-key' }),
+    });
+    const response = await handler(req);
+    expect(response.status).toBe(403);
+    expect(response.headers.get('X-Content-Type-Options')).toBe('nosniff');
+    expect(await response.json()).toEqual({ data: [], error: 'Origin not allowed' });
+  });
+
+  it('rejects invalid methods with 405 and includes nosniff header', async () => {
+    const req = new Request(ORIGIN + '/api/models', {
+      method: 'GET',
+      headers: { origin: ORIGIN },
+    });
+    const response = await handler(req);
+    expect(response.status).toBe(405);
+    expect(response.headers.get('X-Content-Type-Options')).toBe('nosniff');
+    expect(await response.json()).toEqual({ data: [], error: 'Method not allowed' });
   });
 
   it.each([
