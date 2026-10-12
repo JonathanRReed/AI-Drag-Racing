@@ -1,14 +1,18 @@
 // Lobe icon names, which do not always match Simple Icons or provider API IDs.
-export function providerSlugs(providerId: string): string[] {
-  switch (providerId) {
-    case 'google': return ['gemini', 'google'];
-    case 'azure': return ['azure', 'azureai'];
-    case 'together': return ['together'];
-    case 'fireworks': return ['fireworks'];
-    case 'bedrock': return ['aws', 'bedrock'];
-    case 'xai': return ['xai'];
-    case 'moonshot': return ['moonshot', 'kimi'];
-    case 'zhipu': return ['zhipu', 'chatglm'];
-    default: return [providerId];
-  }
+
+// Bolt optimization: Pre-allocated static slug arrays prevent array allocations
+// during icon slug lookups in provider lists and model selectors.
+const STATIC_PROVIDER_SLUGS: Record<string, readonly string[]> = {
+  google: ['gemini', 'google'],
+  azure: ['azure', 'azureai'],
+  together: ['together'],
+  fireworks: ['fireworks'],
+  bedrock: ['aws', 'bedrock'],
+  xai: ['xai'],
+  moonshot: ['moonshot', 'kimi'],
+  zhipu: ['zhipu', 'chatglm'],
+};
+
+export function providerSlugs(providerId: string): readonly string[] {
+  return STATIC_PROVIDER_SLUGS[providerId] || [providerId];
 }

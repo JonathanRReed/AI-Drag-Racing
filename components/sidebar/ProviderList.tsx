@@ -28,7 +28,7 @@ const ICON_SVG = (slug: string) => `/provider-icons/${slug}.svg`;
 
 // Generic icon component that attempts multiple sources in order
 const IconImg: React.FC<{
-  slugs: string[];
+  slugs: readonly string[];
   className?: string;
   alt?: string;
   title?: string;
@@ -111,39 +111,58 @@ interface ProviderListProps {
   suggestedProvider?: string;
 }
 
+// Bolt optimization: Pre-allocate static brand slug arrays to eliminate per-render
+// array allocations across hundreds of rendered model items.
+const BRAND_SLUGS: Record<string, readonly string[]> = {
+  openai: ['openai'],
+  anthropic: ['anthropic'],
+  gemini: ['gemini', 'google'],
+  mistral: ['mistral'],
+  meta: ['meta'],
+  xai: ['xai'],
+  deepseek: ['deepseek'],
+  cohere: ['cohere'],
+  ai21: ['ai21'],
+  perplexity: ['perplexity'],
+  groq: ['groq'],
+  fireworks: ['fireworks'],
+  awsBedrock: ['aws', 'bedrock'],
+  together: ['together'],
+};
+
 // Map model IDs to brand icon slug candidates (best-effort)
-function brandSlugsForModel(providerId: string, modelId: string): string[] | undefined {
+function brandSlugsForModel(providerId: string, modelId: string): readonly string[] | undefined {
   const id = modelId.toLowerCase();
   // OpenRouter vendor prefix: vendor/model
   if (providerId === 'openrouter') {
     const vendor = id.split('/')[0] || '';
-    if (vendor.includes('openai')) return ['openai'];
-    if (vendor.includes('anthropic')) return ['anthropic'];
-    if (vendor.includes('google')) return ['gemini', 'google'];
-    if (vendor.includes('mistral') || vendor.includes('mistralai')) return ['mistral'];
-    if (vendor.includes('meta') || vendor.includes('llama')) return ['meta'];
-    if (vendor.includes('xai')) return ['xai'];
-    if (vendor.includes('deepseek')) return ['deepseek'];
-    if (vendor.includes('cohere')) return ['cohere'];
-    if (vendor.includes('ai21')) return ['ai21'];
-    if (vendor.includes('perplexity')) return ['perplexity'];
-    if (vendor.includes('groq')) return ['groq'];
-    if (vendor.includes('firework')) return ['fireworks'];
+    if (vendor.includes('openai')) return BRAND_SLUGS.openai;
+    if (vendor.includes('anthropic')) return BRAND_SLUGS.anthropic;
+    if (vendor.includes('google')) return BRAND_SLUGS.gemini;
+    if (vendor.includes('mistral') || vendor.includes('mistralai')) return BRAND_SLUGS.mistral;
+    if (vendor.includes('meta') || vendor.includes('llama')) return BRAND_SLUGS.meta;
+    if (vendor.includes('xai')) return BRAND_SLUGS.xai;
+    if (vendor.includes('deepseek')) return BRAND_SLUGS.deepseek;
+    if (vendor.includes('cohere')) return BRAND_SLUGS.cohere;
+    if (vendor.includes('ai21')) return BRAND_SLUGS.ai21;
+    if (vendor.includes('perplexity')) return BRAND_SLUGS.perplexity;
+    if (vendor.includes('groq')) return BRAND_SLUGS.groq;
+    if (vendor.includes('firework')) return BRAND_SLUGS.fireworks;
     return undefined;
   }
   // Provider-specific heuristics
-  if (providerId === 'google' || id.startsWith('gemini')) return ['gemini', 'google'];
-  if (providerId === 'anthropic' || id.startsWith('claude')) return ['anthropic'];
-  if (providerId === 'openai' || id.startsWith('gpt') || id.includes('o1') || id.includes('4o')) return ['openai'];
-  if (providerId === 'mistral' || id.includes('mistral') || id.includes('mixtral')) return ['mistral'];
-  if (providerId === 'cohere' || id.includes('command')) return ['cohere'];
-  if (providerId === 'groq') return ['groq'];
-  if (providerId === 'ai21' || id.includes('jamba') || id.includes('ai21')) return ['ai21'];
-  if (providerId === 'xai' || id.includes('grok')) return ['xai'];
-  if (providerId === 'deepseek' || id.includes('deepseek')) return ['deepseek'];
-  if (providerId === 'bedrock') return ['aws', 'bedrock'];
-  if (providerId === 'together') return ['together'];
-  if (providerId === 'fireworks') return ['fireworks'];
+  if (providerId === 'google' || id.startsWith('gemini')) return BRAND_SLUGS.gemini;
+  if (providerId === 'anthropic' || id.startsWith('claude')) return BRAND_SLUGS.anthropic;
+  if (providerId === 'openai' || id.startsWith('gpt') || id.includes('o1') || id.includes('4o')) return BRAND_SLUGS.openai;
+  if (providerId === 'mistral' || id.includes('mistral') || id.includes('mixtral')) return BRAND_SLUGS.mistral;
+  if (providerId === 'cohere' || id.includes('command')) return BRAND_SLUGS.cohere;
+  if (providerId === 'groq') return BRAND_SLUGS.groq;
+  if (providerId === 'ai21' || id.includes('jamba') || id.includes('ai21')) return BRAND_SLUGS.ai21;
+  if (providerId === 'xai' || id.includes('grok')) return BRAND_SLUGS.xai;
+  if (providerId === 'deepseek' || id.includes('deepseek')) return BRAND_SLUGS.deepseek;
+  if (providerId === 'bedrock') return BRAND_SLUGS.awsBedrock;
+  if (providerId === 'together') return BRAND_SLUGS.together;
+  if (providerId === 'fireworks') return BRAND_SLUGS.fireworks;
   return undefined;
 }
 
