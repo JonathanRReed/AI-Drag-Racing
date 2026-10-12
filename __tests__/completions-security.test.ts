@@ -23,9 +23,17 @@ describe('completion stream credential boundaries', () => {
     const response = await handler(request('openai', key));
     const received = await events(response);
     expect(response.headers.get('content-type')).toContain('text/event-stream');
+    expect(response.headers.get('x-content-type-options')).toBe('nosniff');
     expect(received).toHaveLength(2);
     expect(received[0].type).toBe('meta');
     expect(received[1]).toEqual({ type: 'error', message: 'OpenAI API error: 401 Rejected [REDACTED]; Bearer [REDACTED]' });
+  });
+
+  it('includes X-Content-Type-Options security header on API responses', async () => {
+    const invalidMethodRequest = new Request('https://ai-dragrace.jonathanrreed.com/api/providers/openai/completions', { method: 'GET' });
+    const response = await handler(invalidMethodRequest);
+    expect(response.status).toBe(405);
+    expect(response.headers.get('x-content-type-options')).toBe('nosniff');
   });
 
   it.each([
