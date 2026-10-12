@@ -359,7 +359,7 @@ const ProviderList: React.FC<ProviderListProps> = ({
                     onChange={(e) => setModelQuery(prev => ({ ...prev, [provider.id]: e.target.value }))}
                     placeholder="Search models"
                     aria-label={`Search models for ${provider.displayName}`}
-                    className="w-full px-2 py-1 text-xs rounded-md bg-zinc-900/60 border border-white/10 focus:border-white/20 outline-hidden text-gray-200 placeholder:text-gray-500"
+                    className="w-full px-2 py-1 text-xs rounded-md bg-zinc-900/60 border border-white/10 focus:border-white/20 outline-hidden text-gray-200 placeholder:text-gray-500 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-cyan-400"
                   />
                 </div>
                 <div className="max-h-60 overflow-auto rounded-md border border-white/10 divide-y divide-white/5 bg-zinc-900/40">
@@ -380,7 +380,7 @@ const ProviderList: React.FC<ProviderListProps> = ({
                         <label key={m} className="flex items-center gap-2 px-2 py-1 text-sm text-gray-200 hover:bg-white/5 cursor-pointer">
                           <input
                             type="checkbox"
-                            className="accent-cyan-400"
+                            className="accent-cyan-400 rounded-xs focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-cyan-400"
                             checked={checked}
                             onChange={(e) => handleToggleModel(provider.id, m, e.target.checked)}
                           />
@@ -396,7 +396,7 @@ const ProviderList: React.FC<ProviderListProps> = ({
                   <label className="flex items-center gap-2 text-xs text-gray-300 cursor-pointer">
                     <input
                       type="checkbox"
-                      className="accent-cyan-400"
+                      className="accent-cyan-400 rounded-xs focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-cyan-400"
                       checked={enabledByProvider[provider.id] ?? true}
                       onChange={(e) => handleToggleEnabled(provider.id, e.target.checked)}
                     />
