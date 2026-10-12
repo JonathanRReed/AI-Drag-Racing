@@ -1,14 +1,30 @@
 // Lobe icon names, which do not always match Simple Icons or provider API IDs.
-export function providerSlugs(providerId: string): string[] {
-  switch (providerId) {
-    case 'google': return ['gemini', 'google'];
-    case 'azure': return ['azure', 'azureai'];
-    case 'together': return ['together'];
-    case 'fireworks': return ['fireworks'];
-    case 'bedrock': return ['aws', 'bedrock'];
-    case 'xai': return ['xai'];
-    case 'moonshot': return ['moonshot', 'kimi'];
-    case 'zhipu': return ['zhipu', 'chatglm'];
-    default: return [providerId];
-  }
+
+// Known providers share immutable slug candidates across icon renders.
+// Unknown IDs retain the original one-element fallback without being cached.
+const STATIC_PROVIDER_SLUGS: Record<string, readonly string[]> = {
+  openai: ['openai'],
+  groq: ['groq'],
+  anthropic: ['anthropic'],
+  openrouter: ['openrouter'],
+  cohere: ['cohere'],
+  mistral: ['mistral'],
+  perplexity: ['perplexity'],
+  deepseek: ['deepseek'],
+  ai21: ['ai21'],
+  cerebras: ['cerebras'],
+  google: ['gemini', 'google'],
+  azure: ['azure', 'azureai'],
+  together: ['together'],
+  fireworks: ['fireworks'],
+  bedrock: ['aws', 'bedrock'],
+  xai: ['xai'],
+  moonshot: ['moonshot', 'kimi'],
+  zhipu: ['zhipu', 'chatglm'],
+};
+
+export function providerSlugs(providerId: string): readonly string[] {
+  return Object.hasOwn(STATIC_PROVIDER_SLUGS, providerId)
+    ? STATIC_PROVIDER_SLUGS[providerId]
+    : [providerId];
 }
