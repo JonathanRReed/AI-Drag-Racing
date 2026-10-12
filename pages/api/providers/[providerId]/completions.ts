@@ -29,7 +29,7 @@ export default async function handler(req: Request): Promise<Response> {
   if (!corsHeaders) {
     return new Response(JSON.stringify({ error: 'Origin not allowed' }), {
       status: 403,
-      headers: { 'Content-Type': 'application/json', 'Vary': 'Origin' },
+      headers: { 'Content-Type': 'application/json', 'X-Content-Type-Options': 'nosniff', 'Vary': 'Origin' },
     });
   }
 
@@ -40,7 +40,7 @@ export default async function handler(req: Request): Promise<Response> {
   if (req.method !== 'POST') {
     return new Response(JSON.stringify({ error: 'Method not allowed' }), {
       status: 405,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      headers: { ...corsHeaders, 'Content-Type': 'application/json', 'X-Content-Type-Options': 'nosniff' },
     });
   }
 
@@ -51,7 +51,7 @@ export default async function handler(req: Request): Promise<Response> {
   if (!providerId) {
     return new Response(JSON.stringify({ error: 'Invalid provider ID' }), {
       status: 400,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      headers: { ...corsHeaders, 'Content-Type': 'application/json', 'X-Content-Type-Options': 'nosniff' },
     });
   }
 
@@ -59,7 +59,7 @@ export default async function handler(req: Request): Promise<Response> {
   if (!parsedBody.ok) {
     return new Response(JSON.stringify({ error: parsedBody.error }), {
       status: parsedBody.status,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      headers: { ...corsHeaders, 'Content-Type': 'application/json', 'X-Content-Type-Options': 'nosniff' },
     });
   }
 
@@ -67,7 +67,7 @@ export default async function handler(req: Request): Promise<Response> {
   if (!validation.ok) {
     return new Response(JSON.stringify({ error: validation.error }), {
       status: 400,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      headers: { ...corsHeaders, 'Content-Type': 'application/json', 'X-Content-Type-Options': 'nosniff' },
     });
   }
   const { prompt, model, apiKey, settings } = validation.value;
@@ -87,7 +87,7 @@ export default async function handler(req: Request): Promise<Response> {
   if (!providerService) {
     return new Response(JSON.stringify({ error: `Provider '${providerId}' not found` }), {
       status: 404,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      headers: { ...corsHeaders, 'Content-Type': 'application/json', 'X-Content-Type-Options': 'nosniff' },
     });
   }
 
@@ -154,6 +154,7 @@ export default async function handler(req: Request): Promise<Response> {
       'Cache-Control': 'no-store, no-transform',
       'Connection': 'keep-alive',
       'X-Accel-Buffering': 'no',
+      'X-Content-Type-Options': 'nosniff',
       ...corsHeaders,
     },
   });
