@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import handler from '../pages/api/bedrock-models';
 
 describe('pages/api/bedrock-models', () => {
@@ -62,5 +62,31 @@ describe('pages/api/bedrock-models', () => {
     const body = await res.json();
     expect(Array.isArray(body.models)).toBe(true);
     expect(body.models.length).toBeGreaterThan(0);
+  });
+
+  it('redacts sensitive details from errors in catch block', async () => {
+    const req = new Request('https://ai-dragrace.jonathanrreed.com/api/bedrock-models', {
+      method: 'POST',
+      headers: { Origin: 'https://ai-dragrace.jonathanrreed.com' },
+    });
+    const originalStringify = JSON.stringify;
+    let calls = 0;
+    vi.spyOn(JSON, 'stringify').mockImplementation((val, replacer, space) => {
+      calls++;
+      if (calls === 1) {
+        throw new Error('Failed with secret sk-1234567890abcdef1234567890abcdef');
+      }
+      return originalStringify(val, replacer as any, space);
+    });
+
+    try {
+      const res = await handler(req);
+      expect(res.status).toBe(500);
+      expect(res.headers.get('X-Content-Type-Options')).toBe('nosniff');
+      const body = await res.json();
+      expect(body.error).toBe('Failed with secret [REDACTED]');
+    } finally {
+      vi.restoreAllMocks();
+    }
   });
 });
