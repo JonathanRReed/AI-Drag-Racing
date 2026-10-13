@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import type { RaceReceipt } from '../../utils/raceReceipts';
 import { serializeSanitizedReceipt } from '../../utils/raceReceipts';
 import { createRaceShare, isRaceShareConfigured } from '../../utils/raceShares';
@@ -42,15 +42,27 @@ export default function RaceHistory({
   const [shareState, setShareState] = useState<Record<string, 'sharing' | 'copied' | 'ready' | 'error'>>({});
   const [shareLinks, setShareLinks] = useState<Record<string, { url: string; expiresAt: string }>>({});
   const [exportedState, setExportedState] = useState<Record<string, boolean>>({});
+  const exportTimers = useRef(new Map<string, ReturnType<typeof setTimeout>>());
+
+  useEffect(() => {
+    const timers = exportTimers.current;
+    return () => {
+      timers.forEach((timer) => clearTimeout(timer));
+      timers.clear();
+    };
+  }, []);
 
   if (!receipts.length) return null;
 
   const handleExport = (receipt: RaceReceipt) => {
     downloadReceipt(receipt);
+    const previousTimer = exportTimers.current.get(receipt.id);
+    if (previousTimer !== undefined) clearTimeout(previousTimer);
     setExportedState((current) => ({ ...current, [receipt.id]: true }));
-    setTimeout(() => {
+    exportTimers.current.set(receipt.id, setTimeout(() => {
       setExportedState((current) => ({ ...current, [receipt.id]: false }));
-    }, 2000);
+      exportTimers.current.delete(receipt.id);
+    }, 2000));
   };
 
   const shareReceipt = async (receipt: RaceReceipt) => {
@@ -102,6 +114,14 @@ export default function RaceHistory({
         {receipts.map((receipt) => {
           const leader = fastestLane(receipt);
           const formattedDate = new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(receipt.createdAt));
+          const exportLabel = exportedState[receipt.id] ? 'Exported ✓' : 'Export JSON';
+          const shareLabel = shareState[receipt.id] === 'sharing'
+            ? 'Creating link…'
+            : shareState[receipt.id] === 'copied'
+              ? 'Link copied'
+              : shareState[receipt.id] === 'error'
+                ? 'Retry share'
+                : shareLinks[receipt.id] ? 'Copy share link' : 'Share for 30 days';
           return (
             <article key={receipt.id} className="race-history-row">
               <time dateTime={receipt.createdAt}>
@@ -117,24 +137,21 @@ export default function RaceHistory({
                 <button
                   type="button"
                   onClick={() => handleExport(receipt)}
-                  aria-label={`Export JSON receipt for race on ${formattedDate}`}
+                  aria-label={`${exportLabel} receipt for race on ${formattedDate}`}
                 >
-                  {exportedState[receipt.id] ? 'Exported ✓' : 'Export JSON'}
+                  {exportLabel}
                 </button>
+                <span className="sr-only" role="status">
+                  {exportedState[receipt.id] ? `Exported JSON receipt for race on ${formattedDate}.` : ''}
+                </span>
                 {isRaceShareConfigured() && (
                   <button
                     type="button"
                     disabled={shareState[receipt.id] === 'sharing'}
                     onClick={() => void shareReceipt(receipt)}
-                    aria-label={`Share receipt for race on ${formattedDate}`}
+                    aria-label={`${shareLabel} for race on ${formattedDate}`}
                   >
-                    {shareState[receipt.id] === 'sharing'
-                      ? 'Creating link…'
-                      : shareState[receipt.id] === 'copied'
-                        ? 'Link copied'
-                        : shareState[receipt.id] === 'error'
-                          ? 'Retry share'
-                          : shareLinks[receipt.id] ? 'Copy share link' : 'Share for 30 days'}
+                    {shareLabel}
                   </button>
                 )}
                 <button
