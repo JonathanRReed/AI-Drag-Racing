@@ -1,7 +1,7 @@
 // pages/api/bedrock-models.ts
 export const config = { runtime: 'edge' };
 
-import { corsHeadersForRequest } from '../../utils/requestSecurity';
+import { corsHeadersForRequest, redactCredentials } from '../../utils/requestSecurity';
 
 // Edge-friendly static list of common Bedrock text models.
 const STATIC_BEDROCK_MODELS: string[] = [
@@ -41,8 +41,9 @@ export default async function handler(req: Request): Promise<Response> {
       status: 200,
       headers: { ...corsHeaders, 'Content-Type': 'application/json', 'X-Content-Type-Options': 'nosniff' },
     });
-  } catch (e: any) {
-    return new Response(JSON.stringify({ error: e?.message || 'Failed to list Bedrock models' }), {
+  } catch (e: unknown) {
+    const safeError = redactCredentials(e) || 'Failed to list Bedrock models';
+    return new Response(JSON.stringify({ error: safeError }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json', 'X-Content-Type-Options': 'nosniff' },
     });
