@@ -25,6 +25,52 @@ describe('prompt character counter', () => {
     expect(measurePromptCharacters('🇺🇸')).toEqual({ count: 2, label: '2 code points', shortUnit: 'code point' });
   });
 
+  it('reuses one segmenter across different prompts', () => {
+    const NativeSegmenter = Intl.Segmenter;
+    const Segmenter = vi.fn(function (...args: ConstructorParameters<typeof Intl.Segmenter>) {
+      return new NativeSegmenter(...args);
+    });
+    vi.stubGlobal('Intl', { Segmenter });
+
+    expect(measurePromptCharacters('A🤖').count).toBe(2);
+    expect(measurePromptCharacters('e\u0301 🇺🇸').count).toBe(3);
+    expect(measurePromptCharacters('').count).toBe(0);
+    expect(Segmenter).toHaveBeenCalledExactlyOnceWith(undefined, { granularity: 'grapheme' });
+  });
+
+  it('constructs a fresh segmenter after its constructor is replaced', () => {
+    const NativeSegmenter = Intl.Segmenter;
+    const firstConstructor = vi.fn(function (...args: ConstructorParameters<typeof Intl.Segmenter>) {
+      return new NativeSegmenter(...args);
+    });
+    vi.stubGlobal('Intl', { Segmenter: firstConstructor });
+    expect(measurePromptCharacters('🤖').count).toBe(1);
+
+    const replacementConstructor = vi.fn(function (...args: ConstructorParameters<typeof Intl.Segmenter>) {
+      return new NativeSegmenter(...args);
+    });
+    vi.stubGlobal('Intl', { Segmenter: replacementConstructor });
+    expect(measurePromptCharacters('🇺🇸').count).toBe(1);
+    expect(measurePromptCharacters('e\u0301').count).toBe(1);
+    expect(firstConstructor).toHaveBeenCalledTimes(1);
+    expect(replacementConstructor).toHaveBeenCalledExactlyOnceWith(undefined, { granularity: 'grapheme' });
+  });
+
+  it('uses code points when segmentation becomes unavailable after caching', () => {
+    const NativeSegmenter = Intl.Segmenter;
+    const Segmenter = vi.fn(function (...args: ConstructorParameters<typeof Intl.Segmenter>) {
+      return new NativeSegmenter(...args);
+    });
+    vi.stubGlobal('Intl', { Segmenter });
+    expect(measurePromptCharacters('🇺🇸')).toEqual({ count: 1, label: '1 character', shortUnit: 'char' });
+
+    vi.stubGlobal('Intl', { Segmenter: undefined });
+    expect(measurePromptCharacters('🇺🇸')).toEqual({ count: 2, label: '2 code points', shortUnit: 'code point' });
+    vi.stubGlobal('Intl', undefined);
+    expect(measurePromptCharacters('e\u0301')).toEqual({ count: 2, label: '2 code points', shortUnit: 'code point' });
+    expect(Segmenter).toHaveBeenCalledTimes(1);
+  });
+
   it('defers browser-dependent counter markup until hydration', () => {
     const html = renderToStaticMarkup(
       <PromptInput prompt="A normal prompt" onPromptChange={() => {}} onSubmit={() => {}} isLoading={false} />
