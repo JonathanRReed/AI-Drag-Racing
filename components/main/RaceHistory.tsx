@@ -41,7 +41,17 @@ export default function RaceHistory({
 }) {
   const [shareState, setShareState] = useState<Record<string, 'sharing' | 'copied' | 'ready' | 'error'>>({});
   const [shareLinks, setShareLinks] = useState<Record<string, { url: string; expiresAt: string }>>({});
+  const [exportedState, setExportedState] = useState<Record<string, boolean>>({});
+
   if (!receipts.length) return null;
+
+  const handleExport = (receipt: RaceReceipt) => {
+    downloadReceipt(receipt);
+    setExportedState((current) => ({ ...current, [receipt.id]: true }));
+    setTimeout(() => {
+      setExportedState((current) => ({ ...current, [receipt.id]: false }));
+    }, 2000);
+  };
 
   const shareReceipt = async (receipt: RaceReceipt) => {
     setShareState((current) => ({ ...current, [receipt.id]: 'sharing' }));
@@ -91,10 +101,11 @@ export default function RaceHistory({
       <div className="race-history-list">
         {receipts.map((receipt) => {
           const leader = fastestLane(receipt);
+          const formattedDate = new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(receipt.createdAt));
           return (
             <article key={receipt.id} className="race-history-row">
               <time dateTime={receipt.createdAt}>
-                {new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(receipt.createdAt))}
+                {formattedDate}
               </time>
               <div>
                 <strong>{leader ? leader.modelId : 'No completed lane'}</strong>
@@ -103,12 +114,19 @@ export default function RaceHistory({
                 </span>
               </div>
               <div className="race-history-actions">
-                <button type="button" onClick={() => downloadReceipt(receipt)}>Export JSON</button>
+                <button
+                  type="button"
+                  onClick={() => handleExport(receipt)}
+                  aria-label={`Export JSON receipt for race on ${formattedDate}`}
+                >
+                  {exportedState[receipt.id] ? 'Exported ✓' : 'Export JSON'}
+                </button>
                 {isRaceShareConfigured() && (
                   <button
                     type="button"
                     disabled={shareState[receipt.id] === 'sharing'}
                     onClick={() => void shareReceipt(receipt)}
+                    aria-label={`Share receipt for race on ${formattedDate}`}
                   >
                     {shareState[receipt.id] === 'sharing'
                       ? 'Creating link…'
@@ -119,7 +137,13 @@ export default function RaceHistory({
                           : shareLinks[receipt.id] ? 'Copy share link' : 'Share for 30 days'}
                   </button>
                 )}
-                <button type="button" onClick={() => onDelete(receipt.id)}>Delete local record</button>
+                <button
+                  type="button"
+                  onClick={() => onDelete(receipt.id)}
+                  aria-label={`Delete local record for race on ${formattedDate}`}
+                >
+                  Delete local record
+                </button>
               </div>
               {shareLinks[receipt.id] && (
                 <div className="race-share-result">
