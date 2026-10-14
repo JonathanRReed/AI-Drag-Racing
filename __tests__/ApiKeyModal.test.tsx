@@ -66,12 +66,16 @@ describe('API key dialog', () => {
     expect(onClose).toHaveBeenCalledTimes(1);
   });
 
-  it('resets visibility after closing and reopening the same component', () => {
+  it('resets visibility and clears input value after closing and reopening the same component', () => {
     const { onSave, onClose } = setup();
+    const input = view.container.querySelector('input')!;
+    inputValue(input, 'secret-key');
     click(button('Show API key'));
     view.rerender(<ApiKeyModal isOpen={false} onSave={onSave} onClose={onClose} providerName="OpenAI" />);
     view.rerender(<ApiKeyModal isOpen onSave={onSave} onClose={onClose} providerName="OpenAI" />);
-    expect(view.container.querySelector('input')!.type).toBe('password');
+    const reopenedInput = view.container.querySelector('input')!;
+    expect(reopenedInput.type).toBe('password');
+    expect(reopenedInput.value).toBe('');
     expect(button('Show API key').getAttribute('aria-pressed')).toBe('false');
   });
 
