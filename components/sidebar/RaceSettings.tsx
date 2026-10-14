@@ -113,7 +113,7 @@ const RaceSettings: React.FC<RaceSettingsProps> = ({ config, onChange, selectedP
         onClick={() => setExpanded(!expanded)}
         aria-expanded={expanded}
         aria-controls="race-settings-content"
-        className="w-full flex items-center justify-between text-left"
+        className="w-full flex items-center justify-between text-left focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-emerald-400 rounded-md p-1 -m-1"
       >
         <div className="flex items-center gap-2">
           <div className="w-6 h-6 rounded-md bg-emerald-500/10 flex items-center justify-center ring-1 ring-emerald-400/25">
@@ -158,7 +158,7 @@ const RaceSettings: React.FC<RaceSettingsProps> = ({ config, onChange, selectedP
                     role="radio"
                     aria-checked={isSelected}
                     onClick={() => updateMode(mode.id)}
-                    className={`p-2.5 rounded-lg border text-left transition-all ${isSelected
+                    className={`p-2.5 rounded-lg border text-left transition-all focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-emerald-400 ${isSelected
                       ? 'bg-[var(--signal-soft)] border-[var(--signal)]'
                       : 'bg-white/5 border-white/10 hover:bg-white/10'
                       }`}
@@ -352,7 +352,7 @@ const RaceSettings: React.FC<RaceSettingsProps> = ({ config, onChange, selectedP
                           ...config,
                           modelSettings: { ...config.modelSettings, reasoningEffort: level }
                         })}
-                        className={`flex items-center justify-center gap-1.5 px-2 py-2 rounded-lg text-xs border transition-all duration-150 ${
+                        className={`flex items-center justify-center gap-1.5 px-2 py-2 rounded-lg text-xs border transition-all duration-150 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-cyan-400 ${
                           isSelected
                             ? 'bg-cyan-500/20 border-cyan-500/50 text-cyan-300'
                             : 'bg-zinc-900/40 border-white/10 text-gray-400 hover:bg-white/5 hover:border-white/15'
@@ -409,7 +409,7 @@ const RaceSettings: React.FC<RaceSettingsProps> = ({ config, onChange, selectedP
                                   : [...currentExcluded, p.modelId];
                                 onChange({ ...config, excludedReasoningModels: newExcluded });
                               }}
-                              className="flex shrink-0 items-center justify-center min-h-[var(--control-h)] min-w-[var(--control-h)]"
+                              className="flex shrink-0 items-center justify-center min-h-[var(--control-h)] min-w-[var(--control-h)] focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-cyan-400 rounded-md"
                               aria-label={`Reasoning effort for ${p.modelId}`}
                             >
                               <span
