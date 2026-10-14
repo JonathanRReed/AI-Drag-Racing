@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "license": "SEE LICENSE IN LICENSE",
   "private": true,
-  "packageManager": "bun@1.4.0",
+  "packageManager": "bun@1.4.3",
   "scripts": {
     "dev": "next dev",
     "build": "bun run build:theme && bun scripts/verify-react-runtime.mjs && next build",
@@ -11,6 +11,8 @@
     "start": "next start",
     "lint": "eslint . --ext .js,.cjs,.mjs,.jsx,.ts,.tsx",
     "lint:fix": "eslint . --ext .js,.cjs,.mjs,.jsx,.ts,.tsx --fix",
+    "typecheck": "bun --check",
+    "typecheck:tsc": "tsc --noEmit",
     "test": "vitest run",
     "audit:dependencies": "bun scripts/dependency-audit.cjs audit",
     "build:pages": "bun run build:theme && bun scripts/verify-share-config.mjs && bun run audit:dependencies && bun scripts/dependency-audit.cjs prepare && node --require ./scripts/record-adapter-runtime.cjs ./node_modules/@cloudflare/next-on-pages/bin/index.js && bun scripts/patch-routes.js && bun scripts/dependency-audit.cjs verify",
