@@ -216,7 +216,7 @@ const RaceLane: React.FC<RaceLaneProps> = ({
                 <StatusBadge status={status} />
                 <button
                   onClick={() => setExpanded((v) => !v)}
-                  className="inline-flex min-h-[var(--control-h)] min-w-[var(--control-h)] items-center justify-center rounded-sm bg-white/5 hover:bg-white/10 text-[var(--text-muted)] hover:text-white transition-colors"
+                  className="inline-flex min-h-[var(--control-h)] min-w-[var(--control-h)] items-center justify-center rounded-sm bg-white/5 hover:bg-white/10 text-[var(--text-muted)] hover:text-white transition-colors focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-cyan-400"
                   aria-expanded={expanded}
                   aria-label={`${expanded ? 'Collapse' : 'Expand'} ${displayName} response`}
                   title={expanded ? 'Collapse' : 'Expand'}
