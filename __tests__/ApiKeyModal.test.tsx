@@ -19,6 +19,8 @@ const button = (label: string) => {
   return result!;
 };
 const saveButton = () => Array.from(view.container.querySelectorAll('button')).find(b => b.textContent === 'Save Key')!;
+const cancelButton = () => Array.from(view.container.querySelectorAll('button')).find(b => b.textContent === 'Cancel')!;
+const SYNTHETIC_KEY = 'sk-synth-test-key-001';
 
 describe('API key dialog', () => {
   it('links the privacy description and labels every non-submit button', () => {
@@ -58,20 +60,63 @@ describe('API key dialog', () => {
     expect(onClose).not.toHaveBeenCalled();
   });
 
-  it('saves a trimmed key once and closes', () => {
-    const { input, onSave, onClose } = setup();
-    inputValue(input, '  test-key  ');
+  it('saves a trimmed key once, closes, and clears/hides input while parent stays mounted', () => {
+    // Parent keeps isOpen true after onClose so only the save-path reset clears UI state.
+    const onSave = vi.fn();
+    const onClose = vi.fn();
+    view = mount(<ApiKeyModal isOpen onSave={onSave} onClose={onClose} providerName="OpenAI" />);
+    const input = view.container.querySelector('input')!;
+    inputValue(input, `  ${SYNTHETIC_KEY}  `);
+    click(button('Show API key'));
+    expect(input.type).toBe('text');
+    expect(input.value).toBe(`  ${SYNTHETIC_KEY}  `);
+    expect(button('Hide API key').getAttribute('aria-pressed')).toBe('true');
     click(saveButton());
-    expect(onSave).toHaveBeenCalledExactlyOnceWith('test-key');
+    expect(onSave).toHaveBeenCalledExactlyOnceWith(SYNTHETIC_KEY);
     expect(onClose).toHaveBeenCalledTimes(1);
+    // Dialog still mounted (parent did not flip isOpen). Assert component-state/UI cleanup.
+    expect(view.container.querySelector('[role="dialog"]'), 'dialog still mounted').not.toBeNull();
+    const after = view.container.querySelector('input')!;
+    expect(after.value).toBe('');
+    expect(after.type).toBe('password');
+    expect(button('Show API key').getAttribute('aria-pressed')).toBe('false');
   });
 
-  it('resets visibility after closing and reopening the same component', () => {
+  it('resets visibility and clears input value after closing and reopening the same component', () => {
     const { onSave, onClose } = setup();
+    const input = view.container.querySelector('input')!;
+    inputValue(input, 'secret-key');
     click(button('Show API key'));
     view.rerender(<ApiKeyModal isOpen={false} onSave={onSave} onClose={onClose} providerName="OpenAI" />);
+    expect(view.container.querySelector('[role="dialog"]')).toBeNull();
     view.rerender(<ApiKeyModal isOpen onSave={onSave} onClose={onClose} providerName="OpenAI" />);
-    expect(view.container.querySelector('input')!.type).toBe('password');
+    const reopenedInput = view.container.querySelector('input')!;
+    expect(reopenedInput.type).toBe('password');
+    expect(reopenedInput.value).toBe('');
+    expect(button('Show API key').getAttribute('aria-pressed')).toBe('false');
+  });
+
+  it('clears and hides after Cancel then reopen when parent stays mounted', () => {
+    function Harness() {
+      const [open, setOpen] = useState(true);
+      return (
+        <>
+          <button type="button" onClick={() => setOpen(true)}>Open</button>
+          <ApiKeyModal isOpen={open} onSave={() => {}} onClose={() => setOpen(false)} providerName="OpenAI" />
+        </>
+      );
+    }
+    view = mount(<Harness />);
+    const input = view.container.querySelector('input')!;
+    inputValue(input, SYNTHETIC_KEY);
+    click(button('Show API key'));
+    expect(input.type).toBe('text');
+    click(cancelButton());
+    expect(view.container.querySelector('[role="dialog"]')).toBeNull();
+    click(view.container.querySelector('button')!);
+    const reopened = view.container.querySelector('input')!;
+    expect(reopened.value).toBe('');
+    expect(reopened.type).toBe('password');
     expect(button('Show API key').getAttribute('aria-pressed')).toBe('false');
   });
 
@@ -92,8 +137,17 @@ describe('API key dialog', () => {
     expect(document.activeElement).toBe(cancel);
     key(cancel, 'Tab');
     expect(document.activeElement).toBe(first);
+    const input = view.container.querySelector('input')!;
+    inputValue(input, SYNTHETIC_KEY);
+    click(button('Show API key'));
     key(first, 'Escape');
     expect(view.container.querySelector('[role="dialog"]')).toBeNull();
     expect(document.activeElement).toBe(opener);
+    click(opener);
+    const reopened = view.container.querySelector('input')!;
+    expect(reopened.value).toBe('');
+    expect(reopened.type).toBe('password');
+    expect(button('Show API key').getAttribute('aria-pressed')).toBe('false');
+    expect(document.activeElement).toBe(reopened);
   });
 });

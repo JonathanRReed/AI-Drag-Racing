@@ -29,11 +29,12 @@ const ApiKeyModal: React.FC<ApiKeyModalProps> = ({
   const inputRef = useRef<HTMLInputElement | null>(null);
   const returnFocusRef = useRef<HTMLElement | null>(null);
 
-  // Remember the control that opened the dialog, move focus to the key input,
-  // and hand focus back to that control when the dialog goes away.
+  // Security hygiene: Reset input state whenever the modal opens or closes to
+  // prevent sensitive API key strings from lingering in component React state/DOM.
   useEffect(() => {
-    if (!isOpen) return;
+    setApiKey('');
     setShowKey(false);
+    if (!isOpen) return;
     returnFocusRef.current = document.activeElement as HTMLElement | null;
     inputRef.current?.focus();
     return () => {
@@ -52,6 +53,9 @@ const ApiKeyModal: React.FC<ApiKeyModalProps> = ({
     const trimmed = apiKey.trim();
     if (!trimmed) return;
     onSave(trimmed);
+    // Immediately clear sensitive key from local component state after saving.
+    setApiKey('');
+    setShowKey(false);
     onClose();
   };
 
