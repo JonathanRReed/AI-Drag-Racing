@@ -466,4 +466,4 @@ const ProviderList: React.FC<ProviderListProps> = ({
   );
 };
 
-export default ProviderList;
+export default React.memo(ProviderList);
