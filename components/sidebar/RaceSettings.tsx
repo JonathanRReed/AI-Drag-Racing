@@ -409,7 +409,7 @@ const RaceSettings: React.FC<RaceSettingsProps> = ({ config, onChange, selectedP
                                   : [...currentExcluded, p.modelId];
                                 onChange({ ...config, excludedReasoningModels: newExcluded });
                               }}
-                              className="flex shrink-0 items-center justify-center min-h-[var(--control-h)] min-w-[var(--control-h)] focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-cyan-400 rounded-md"
+                              className="flex shrink-0 items-center justify-center min-h-[var(--control-h)] min-w-[var(--control-h)] focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-cyan-400 rounded-md"
                               aria-label={`Reasoning effort for ${p.modelId}`}
                             >
                               <span
