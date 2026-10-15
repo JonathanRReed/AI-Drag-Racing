@@ -12,6 +12,7 @@
     "lint": "eslint . --ext .js,.cjs,.mjs,.jsx,.ts,.tsx",
     "lint:fix": "eslint . --ext .js,.cjs,.mjs,.jsx,.ts,.tsx --fix",
     "typecheck": "node scripts/bun-check.mjs",
+    "test:bun-check": "node --test scripts/bun-check-regression.mjs",
     "typecheck:tsc": "tsc --noEmit",
     "test": "vitest run",
     "audit:dependencies": "bun scripts/dependency-audit.cjs audit",
