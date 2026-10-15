@@ -79,4 +79,15 @@ describe('provider picker', () => {
     await act(async () => { retry!.click(); await Promise.resolve(); });
     expect(fetchModels).toHaveBeenCalledExactlyOnceWith('openai', 'synthetic-key');
   });
+
+  it('includes accessible aria-label on enable checkbox and decorative attributes on model icons', () => {
+    view = mount(<ProviderList apiKeys={{ openai: 'synthetic-key' }} dispatch={vi.fn()} selectedPairs={[]} />);
+    const enableCheckbox = view.container.querySelector<HTMLInputElement>('input[aria-label="Enable OpenAI for race"]');
+    expect(enableCheckbox).not.toBeNull();
+
+    const modelIcon = view.container.querySelector<HTMLImageElement>('label img');
+    expect(modelIcon).not.toBeNull();
+    expect(modelIcon!.getAttribute('alt')).toBe('');
+    expect(modelIcon!.getAttribute('aria-hidden')).toBe('true');
+  });
 });

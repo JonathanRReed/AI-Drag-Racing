@@ -35,7 +35,8 @@ const IconImg: React.FC<{
   width?: number;
   height?: number;
   fallback?: React.ReactNode;
-}> = ({ slugs, className, alt = 'icon', title, width = 20, height = 20, fallback }) => {
+  'aria-hidden'?: boolean | 'true' | 'false';
+}> = ({ slugs, className, alt = 'icon', title, width = 20, height = 20, fallback, 'aria-hidden': ariaHidden }) => {
   const [index, setIndex] = useState(0);
   const sources = useMemo(() => {
     return slugs.map(ICON_SVG);
@@ -51,6 +52,7 @@ const IconImg: React.FC<{
       height={height}
       className={className}
       loading="eager"
+      aria-hidden={ariaHidden}
       onError={() => setIndex((i) => i + 1)}
     />
   );
@@ -403,7 +405,7 @@ const ProviderList: React.FC<ProviderListProps> = ({
                             checked={checked}
                             onChange={(e) => handleToggleModel(provider.id, m, e.target.checked)}
                           />
-                          <IconImg slugs={slugs} alt="brand" width={14} height={14} className="w-3.5 h-3.5 rounded-xs opacity-80" />
+                          <IconImg slugs={slugs} alt="" aria-hidden="true" width={14} height={14} className="w-3.5 h-3.5 rounded-xs opacity-80" />
                           <span className="min-w-0 break-all leading-5" title={m}>{m}</span>
                         </label>
                       );
@@ -418,6 +420,7 @@ const ProviderList: React.FC<ProviderListProps> = ({
                       className="accent-cyan-400 rounded-xs focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-cyan-400"
                       checked={enabledByProvider[provider.id] ?? true}
                       onChange={(e) => handleToggleEnabled(provider.id, e.target.checked)}
+                      aria-label={`Enable ${provider.displayName} for race`}
                     />
                     Enable for race
                   </label>
