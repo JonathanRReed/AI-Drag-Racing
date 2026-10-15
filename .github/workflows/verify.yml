@@ -28,6 +28,8 @@ jobs:
         run: bun run audit:dependencies
       - name: Lint
         run: bun run lint
+      - name: Bun type-check guard tests
+        run: bun run test:bun-check
       - name: Typecheck
         run: bun run typecheck
       - name: Test
