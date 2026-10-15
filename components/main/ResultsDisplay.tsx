@@ -107,4 +107,6 @@ const ResultsDisplay: React.FC<ResultsDisplayProps> = ({ results, hideFailed = f
   );
 };
 
-export default ResultsDisplay;
+// Bolt performance optimization: Wrap ResultsDisplay in React.memo to prevent
+// unnecessary re-renders of the grid layout and container when props (results, hideFailed, force, compact) are unchanged.
+export default React.memo(ResultsDisplay);

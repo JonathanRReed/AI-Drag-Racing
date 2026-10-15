@@ -3,6 +3,7 @@ import React, { act } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import DragStrip from '../components/main/DragStrip';
 import LivePaceChart from '../components/main/LivePaceChart';
+import StandingsTicker from '../components/main/StandingsTicker';
 import { createLaneBuffer, pushChunk } from '../utils/raceBuffers';
 import { mount } from './reactDom';
 
@@ -152,5 +153,31 @@ describe('race animation DOM writes', () => {
     expect(frames.size).toBe(1);
     view.unmount();
     expect(frames.size).toBe(0);
+  });
+
+  it('skips StandingsTicker DOM re-renders when parent re-renders with unchanged props', () => {
+    const buffersRef = { current: { one: createLaneBuffer('one') } };
+    view = mount(
+      <StandingsTicker
+        lanes={lanes}
+        buffersRef={buffersRef}
+        running={true}
+        mode="drag"
+        reducedMotion={true}
+      />
+    );
+    const observer = watch();
+    // Re-render StandingsTicker with identical props (simulating parent state commit)
+    view.rerender(
+      <StandingsTicker
+        lanes={lanes}
+        buffersRef={buffersRef}
+        running={true}
+        mode="drag"
+        reducedMotion={true}
+      />
+    );
+    expect(observer.takeRecords()).toHaveLength(0);
+    observer.disconnect();
   });
 });

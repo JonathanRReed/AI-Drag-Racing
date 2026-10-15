@@ -186,4 +186,7 @@ const StandingsTicker: React.FC<StandingsTickerProps> = ({
   );
 };
 
-export default StandingsTicker;
+// Bolt performance optimization: Wrap StandingsTicker in React.memo to prevent
+// component re-renders and costly FLIP layout measurements (getBoundingClientRect)
+// on high-frequency parent state updates (~11x/s during text streaming) when props are unchanged.
+export default React.memo(StandingsTicker);
