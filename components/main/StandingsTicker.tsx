@@ -147,7 +147,7 @@ const StandingsTicker: React.FC<StandingsTickerProps> = ({
                 <span className="flex items-start gap-1.5 break-words text-sm text-[var(--text)]">
                   {r.label}
                   {r.done && !r.errored && (
-                    <svg viewBox="0 0 24 24" className="h-3 w-3 shrink-0 text-[var(--text-muted)]" fill="currentColor" aria-label="finished">
+                    <svg viewBox="0 0 24 24" className="h-3 w-3 shrink-0 text-[var(--text-muted)]" fill="currentColor" role="img" aria-label="finished">
                       <path d="M5 3v18h2v-7h12V3H5zm2 2h8v3H7V5zm0 5h10v2H7v-2z" />
                     </svg>
                   )}
