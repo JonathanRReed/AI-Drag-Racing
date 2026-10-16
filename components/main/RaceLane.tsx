@@ -75,6 +75,78 @@ const StatusBadge: React.FC<{ status: LaneStatus }> = ({ status }) => {
   );
 };
 
+type CopyFeedback =
+  | { kind: 'idle' }
+  | { kind: 'copied'; text: string }
+  | { kind: 'failed'; text: string; reason: 'unavailable' | 'blocked' };
+
+const COPIED_MS = 2000;
+const FAILED_MS = 4000;
+const IDLE: CopyFeedback = { kind: 'idle' };
+
+/**
+ * Copy feedback describes one snapshot of the response. A newer click, new
+ * streamed text, a new race, or unmount retires every write still pending, so
+ * a late clipboard promise can neither set state nor schedule a timer.
+ */
+function useCopyResponse(text: string) {
+  const [feedback, setFeedback] = useState<CopyFeedback>(IDLE);
+  const attempt = useRef(0);
+  const timer = useRef<number | null>(null);
+
+  const retire = () => {
+    attempt.current += 1;
+    if (timer.current !== null) window.clearTimeout(timer.current);
+    timer.current = null;
+  };
+
+  useEffect(() => {
+    retire();
+    setFeedback(IDLE);
+  }, [text]);
+
+  useEffect(() => retire, []);
+
+  const copy = async () => {
+    if (!text) return;
+    retire();
+    const id = attempt.current;
+    const snapshot = text;
+    setFeedback(IDLE);
+    const settle = (next: CopyFeedback, ms: number) => {
+      if (id !== attempt.current) return;
+      setFeedback(next);
+      timer.current = window.setTimeout(() => {
+        timer.current = null;
+        setFeedback(IDLE);
+      }, ms);
+    };
+    if (typeof navigator.clipboard?.writeText !== 'function') {
+      settle({ kind: 'failed', text: snapshot, reason: 'unavailable' }, FAILED_MS);
+      return;
+    }
+    try {
+      await navigator.clipboard.writeText(snapshot);
+      settle({ kind: 'copied', text: snapshot }, COPIED_MS);
+    } catch {
+      settle({ kind: 'failed', text: snapshot, reason: 'blocked' }, FAILED_MS);
+    }
+  };
+
+  // Until the reset effect runs, never show feedback for text that is no longer displayed.
+  return { feedback: feedback.kind !== 'idle' && feedback.text !== text ? IDLE : feedback, copy };
+}
+
+function copyFeedbackMessage(feedback: CopyFeedback, displayName: string) {
+  if (feedback.kind === 'copied') return `Copied ${displayName} response.`;
+  if (feedback.kind === 'failed') {
+    return feedback.reason === 'unavailable'
+      ? 'Copy failed: clipboard is not available in this browser.'
+      : 'Copy failed: clipboard access was blocked.';
+  }
+  return '';
+}
+
 const RaceLane: React.FC<RaceLaneProps> = ({
   providerName,
   modelName,
@@ -101,28 +173,11 @@ const RaceLane: React.FC<RaceLaneProps> = ({
 
   // Expanded state for the response area
   const [expanded, setExpanded] = useState(initialExpanded);
-  const [copied, setCopied] = useState(false);
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const autoCollapseTimer = useRef<number | null>(null);
-  const copyTimer = useRef<number | null>(null);
 
-  const handleCopy = async () => {
-    if (!responseText) return;
-    try {
-      await navigator.clipboard.writeText(responseText);
-      setCopied(true);
-      if (copyTimer.current) clearTimeout(copyTimer.current);
-      copyTimer.current = window.setTimeout(() => setCopied(false), 2000);
-    } catch {
-      // Fallback or handle error if clipboard access is restricted
-    }
-  };
-
-  useEffect(() => {
-    return () => {
-      if (copyTimer.current) clearTimeout(copyTimer.current);
-    };
-  }, []);
+  const { feedback: copyFeedback, copy } = useCopyResponse(responseText);
+  const copyMessage = copyFeedbackMessage(copyFeedback, displayName);
 
   // Auto-expand when streaming starts, and auto-scroll on new chunks
   useEffect(() => {
@@ -238,12 +293,22 @@ const RaceLane: React.FC<RaceLaneProps> = ({
                   {responseText && (
                     <button
                       type="button"
-                      onClick={() => void handleCopy()}
+                      onClick={() => void copy()}
                       className="inline-flex min-h-[var(--control-h)] min-w-[var(--control-h)] items-center justify-center rounded-sm bg-white/5 hover:bg-white/10 text-[var(--text-muted)] hover:text-white transition-colors focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-cyan-400 p-1"
-                      aria-label={copied ? `Copied ${displayName} response` : `Copy ${displayName} response`}
-                      title={copied ? 'Copied ✓' : 'Copy response'}
+                      aria-label={
+                        copyFeedback.kind === 'copied'
+                          ? `Copied ${displayName} response`
+                          : copyFeedback.kind === 'failed'
+                            ? `Copy failed. Retry copying ${displayName} response`
+                            : `Copy ${displayName} response`
+                      }
+                      title={copyFeedback.kind === 'copied' ? 'Copied ✓' : copyFeedback.kind === 'failed' ? 'Copy failed' : 'Copy response'}
                     >
-                      {copied ? (
+                      {copyFeedback.kind === 'failed' ? (
+                        <svg viewBox="0 0 24 24" className="w-3.5 h-3.5 text-rose-400" fill="none" stroke="currentColor" strokeWidth="2.5" aria-hidden="true">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v5m0 3h.01M10.3 3.9L2.4 18a2 2 0 0 0 1.7 3h15.8a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z" />
+                        </svg>
+                      ) : copyFeedback.kind === 'copied' ? (
                         <svg viewBox="0 0 24 24" className="w-3.5 h-3.5 text-emerald-400" fill="none" stroke="currentColor" strokeWidth="2.5" aria-hidden="true">
                           <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                         </svg>
@@ -276,6 +341,9 @@ const RaceLane: React.FC<RaceLaneProps> = ({
                 </div>
               </div>
             </div>
+            <p role="status" aria-live="polite" className={copyFeedback.kind === 'failed' ? 'mb-2 text-right text-xs text-rose-300' : 'sr-only'}>
+              {copyMessage}
+            </p>
 
             {/* Response streaming area */}
             <div
