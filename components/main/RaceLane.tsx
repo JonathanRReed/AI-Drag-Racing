@@ -101,8 +101,28 @@ const RaceLane: React.FC<RaceLaneProps> = ({
 
   // Expanded state for the response area
   const [expanded, setExpanded] = useState(initialExpanded);
+  const [copied, setCopied] = useState(false);
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const autoCollapseTimer = useRef<number | null>(null);
+  const copyTimer = useRef<number | null>(null);
+
+  const handleCopy = async () => {
+    if (!responseText) return;
+    try {
+      await navigator.clipboard.writeText(responseText);
+      setCopied(true);
+      if (copyTimer.current) clearTimeout(copyTimer.current);
+      copyTimer.current = window.setTimeout(() => setCopied(false), 2000);
+    } catch {
+      // Fallback or handle error if clipboard access is restricted
+    }
+  };
+
+  useEffect(() => {
+    return () => {
+      if (copyTimer.current) clearTimeout(copyTimer.current);
+    };
+  }, []);
 
   // Auto-expand when streaming starts, and auto-scroll on new chunks
   useEffect(() => {
@@ -214,23 +234,46 @@ const RaceLane: React.FC<RaceLaneProps> = ({
               </div>
               <div className="flex flex-col items-end gap-1.5 shrink-0">
                 <StatusBadge status={status} />
-                <button
-                  onClick={() => setExpanded((v) => !v)}
-                  className="inline-flex min-h-[var(--control-h)] min-w-[var(--control-h)] items-center justify-center rounded-sm bg-white/5 hover:bg-white/10 text-[var(--text-muted)] hover:text-white transition-colors focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-cyan-400"
-                  aria-expanded={expanded}
-                  aria-label={`${expanded ? 'Collapse' : 'Expand'} ${displayName} response`}
-                  title={expanded ? 'Collapse' : 'Expand'}
-                >
-                  <svg
-                    viewBox="0 0 24 24"
-                    className={`w-3.5 h-3.5 transition-transform duration-200 ${expanded ? 'rotate-180' : ''}`}
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2.5"
+                <div className="flex items-center gap-1">
+                  {responseText && (
+                    <button
+                      type="button"
+                      onClick={() => void handleCopy()}
+                      className="inline-flex min-h-[var(--control-h)] min-w-[var(--control-h)] items-center justify-center rounded-sm bg-white/5 hover:bg-white/10 text-[var(--text-muted)] hover:text-white transition-colors focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-cyan-400 p-1"
+                      aria-label={copied ? `Copied ${displayName} response` : `Copy ${displayName} response`}
+                      title={copied ? 'Copied ✓' : 'Copy response'}
+                    >
+                      {copied ? (
+                        <svg viewBox="0 0 24 24" className="w-3.5 h-3.5 text-emerald-400" fill="none" stroke="currentColor" strokeWidth="2.5" aria-hidden="true">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                        </svg>
+                      ) : (
+                        <svg viewBox="0 0 24 24" className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+                          <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+                          <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+                        </svg>
+                      )}
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => setExpanded((v) => !v)}
+                    className="inline-flex min-h-[var(--control-h)] min-w-[var(--control-h)] items-center justify-center rounded-sm bg-white/5 hover:bg-white/10 text-[var(--text-muted)] hover:text-white transition-colors focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-cyan-400"
+                    aria-expanded={expanded}
+                    aria-label={`${expanded ? 'Collapse' : 'Expand'} ${displayName} response`}
+                    title={expanded ? 'Collapse' : 'Expand'}
                   >
-                    <path d="M6 9l6 6 6-6" strokeLinecap="round" strokeLinejoin="round" />
-                  </svg>
-                </button>
+                    <svg
+                      viewBox="0 0 24 24"
+                      className={`w-3.5 h-3.5 transition-transform duration-200 ${expanded ? 'rotate-180' : ''}`}
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2.5"
+                    >
+                      <path d="M6 9l6 6 6-6" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                  </button>
+                </div>
               </div>
             </div>
 
