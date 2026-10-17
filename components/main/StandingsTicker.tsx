@@ -94,21 +94,36 @@ const StandingsTicker: React.FC<StandingsTickerProps> = ({
     if (reducedMotion) return;
     const newTops = new Map<string, number>();
     rowRefs.current.forEach((el, id) => newTops.set(id, el.getBoundingClientRect().top));
+
+    // Batch collect shifts to separate DOM reads/writes and avoid interleaved mutations
+    const movedElements: { el: HTMLLIElement; dy: number }[] = [];
     newTops.forEach((top, id) => {
       const prev = prevTops.current.get(id);
       const el = rowRefs.current.get(id);
       if (prev != null && el) {
         const dy = prev - top;
         if (Math.abs(dy) > 0.5) {
-          el.style.transition = 'none';
-          el.style.transform = `translateY(${dy}px)`;
-          requestAnimationFrame(() => {
-            el.style.transition = 'transform 320ms cubic-bezier(0.16, 1, 0.3, 1)';
-            el.style.transform = '';
-          });
+          movedElements.push({ el, dy });
         }
       }
     });
+
+    if (movedElements.length > 0) {
+      // First phase: set initial inverted transforms synchronously without transition
+      movedElements.forEach(({ el, dy }) => {
+        el.style.transition = 'none';
+        el.style.transform = `translateY(${dy}px)`;
+      });
+
+      // Second phase: in next frame, restore transition and clear transform to trigger smooth FLIP animation
+      requestAnimationFrame(() => {
+        movedElements.forEach(({ el }) => {
+          el.style.transition = 'transform 320ms cubic-bezier(0.16, 1, 0.3, 1)';
+          el.style.transform = '';
+        });
+      });
+    }
+
     prevTops.current = newTops;
   }, [rows, reducedMotion]);
 
@@ -186,4 +201,6 @@ const StandingsTicker: React.FC<StandingsTickerProps> = ({
   );
 };
 
-export default StandingsTicker;
+// Bolt optimization: Memoize StandingsTicker to prevent component re-renders
+// during parent state updates when standings props have not changed.
+export default React.memo(StandingsTicker);
