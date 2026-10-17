@@ -84,9 +84,23 @@ const PromptInput: React.FC<PromptInputProps> = ({
         <span className="text-xs text-zinc-600 truncate">Enter starts race. Shift+Enter adds line.</span>
         <div className="flex items-center gap-2 shrink-0">
           {counterReady && prompt.length > 0 && (
-            <span className="text-xs font-mono text-zinc-500" aria-label={counter.label}>
-              {counter.count.toLocaleString()} {counter.shortUnit}{counter.count === 1 ? '' : 's'}
-            </span>
+            <div className="flex items-center gap-1.5">
+              <span className="text-xs font-mono text-zinc-500" aria-label={counter.label}>
+                {counter.count.toLocaleString()} {counter.shortUnit}{counter.count === 1 ? '' : 's'}
+              </span>
+              <button
+                type="button"
+                onClick={() => onPromptChange('')}
+                disabled={isLoading}
+                aria-label="Clear prompt"
+                title="Clear prompt"
+                className="inline-flex items-center justify-center rounded p-0.5 text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-cyan-400 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+              >
+                <svg viewBox="0 0 24 24" className="w-3.5 h-3.5 stroke-current fill-none stroke-2" aria-hidden="true">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
           )}
           <button
             type="button"
