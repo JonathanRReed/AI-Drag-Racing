@@ -186,4 +186,7 @@ const StandingsTicker: React.FC<StandingsTickerProps> = ({
   );
 };
 
-export default StandingsTicker;
+// Bolt optimization: Wrap StandingsTicker in React.memo to prevent unnecessary component tree
+// reconciliations and re-renders during high-frequency parent state dispatches (~11x/sec via COMMIT_TEXT)
+// when StandingsTicker props (lanes, running, mode, reducedMotion, buffersRef) have not changed.
+export default React.memo(StandingsTicker);
