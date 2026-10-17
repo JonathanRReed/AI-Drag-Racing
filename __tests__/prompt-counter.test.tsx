@@ -123,4 +123,20 @@ describe('prompt character counter', () => {
     click(startBtn);
     expect(onSubmit).toHaveBeenCalledTimes(1);
   });
+
+  it('allows clearing prompt with clear button when prompt is not empty and not loading', () => {
+    const onPromptChange = vi.fn();
+    view = mount(<PromptInput prompt="Sample prompt" onPromptChange={onPromptChange} onSubmit={() => {}} isLoading={false} />);
+
+    const clearBtn = view.container.querySelector('button[aria-label="Clear prompt"]') as HTMLButtonElement;
+    expect(clearBtn).not.toBeNull();
+    expect(clearBtn.disabled).toBe(false);
+
+    click(clearBtn);
+    expect(onPromptChange).toHaveBeenCalledWith('');
+
+    view.rerender(<PromptInput prompt="Sample prompt" onPromptChange={onPromptChange} onSubmit={() => {}} isLoading={true} />);
+    const loadingClearBtn = view.container.querySelector('button[aria-label="Clear prompt"]') as HTMLButtonElement;
+    expect(loadingClearBtn.disabled).toBe(true);
+  });
 });
