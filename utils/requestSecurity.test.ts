@@ -232,6 +232,13 @@ describe('credential redaction', () => {
     expect(redactCredentials('', '')).toBe('');
   });
 
+  it('safely ignores non-string key types passed in keysToRedact', () => {
+    expect(redactCredentials('HTTP 401 error', [123 as any, null as any, undefined as any, { key: 'val' } as any]))
+      .toBe('HTTP 401 error');
+    expect(redactCredentials('Rejected secret-key', [123 as any, 'secret-key']))
+      .toBe('Rejected [REDACTED]');
+  });
+
   it('drops oversized diagnostics before collecting matches for short keys', () => {
     expect(redactCredentials('k'.repeat(16_385), 'k')).toBe('Error details exceeded the diagnostic limit');
   });
