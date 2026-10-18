@@ -145,8 +145,14 @@ export const PROVIDERS: ProviderConfig[] = [
   },
 ];
 
+// Fast O(1) lookup map to eliminate repeated linear array scans during high-frequency
+// streaming dispatch and multi-lane component rendering loops.
+const PROVIDER_MAP = new Map<string, ProviderConfig>(
+  PROVIDERS.map((p) => [p.id, p])
+);
+
 export function getProviderById(id: string): ProviderConfig | undefined {
-  return PROVIDERS.find(p => p.id === id);
+  return PROVIDER_MAP.get(id);
 }
 
 /**
