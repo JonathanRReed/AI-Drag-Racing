@@ -254,8 +254,10 @@ const ComparisonCharts: React.FC<ComparisonChartsProps> = ({ results }) => {
       <div className="mb-2 flex items-center justify-end">
         <button
           type="button"
-          className="btn-ghost text-xs"
+          className="btn-ghost text-xs focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-cyan-400 rounded-md"
           onClick={() => setDescending(v => !v)}
+          aria-label={descending ? 'Sort charts: High to Low. Click to switch to Low to High.' : 'Sort charts: Low to High. Click to switch to High to Low.'}
+          aria-pressed={descending}
           title={descending ? 'Sorted: High → Low (click to reverse)' : 'Sorted: Low → High (click to reverse)'}
         >
           Sort: {descending ? 'High → Low' : 'Low → High'}
