@@ -196,3 +196,17 @@ describe('RaceLane copy response', () => {
     expect(status()).toBe('Copied OpenAI response.');
   });
 });
+
+describe('RaceLane telemetry accessibility', () => {
+  test('renders abbr tags for telemetry metrics with explanatory titles', () => {
+    view = mount(lane());
+    const ttftAbbr = view.container.querySelector('abbr[title="Time to First Token"]');
+    const tpsAbbr = view.container.querySelector('abbr[title="Tokens Per Second"]');
+
+    expect(ttftAbbr).not.toBeNull();
+    expect(ttftAbbr?.textContent).toBe('TTFT');
+
+    expect(tpsAbbr).not.toBeNull();
+    expect(tpsAbbr?.textContent).toBe('TPS');
+  });
+});

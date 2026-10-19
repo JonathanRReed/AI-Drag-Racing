@@ -231,7 +231,7 @@ const RaceLane: React.FC<RaceLaneProps> = ({
 
         <div className="flex items-start gap-4 pt-1 relative z-10">
           {/* Mini Christmas tree / Stage lights */}
-          <div className="flex flex-col items-center gap-1.5 pt-1 w-6 shrink-0 bg-zinc-900/50 p-1.5 rounded-full border border-white/5 shadow-inner">
+          <div className="flex flex-col items-center gap-1.5 pt-1 w-6 shrink-0 bg-zinc-900/50 p-1.5 rounded-full border border-white/5 shadow-inner" aria-hidden="true">
             <div
               className={`w-2.5 h-2.5 rounded-full transition-all duration-200 border border-zinc-800 ${status === 'staging' ? 'bg-amber-400 shadow-[0_0_8px_rgba(251,191,36,0.8)]' : 'bg-black/50'
                 }`}
@@ -384,7 +384,9 @@ const RaceLane: React.FC<RaceLaneProps> = ({
             {/* Metrics bar (Telemetry) */}
             <div className={`grid grid-cols-4 gap-2 text-xs pt-2 mt-2 border-t border-zinc-800 bg-black/40 rounded-b-lg px-2 pb-2 ${expanded ? '' : 'border-t-0 pt-0 hidden'}`}>
               <div className="flex flex-col">
-                <span className="text-zinc-500 text-xs font-bold">TTFT</span>
+                <span className="text-zinc-500 text-xs font-bold">
+                  <abbr title="Time to First Token" className="no-underline cursor-help">TTFT</abbr>
+                </span>
                 <span className="text-zinc-300 font-mono font-bold tracking-tight">{formatMs(ttft)}</span>
               </div>
               <div className="flex flex-col">
@@ -392,7 +394,9 @@ const RaceLane: React.FC<RaceLaneProps> = ({
                 <span className="text-zinc-300 font-mono font-bold tracking-tight">{formatMs(total)}</span>
               </div>
               <div className="flex flex-col">
-                <span className="text-zinc-500 text-xs font-bold">TPS</span>
+                <span className="text-zinc-500 text-xs font-bold">
+                  <abbr title="Tokens Per Second" className="no-underline cursor-help">TPS</abbr>
+                </span>
                 <span className="text-emerald-400 font-mono font-bold tracking-tight">{calcTps(metrics)}</span>
               </div>
               <div className="flex flex-col">
