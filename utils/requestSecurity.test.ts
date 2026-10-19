@@ -72,10 +72,25 @@ describe('model ID validation', () => {
       'a'.repeat(512), '🔐'.repeat(256), 'vendor/模型:α@q4_k-m+β.v1#tag',
       'Model', 'model', 'café', 'cafe\u0301', 'model name', 'model\u00a0name',
       'org/می\u200cروم', 'org/👩\u200d💻',
+      'org/بَ\u200cر', 'org/क्\u200dष', 'org/क्\u200cष',
+      'org/\u1bc0\u1bf2\u200d\u1bc0',
+      'org/👩🏽\u200d💻', 'org/👨\u200d👩\u200d👧\u200d👦', 'sun/☀\ufe0f', '葛\u{e0100}',
+      'a\u200db', 'a\u200cb', '1\u200d+',
     ]) {
       expect(sanitizeModelId(id)).toBe(id);
       expect(validateRaceRequestBody(body(id))).toMatchObject({ ok: true, value: { model: id } });
     }
+  });
+
+  it.each([
+    '\u200c', '\u200d', '\u2061', '\u200c\u200d', '\ufe0f', '\u034f', '\u115f', '\u3164', '\uffa0', '\u0301',
+    'model\u200c', 'model\u200d', '\u200dmodel', 'model\u2061suffix', 'model\u00adname',
+    'a\u200d\u200db', 'a\u200c\u200db', 'a\u200d\u0301\u200cb',
+    'a \u200db', 'a\u200d b', 'a\u200c\u00a0b', '\u0301\u200da', 'a\u200d\u0301',
+    'می\u200c', '👩\u200d💻\u200d', '\ud800', 'x\ud800y',
+  ])('rejects invisible-only IDs, controls and unanchored joiners (%j)', id => {
+    expect(sanitizeModelId(id)).toBe('');
+    expect(validateRaceRequestBody(body(id)).ok).toBe(false);
   });
 
   it('rejects invalid types, padding and oversized IDs instead of rewriting them', () => {

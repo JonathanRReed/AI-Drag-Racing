@@ -1,6 +1,7 @@
 export const config = { runtime: 'edge' };
 
-import { corsHeadersForRequest, readJsonBodyWithLimit, redactCredentials, sanitizeApiKey, sanitizeModelId } from '../../utils/requestSecurity';
+import { corsHeadersForRequest, readJsonBodyWithLimit, redactCredentials, sanitizeApiKey } from '../../utils/requestSecurity';
+import { filterModelIds } from '../../utils/modelIds';
 
 type ModelResponse = {
     data: string[];
@@ -301,7 +302,7 @@ export default async function handler(req: Request): Promise<Response> {
             }
         }
 
-        const validIds = Array.from(new Set(ids.map(sanitizeModelId).filter(Boolean)));
+        const validIds = filterModelIds(ids);
         return jsonResponse({ data: validIds }, corsHeaders);
 
     } catch (error) {

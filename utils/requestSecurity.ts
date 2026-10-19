@@ -1,3 +1,5 @@
+import { isAcceptedModelId } from './modelIds';
+
 const PRODUCTION_ORIGIN = 'https://ai-dragrace.jonathanrreed.com';
 
 function isLoopback(hostname: string): boolean {
@@ -84,12 +86,7 @@ export function sanitizeApiKey(key: string): string {
 
 // Model IDs are opaque: reject invalid values without creating a different ID.
 export function sanitizeModelId(id: unknown): string {
-  if (typeof id !== 'string' || !id || id.length > 512 || id !== id.trim()) return '';
-  // Reject controls, line/directional separators and invisible delimiters;
-  // retain ordinary Unicode, including ZWNJ/ZWJ used within graphemes.
-  // eslint-disable-next-line no-control-regex
-  if (/[\u0000-\u001f\u007f-\u009f\u061c\u200b\u200e\u200f\u2028-\u202e\u2060\u2066-\u2069\ufeff]/.test(id)) return '';
-  return id;
+  return isAcceptedModelId(id) ? id : '';
 }
 
 export function validateRaceRequestBody(body: unknown):
@@ -108,7 +105,7 @@ export function validateRaceRequestBody(body: unknown):
   if (!prompt || !model || !apiKey) return { ok: false, error: 'Missing prompt, model, or API key' };
   if (prompt.length > 100_000) return { ok: false, error: 'Prompt exceeds the 100,000 character limit' };
   if (model.length > 512) return { ok: false, error: 'Model identifier is too long' };
-  if (!sanitizeModelId(model)) return { ok: false, error: 'Invalid model identifier' };
+  if (!isAcceptedModelId(model)) return { ok: false, error: 'Invalid model identifier' };
   if (apiKey.length > 4096) return { ok: false, error: 'API key is too long' };
 
   return { ok: true, value: { prompt, model, apiKey, settings } };

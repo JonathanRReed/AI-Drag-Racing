@@ -105,6 +105,17 @@ describe('models proxy error handling', () => {
     expect(await response.json()).toEqual({ data: expected });
   });
 
+  it.each(['anthropic', 'fireworks', 'openrouter'])('filters %s IDs by the shared display contract without rewriting them', async provider => {
+    const valid = ['Model', 'model', 'café', 'cafe\u0301', 'org/می\u200cروم', 'org/👩🏽\u200d💻', 'sun/☀\ufe0f', 'a\u200db'];
+    const invalid = ['\u200c', '\u200d', '\u2061', '\u034f', '\u115f', '\ufe0f',
+      'model\u200c', 'model\u200d', 'a\u200d\u200db', 'model\u2061suffix', '👩\u200d💻\u200d'];
+    const data = [...invalid, ...valid, ...invalid, ...valid].map(id => ({ id }));
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(JSON.stringify({ data }))));
+    const response = await handler(request(provider));
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({ data: valid });
+  });
+
   it('keeps the static fallback when the outer catch handles a failure', async () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response('{"data":[]}')));
     const req = request('openai');
