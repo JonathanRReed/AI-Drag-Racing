@@ -252,6 +252,15 @@ export default function Home() {
     return () => mq.removeEventListener('change', handler);
   }, []);
 
+  const handleDeleteReceipt = useCallback((id: string) => {
+    setHistory(deleteRaceReceipt(window.localStorage, id));
+  }, []);
+
+  const handleClearHistory = useCallback(() => {
+    clearRaceHistory(window.localStorage);
+    setHistory([]);
+  }, []);
+
   const handleReset = useCallback(() => {
     abortRef.current?.abort();
     if (flushTimerRef.current != null) {
@@ -1099,11 +1108,8 @@ export default function Home() {
               <ResultsDisplay results={state.results} hideFailed={hideFailed} force={force} compact={showStage} onDemo={handleRunDemo} />
               <RaceHistory
                 receipts={history}
-                onDelete={(id) => setHistory(deleteRaceReceipt(window.localStorage, id))}
-                onClear={() => {
-                  clearRaceHistory(window.localStorage);
-                  setHistory([]);
-                }}
+                onDelete={handleDeleteReceipt}
+                onClear={handleClearHistory}
               />
             </div>
           )}

@@ -30,7 +30,7 @@ function fastestLane(receipt: RaceReceipt) {
     .sort((a, b) => (a.browser.totalMs ?? Number.POSITIVE_INFINITY) - (b.browser.totalMs ?? Number.POSITIVE_INFINITY))[0];
 }
 
-export default function RaceHistory({
+function RaceHistory({
   receipts,
   onDelete,
   onClear,
@@ -182,3 +182,7 @@ export default function RaceHistory({
     </section>
   );
 }
+
+// Bolt optimization: Wrap RaceHistory in React.memo to skip re-rendering the history
+// list during high-frequency parent streaming state dispatches (~11x/sec) when history stays stable.
+export default React.memo(RaceHistory);

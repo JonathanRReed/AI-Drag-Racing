@@ -161,6 +161,22 @@ describe('RaceHistory component', () => {
     expect(view!.container.querySelector('[role="alert"]')!.textContent).toContain('unavailable');
   });
 
+  it('skips re-rendering DOM nodes when parent re-renders with shallowly equal props', () => {
+    const { onDelete, onClear } = setup();
+    const article = view!.container.querySelector('article');
+    expect(article).not.toBeNull();
+
+    const observer = new MutationObserver(() => {});
+    observer.observe(view!.container, { attributes: true, childList: true, characterData: true, subtree: true });
+
+    view!.rerender(<RaceHistory receipts={[mockReceipt]} onDelete={onDelete} onClear={onClear} />);
+
+    expect(observer.takeRecords()).toHaveLength(0);
+    expect(view!.container.querySelector('article')).toBe(article);
+
+    observer.disconnect();
+  });
+
   it('keeps the copy action in the name when clipboard access is denied', async () => {
     vi.mocked(navigator.clipboard.writeText).mockRejectedValue(new Error('Clipboard denied'));
     setup();
