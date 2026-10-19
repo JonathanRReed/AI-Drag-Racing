@@ -78,6 +78,18 @@ describe('models proxy error handling', () => {
     expect(await response.json()).toEqual({ data: [], error: expectedError });
   });
 
+  it('sanitizes and deduplicates model IDs returned by upstream responses', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(
+      new Response(JSON.stringify({ data: [{ id: '  custom-model\r\n ' }, { id: 'custom-model' }, { id: '\x00' }, { id: 123 }] }))
+    ));
+    const response = await handler(request('anthropic'));
+    expect(response.status).toBe(200);
+    const body = await response.json();
+    expect(body.data).toContain('custom-model');
+    expect(body.data.filter((m: string) => m === 'custom-model').length).toBe(1);
+    expect(body.data).not.toContain('');
+  });
+
   it('keeps the static fallback when the outer catch handles a failure', async () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response('{"data":[]}')));
     const req = request('openai');

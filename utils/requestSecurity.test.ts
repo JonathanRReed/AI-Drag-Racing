@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { boundedNumber, corsHeadersForRequest, isAllowedRequestOrigin, readJsonBodyWithLimit, redactCredentials, sanitizeApiKey, validateRaceRequestBody } from './requestSecurity';
+import { boundedNumber, corsHeadersForRequest, isAllowedRequestOrigin, readJsonBodyWithLimit, redactCredentials, sanitizeApiKey, sanitizeModelId, validateRaceRequestBody } from './requestSecurity';
 
 function request(url: string, origin?: string) {
   return new Request(url, { headers: origin ? { origin } : {} });
@@ -61,6 +61,16 @@ describe('pasted API key boundaries', () => {
     expect(sanitizeApiKey('\x00 "sk-test-only" \x7F')).toBe('sk-test-only');
     expect(sanitizeApiKey('"sk-test-only"\x00')).toBe('sk-test-only');
     expect(sanitizeApiKey('\x00   \x7F')).toBe('');
+  });
+});
+
+describe('model ID sanitization', () => {
+  it('sanitizes and caps model IDs', () => {
+    expect(sanitizeModelId('  gpt-4o  ')).toBe('gpt-4o');
+    expect(sanitizeModelId('model\x00-id\r\n')).toBe('model-id');
+    expect(sanitizeModelId(123)).toBe('');
+    expect(sanitizeModelId(null)).toBe('');
+    expect(sanitizeModelId('a'.repeat(600)).length).toBe(512);
   });
 });
 

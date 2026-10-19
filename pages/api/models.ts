@@ -1,6 +1,6 @@
 export const config = { runtime: 'edge' };
 
-import { corsHeadersForRequest, readJsonBodyWithLimit, redactCredentials, sanitizeApiKey } from '../../utils/requestSecurity';
+import { corsHeadersForRequest, readJsonBodyWithLimit, redactCredentials, sanitizeApiKey, sanitizeModelId } from '../../utils/requestSecurity';
 
 type ModelResponse = {
     data: string[];
@@ -301,7 +301,8 @@ export default async function handler(req: Request): Promise<Response> {
             }
         }
 
-        return jsonResponse({ data: ids }, corsHeaders);
+        const sanitizedIds = Array.from(new Set(ids.map(sanitizeModelId).filter(Boolean)));
+        return jsonResponse({ data: sanitizedIds }, corsHeaders);
 
     } catch (error) {
         // Upstream messages can include request metadata beyond recognizable keys.
