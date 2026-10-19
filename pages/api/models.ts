@@ -301,8 +301,8 @@ export default async function handler(req: Request): Promise<Response> {
             }
         }
 
-        const sanitizedIds = Array.from(new Set(ids.map(sanitizeModelId).filter(Boolean)));
-        return jsonResponse({ data: sanitizedIds }, corsHeaders);
+        const validIds = Array.from(new Set(ids.map(sanitizeModelId).filter(Boolean)));
+        return jsonResponse({ data: validIds }, corsHeaders);
 
     } catch (error) {
         // Upstream messages can include request metadata beyond recognizable keys.

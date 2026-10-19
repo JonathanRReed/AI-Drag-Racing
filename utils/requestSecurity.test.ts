@@ -64,13 +64,43 @@ describe('pasted API key boundaries', () => {
   });
 });
 
-describe('model ID sanitization', () => {
-  it('sanitizes and caps model IDs', () => {
-    expect(sanitizeModelId('  gpt-4o  ')).toBe('gpt-4o');
-    expect(sanitizeModelId('model\x00-id\r\n')).toBe('model-id');
-    expect(sanitizeModelId(123)).toBe('');
-    expect(sanitizeModelId(null)).toBe('');
-    expect(sanitizeModelId('a'.repeat(600)).length).toBe(512);
+describe('model ID validation', () => {
+  const body = (model: unknown) => ({ prompt: 'hello', model, apiKey: 'synthetic-key' });
+
+  it('preserves accepted IDs exactly at both boundaries', () => {
+    for (const id of [
+      'a'.repeat(512), '🔐'.repeat(256), 'vendor/模型:α@q4_k-m+β.v1#tag',
+      'Model', 'model', 'café', 'cafe\u0301', 'model name', 'model\u00a0name',
+      'org/می\u200cروم', 'org/👩\u200d💻',
+    ]) {
+      expect(sanitizeModelId(id)).toBe(id);
+      expect(validateRaceRequestBody(body(id))).toMatchObject({ ok: true, value: { model: id } });
+    }
+  });
+
+  it('rejects invalid types, padding and oversized IDs instead of rewriting them', () => {
+    for (const id of [
+      null, undefined, 123, {}, '', ' ', ' model', 'model ', '\u00a0model',
+      'model\u2003', 'model\r\n', 'a'.repeat(513), 'a'.repeat(512) + 'b', '🔐'.repeat(257),
+    ]) {
+      expect(sanitizeModelId(id)).toBe('');
+      expect(validateRaceRequestBody(body(id)).ok).toBe(false);
+    }
+  });
+
+  it('rejects ASCII, C1 and invisible separator/directional controls at both boundaries', () => {
+    const controls = [
+      ...Array.from({ length: 32 }, (_, i) => i),
+      ...Array.from({ length: 33 }, (_, i) => i + 0x7f),
+      0x061c, 0x200b, 0x200e, 0x200f, 0x2028, 0x2029,
+      ...Array.from({ length: 5 }, (_, i) => i + 0x202a),
+      0x2060, ...Array.from({ length: 4 }, (_, i) => i + 0x2066), 0xfeff,
+    ];
+    for (const code of controls) {
+      const id = `model${String.fromCharCode(code)}-id`;
+      expect(sanitizeModelId(id), `U+${code.toString(16)}`).toBe('');
+      expect(validateRaceRequestBody(body(id)).ok, `U+${code.toString(16)}`).toBe(false);
+    }
   });
 });
 

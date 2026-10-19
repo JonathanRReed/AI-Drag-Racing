@@ -78,16 +78,31 @@ describe('models proxy error handling', () => {
     expect(await response.json()).toEqual({ data: [], error: expectedError });
   });
 
-  it('sanitizes and deduplicates model IDs returned by upstream responses', async () => {
+  it('does not manufacture IDs from controls, padding or two oversized IDs sharing a prefix', async () => {
+    const prefix = 'a'.repeat(512);
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(
-      new Response(JSON.stringify({ data: [{ id: '  custom-model\r\n ' }, { id: 'custom-model' }, { id: '\x00' }, { id: 123 }] }))
+      new Response(JSON.stringify({ data: [
+        'custom\x00-model', ' custom-model ', prefix + 'A', prefix + 'B', '\x00', 123,
+      ].map(id => ({ id })) }))
     ));
     const response = await handler(request('anthropic'));
     expect(response.status).toBe(200);
-    const body = await response.json();
-    expect(body.data).toContain('custom-model');
-    expect(body.data.filter((m: string) => m === 'custom-model').length).toBe(1);
-    expect(body.data).not.toContain('');
+    expect(await response.json()).toEqual({ data: [] });
+  });
+
+  it.each(['anthropic', 'fireworks', 'openrouter'])('preserves exact IDs and first occurrence order for %s responses', async (provider) => {
+    const prefix = 'a'.repeat(512);
+    const expected = ['marker', prefix, 'Model', 'model', 'café', 'cafe\u0301', 'vendor/模型:α@q4_k-m+β.v1#tag', 'org/👩\u200d💻'];
+    const ids = [prefix + 'A', ' marker ', ...expected, prefix + 'B', ...expected];
+    const upstream = provider === 'fireworks' ? ids.map(id => ({ id }))
+      : provider === 'openrouter' ? { models: ids.map(name => ({ name })) }
+      : { data: ids.map(id => ({ id })) };
+    const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify(upstream)));
+    vi.stubGlobal('fetch', fetchMock);
+    const response = await handler(request(provider));
+    expect(fetchMock).toHaveBeenCalledOnce();
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({ data: expected });
   });
 
   it('keeps the static fallback when the outer catch handles a failure', async () => {

@@ -82,13 +82,14 @@ export function sanitizeApiKey(key: string): string {
     .trim();
 }
 
+// Model IDs are opaque: reject invalid values without creating a different ID.
 export function sanitizeModelId(id: unknown): string {
-  if (typeof id !== 'string' || !id) return '';
-  const sanitized = id
-    // eslint-disable-next-line no-control-regex
-    .replace(/[\x00-\x1F\x7F]/g, '')
-    .trim();
-  return sanitized.length > 512 ? sanitized.slice(0, 512) : sanitized;
+  if (typeof id !== 'string' || !id || id.length > 512 || id !== id.trim()) return '';
+  // Reject controls, line/directional separators and invisible delimiters;
+  // retain ordinary Unicode, including ZWNJ/ZWJ used within graphemes.
+  // eslint-disable-next-line no-control-regex
+  if (/[\u0000-\u001f\u007f-\u009f\u061c\u200b\u200e\u200f\u2028-\u202e\u2060\u2066-\u2069\ufeff]/.test(id)) return '';
+  return id;
 }
 
 export function validateRaceRequestBody(body: unknown):
@@ -107,6 +108,7 @@ export function validateRaceRequestBody(body: unknown):
   if (!prompt || !model || !apiKey) return { ok: false, error: 'Missing prompt, model, or API key' };
   if (prompt.length > 100_000) return { ok: false, error: 'Prompt exceeds the 100,000 character limit' };
   if (model.length > 512) return { ok: false, error: 'Model identifier is too long' };
+  if (!sanitizeModelId(model)) return { ok: false, error: 'Invalid model identifier' };
   if (apiKey.length > 4096) return { ok: false, error: 'API key is too long' };
 
   return { ok: true, value: { prompt, model, apiKey, settings } };
