@@ -454,4 +454,5 @@ const RaceSettings: React.FC<RaceSettingsProps> = ({ config, onChange, selectedP
   );
 };
 
-export default RaceSettings;
+// Bolt optimization: Memoize RaceSettings so high-frequency streaming updates in parent state do not re-render sidebar settings.
+export default React.memo(RaceSettings);

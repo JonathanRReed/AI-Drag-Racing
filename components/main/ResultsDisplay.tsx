@@ -107,4 +107,5 @@ const ResultsDisplay: React.FC<ResultsDisplayProps> = ({ results, hideFailed = f
   );
 };
 
-export default ResultsDisplay;
+// Bolt optimization: Memoize ResultsDisplay to avoid top-level grid reconciliations when non-results state changes in parent.
+export default React.memo(ResultsDisplay);

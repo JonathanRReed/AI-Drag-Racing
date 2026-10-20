@@ -186,4 +186,5 @@ const StandingsTicker: React.FC<StandingsTickerProps> = ({
   );
 };
 
-export default StandingsTicker;
+// Bolt optimization: Memoize StandingsTicker to skip re-renders during high-frequency stream state dispatches when input props are unchanged.
+export default React.memo(StandingsTicker);

@@ -107,4 +107,5 @@ const PromptInput: React.FC<PromptInputProps> = ({
   );
 };
 
-export default PromptInput;
+// Bolt optimization: Memoize PromptInput to skip re-calculating prompt character metrics and height adjustments during streaming updates.
+export default React.memo(PromptInput);
