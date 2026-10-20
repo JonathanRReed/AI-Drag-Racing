@@ -12,4 +12,19 @@ describe('Together model discovery', () => {
       method: 'POST', body: JSON.stringify({ providerId: 'together', apiKey: 'test-key' }),
     }));
   });
+
+  it('redacts sensitive API keys in console.error when fetchViaProxy encounters an error', async () => {
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const secretKey = 'sk-proj-secret123key';
+    const fetcher = vi.fn().mockRejectedValue(new Error(`Connection failed with key ${secretKey}`));
+    vi.stubGlobal('fetch', fetcher);
+
+    await expect(fetchTogetherModels(secretKey)).rejects.toThrow();
+    expect(consoleSpy).toHaveBeenCalledWith(
+      'Fetch failed for together:',
+      expect.stringContaining('[REDACTED]')
+    );
+    expect(consoleSpy.mock.calls.flat().join(' ')).not.toContain(secretKey);
+    consoleSpy.mockRestore();
+  });
 });

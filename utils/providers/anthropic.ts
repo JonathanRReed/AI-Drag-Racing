@@ -8,6 +8,7 @@ import {
 } from '../providerService';
 import { finalTokenTotal, approxTokensFromText } from '../tokens';
 import { parseSseJson } from '../sse';
+import { redactCredentials } from '../requestSecurity';
 
 const anthropicService: ProviderService = {
   providerId: 'anthropic',
@@ -30,7 +31,7 @@ const anthropicService: ProviderService = {
           .filter((id: string) => typeof id === 'string');
       }
     } catch (e) {
-      console.warn('[Anthropic] Falling back to static model list:', e);
+      console.warn('[Anthropic] Falling back to static model list:', redactCredentials(e, apiKey));
     }
     // Fallback static list
     return [
