@@ -370,34 +370,6 @@
 
 @utility provider-key-button {
   @apply relative inline-flex min-h-[var(--control-h)] min-w-[var(--control-h)] items-center justify-center rounded-md text-gray-400 transition-colors hover:bg-white/20 hover:text-white;
-
-  &::before {
-    content: '';
-    position: absolute;
-    left: 50%;
-    top: 50%;
-    width: 1rem;
-    height: 2px;
-    border-radius: 999px;
-    background: currentColor;
-    transform: translate(-50%, -50%);
-  }
-
-  &::after {
-    content: '';
-    position: absolute;
-    left: 50%;
-    top: 50%;
-    width: 1rem;
-    height: 2px;
-    border-radius: 999px;
-    background: currentColor;
-    transform: translate(-50%, -50%);
-  }
-
-  &::after {
-    transform: translate(-50%, -50%) rotate(90deg);
-  }
 }
 
 @utility app-shell {

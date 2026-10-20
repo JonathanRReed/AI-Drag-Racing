@@ -96,7 +96,11 @@ const ProviderListItem = React.memo(function ProviderListItem({ provider, hasApi
           className="provider-key-button focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-cyan-400"
           aria-label={`${hasApiKey ? 'Edit' : 'Add'} API key for ${provider.displayName}`}
           title={`${hasApiKey ? 'Edit' : 'Add'} API key for ${provider.displayName}`}
-        />
+        >
+          <svg className="w-4 h-4 fill-current" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M19 11h-6V5a1 1 0 0 0-2 0v6H5a1 1 0 0 0 0 2h6v6a1 1 0 0 0 2 0v-6h6a1 1 0 0 0 0-2z" />
+          </svg>
+        </button>
       </div>
     </div>
   );
