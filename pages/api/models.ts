@@ -1,6 +1,6 @@
 export const config = { runtime: 'edge' };
 
-import { corsHeadersForRequest, readJsonBodyWithLimit, redactCredentials, sanitizeApiKey } from '../../utils/requestSecurity';
+import { corsHeadersForRequest, readJsonBodyWithLimit, redactCredentials, sanitizeApiKey, sanitizeModelId } from '../../utils/requestSecurity';
 
 type ModelResponse = {
     data: string[];
@@ -301,7 +301,8 @@ export default async function handler(req: Request): Promise<Response> {
             }
         }
 
-        return jsonResponse({ data: ids }, corsHeaders);
+        const sanitizedIds = Array.from(new Set(ids.map(sanitizeModelId).filter(Boolean)));
+        return jsonResponse({ data: sanitizedIds }, corsHeaders);
 
     } catch (error) {
         // Upstream messages can include request metadata beyond recognizable keys.
@@ -310,7 +311,7 @@ export default async function handler(req: Request): Promise<Response> {
         // Return fallback data instead of error when possible
         const fallback = Object.hasOwn(STATIC_FALLBACKS, providerId) ? STATIC_FALLBACKS[providerId] : undefined;
         if (fallback && fallback.length > 0) {
-            return jsonResponse({ data: fallback }, corsHeaders);
+            return jsonResponse({ data: Array.from(new Set(fallback.map(sanitizeModelId).filter(Boolean))) }, corsHeaders);
         }
 
         const safeMessage = redactCredentials(error, [rawApiKey, apiKey]);

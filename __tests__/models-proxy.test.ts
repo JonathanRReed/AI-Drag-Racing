@@ -95,4 +95,26 @@ describe('models proxy error handling', () => {
     expect(response.status).toBe(500);
     expect(await response.json()).toEqual({ data: [], error: 'Failed to fetch models' });
   });
+
+  it('sanitizes and deduplicates model IDs returned by external APIs', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(
+      new Response(JSON.stringify({
+        data: [
+          { id: '  gpt-4o\r\n ' },
+          { id: 'gpt-4o' },
+          { id: 'claude\x00-sonnet' },
+          { id: 12345 },
+          { id: null },
+        ],
+      }))
+    );
+    vi.stubGlobal('fetch', fetchMock);
+    const response = await handler(request('openai'));
+    expect(response.status).toBe(200);
+    const json = await response.json();
+    expect(json.data).toContain('gpt-4o');
+    expect(json.data).toContain('claude-sonnet');
+    expect(json.data.filter((id: string) => id === 'gpt-4o').length).toBe(1);
+    expect(json.data.every((id: string) => typeof id === 'string' && id.trim() === id)).toBe(true);
+  });
 });

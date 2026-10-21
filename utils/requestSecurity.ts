@@ -82,6 +82,15 @@ export function sanitizeApiKey(key: string): string {
     .trim();
 }
 
+export function sanitizeModelId(id: unknown): string {
+  if (typeof id !== 'string' || !id) return '';
+  const sanitized = id
+    // eslint-disable-next-line no-control-regex
+    .replace(/[\x00-\x1F\x7F]/g, '')
+    .trim();
+  return sanitized.length > 512 ? sanitized.slice(0, 512) : sanitized;
+}
+
 export function validateRaceRequestBody(body: unknown):
   | { ok: true; value: { prompt: string; model: string; apiKey: string; settings: Record<string, unknown> } }
   | { ok: false; error: string } {

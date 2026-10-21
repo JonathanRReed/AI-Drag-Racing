@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { boundedNumber, corsHeadersForRequest, isAllowedRequestOrigin, readJsonBodyWithLimit, redactCredentials, sanitizeApiKey, validateRaceRequestBody } from './requestSecurity';
+import { boundedNumber, corsHeadersForRequest, isAllowedRequestOrigin, readJsonBodyWithLimit, redactCredentials, sanitizeApiKey, sanitizeModelId, validateRaceRequestBody } from './requestSecurity';
 
 function request(url: string, origin?: string) {
   return new Request(url, { headers: origin ? { origin } : {} });
@@ -53,6 +53,17 @@ describe('request security', () => {
       body: JSON.stringify({ payload: 'x'.repeat(20_000) }),
     });
     expect(await readJsonBodyWithLimit(streamed, 16_384)).toMatchObject({ ok: false, status: 413 });
+  });
+});
+
+describe('sanitizeModelId', () => {
+  it('strips control characters, trims whitespace, and limits max length', () => {
+    expect(sanitizeModelId('  gpt-4o\r\n  ')).toBe('gpt-4o');
+    expect(sanitizeModelId('claude\x00-3.5-sonnet')).toBe('claude-3.5-sonnet');
+    expect(sanitizeModelId(123)).toBe('');
+    expect(sanitizeModelId(null)).toBe('');
+    expect(sanitizeModelId(undefined)).toBe('');
+    expect(sanitizeModelId('a'.repeat(600)).length).toBe(512);
   });
 });
 
