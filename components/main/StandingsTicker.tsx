@@ -186,4 +186,6 @@ const StandingsTicker: React.FC<StandingsTickerProps> = ({
   );
 };
 
-export default StandingsTicker;
+// Memoize StandingsTicker so high-frequency parent state updates (e.g. streaming token dispatches ~11x/sec)
+// do not trigger unnecessary StandingsTicker reconciliations and layout recalculations.
+export default React.memo(StandingsTicker);

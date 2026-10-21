@@ -13,7 +13,7 @@ function formatMs(value: number | null | undefined): string {
   return `${(value / 1000).toFixed(value < 10_000 ? 2 : 1)} s`;
 }
 
-export default function FinishSummary({ results }: { results: ResultState[] }) {
+function FinishSummary({ results }: { results: ResultState[] }) {
   const finished = useMemo(
     () => results
       .filter((result) => !result.error && (result.browserTiming?.totalMs != null || edgeDuration(result) != null))
@@ -122,3 +122,6 @@ export default function FinishSummary({ results }: { results: ResultState[] }) {
     </section>
   );
 }
+
+// Memoize FinishSummary to avoid unneeded component reconciliations when parent state updates.
+export default React.memo(FinishSummary);
