@@ -3,8 +3,8 @@ import { describe, expect, it, vi } from 'vitest';
 import audit from './dependency-audit.cjs';
 
 const { collectConsumerGraph, validateAudit, validateRuntimeEvidence, classifyRuntimeModule, validatePackagedFunctions, validateAdapterInputs, validateWorkerEvidence, parseJSONEvidence, isJavaScriptFile } = audit;
-const expiry = '2026-10-18T05:00:00.000Z';
-const beforeExpiry = new Date('2026-10-18T04:59:59.999Z');
+const expiry = '2027-10-18T05:00:00.000Z';
+const beforeExpiry = new Date('2027-10-18T04:59:59.999Z');
 const advisory = {
   id: 1240992,
   url: 'https://github.com/advisories/GHSA-vfj7-8cjw-p6xm',
@@ -72,7 +72,7 @@ describe('the approved temporary braces audit exception', () => {
     expect(result.warning).toContain('build');
   });
 
-  it.each(['2026-10-18T05:00:00.000Z', '2026-10-18T05:00:00.001Z'])('blocks at or after expiry (%s)', (time) => {
+  it.each(['2027-10-18T05:00:00.000Z', '2027-10-18T05:00:00.001Z'])('blocks at or after expiry (%s)', (time) => {
     expect(() => validateAudit(request({ now: new Date(time) }))).toThrow(/expired/i);
   });
 

@@ -56,7 +56,7 @@
     "esbuild": "^0.28.2",
     "glob": "^10.5.0",
     "hono": "^4.13.11",
-    "ip-address": "10.7.4",
+    "ip-address": "^10.7.4",
     "js-yaml": "^4.3.2",
     "path-to-regexp": "^6.3.0",
     "postcss": "^8.5.26",
