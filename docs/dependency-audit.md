@@ -2,6 +2,16 @@
 
 Expires **2026-10-18 at 05:00 UTC**. No automatic extension.
 
+## October 22, 2026 maintenance status
+
+The original deadline remains expired. The unrelated extension to October 2027
+has been removed; there is no renewed exception. Next.js and its ESLint config
+are updated to 15.5.28, and ip-address is pinned to its patched 10.7.4 release.
+The fresh unfiltered audit now reports only the braces finding below, and the
+policy correctly blocks it. A successful ordinary Next build is not a passing
+Cloudflare packaging gate. Do not merge or deploy until the remaining dependency
+is remediated and the complete gate passes.
+
 The dependency audit still checks every installed dependency and every severity.
 It temporarily accepts only [GHSA-vfj7-8cjw-p6xm](https://github.com/advisories/GHSA-vfj7-8cjw-p6xm)
 for exact braces 3.0.3. The advisory has no published patched release as of

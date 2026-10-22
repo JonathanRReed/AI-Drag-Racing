@@ -132,6 +132,26 @@ function jsonResponse(data: ModelResponse, corsHeaders: Record<string, string>, 
     });
 }
 
+function extractModelIds(payload: unknown): string[] {
+    let items: unknown[] = [];
+    let preferName = false;
+    if (Array.isArray(payload)) {
+        items = payload;
+    } else if (payload && typeof payload === 'object') {
+        const record = payload as Record<string, unknown>;
+        if (Array.isArray(record.data)) items = record.data;
+        else if (Array.isArray(record.models)) {
+            items = record.models;
+            preferName = true;
+        }
+    }
+    return sanitizeModelIds(items.map((item) => {
+        if (!item || typeof item !== 'object' || Array.isArray(item)) return undefined;
+        const model = item as Record<string, unknown>;
+        return preferName ? (model.name || model.id) : model.id;
+    }));
+}
+
 export default async function handler(req: Request): Promise<Response> {
     const corsHeaders = corsHeadersForRequest(req);
     if (!corsHeaders) {
@@ -188,7 +208,7 @@ export default async function handler(req: Request): Promise<Response> {
                     throw new Error(`Anthropic error: ${response.status}`);
                 }
                 const data = await response.json();
-                ids = data.data?.map((m: any) => m.id) || [];
+                ids = extractModelIds(data);
             } catch (e) {
                 clearTimeout(timeoutId);
                 console.warn(`[Proxy] Anthropic fetch failed, using fallback`);
@@ -209,7 +229,7 @@ export default async function handler(req: Request): Promise<Response> {
                     throw new Error(`Moonshot error: ${response.status}`);
                 }
                 const data = await response.json();
-                ids = data.data?.map((m: any) => m.id) || [];
+                ids = extractModelIds(data);
                 // Merge with static fallback to ensure key models are always present
                 const merged = new Set([...ids, ...STATIC_FALLBACKS.moonshot]);
                 ids = Array.from(merged);
@@ -238,7 +258,7 @@ export default async function handler(req: Request): Promise<Response> {
                     throw new Error(`Groq error: ${response.status}`);
                 }
                 const data = await response.json();
-                ids = data.data?.map((m: any) => m.id) || [];
+                ids = extractModelIds(data);
                 // Merge with fallback
                 const merged = new Set([...ids, ...STATIC_FALLBACKS.groq]);
                 ids = Array.from(merged);
@@ -280,14 +300,7 @@ export default async function handler(req: Request): Promise<Response> {
                 }
                 const data = await response.json();
 
-                // Handle various response shapes
-                if (Array.isArray(data)) {
-                    ids = data.map((m: any) => m.id);
-                } else if (Array.isArray(data.data)) {
-                    ids = data.data.map((m: any) => m.id);
-                } else if (Array.isArray(data.models)) {
-                    ids = data.models.map((m: any) => m.name || m.id);
-                }
+                ids = extractModelIds(data);
 
                 // Merge with static fallback if available
                 if (STATIC_FALLBACKS[providerId]) {
