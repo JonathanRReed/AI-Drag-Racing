@@ -92,14 +92,18 @@ const PromptInput: React.FC<PromptInputProps> = ({
             type="button"
             onClick={onSubmit}
             disabled={!canSubmit}
-            aria-label="Start Race"
+            aria-label={canSubmit ? 'Start Race' : buttonTitle}
             title={buttonTitle}
-            className="inline-flex min-h-[var(--control-h)] items-center gap-1 rounded-md bg-cyan-500/20 px-2.5 py-1 text-xs font-semibold text-cyan-300 border border-cyan-500/40 hover:bg-cyan-500/30 disabled:opacity-40 disabled:cursor-not-allowed transition-colors focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-cyan-400"
+            className="inline-flex min-h-[var(--control-h)] items-center gap-1.5 rounded-md bg-cyan-500/20 px-2.5 py-1 text-xs font-semibold text-cyan-300 border border-cyan-500/40 hover:bg-cyan-500/30 disabled:opacity-40 disabled:cursor-not-allowed transition-colors focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-cyan-400"
           >
-            <svg viewBox="0 0 24 24" className="w-3 h-3 fill-current" aria-hidden="true">
-              <path d="M5 3l14 9-14 9V3z" />
-            </svg>
-            <span>Start</span>
+            {isLoading ? (
+              <span className="w-3 h-3 border-2 border-cyan-300/30 border-t-cyan-300 rounded-full animate-spin shrink-0" aria-hidden="true" />
+            ) : (
+              <svg viewBox="0 0 24 24" className="w-3 h-3 fill-current shrink-0" aria-hidden="true">
+                <path d="M5 3l14 9-14 9V3z" />
+              </svg>
+            )}
+            <span>{isLoading ? 'Racing...' : 'Start'}</span>
           </button>
         </div>
       </div>

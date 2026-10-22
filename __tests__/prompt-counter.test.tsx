@@ -78,23 +78,29 @@ describe('prompt character counter', () => {
     expect(html).not.toMatch(/aria-label="\d+ characters?"/);
   });
 
-  it('renders start button with contextual tooltip when disabled or loading', () => {
+  it('renders start button with contextual tooltip, state text, and dynamic aria-label', () => {
     const htmlNoPrompt = renderToStaticMarkup(
       <PromptInput prompt="" onPromptChange={() => {}} onSubmit={() => {}} isLoading={false} />
     );
     expect(htmlNoPrompt).toContain('title="Enter a prompt to start"');
+    expect(htmlNoPrompt).toContain('aria-label="Enter a prompt to start"');
     expect(htmlNoPrompt).toContain('disabled=""');
+    expect(htmlNoPrompt).toContain('<span>Start</span>');
 
     const htmlDisabled = renderToStaticMarkup(
       <PromptInput prompt="Hello" onPromptChange={() => {}} onSubmit={() => {}} isLoading={false} disabled={true} />
     );
     expect(htmlDisabled).toContain('title="Select a model and add its API key"');
+    expect(htmlDisabled).toContain('aria-label="Select a model and add its API key"');
     expect(htmlDisabled).toContain('disabled=""');
 
     const htmlLoading = renderToStaticMarkup(
       <PromptInput prompt="Hello" onPromptChange={() => {}} onSubmit={() => {}} isLoading={true} />
     );
     expect(htmlLoading).toContain('title="Race in progress"');
+    expect(htmlLoading).toContain('aria-label="Race in progress"');
+    expect(htmlLoading).toContain('<span>Racing...</span>');
+    expect(htmlLoading).toContain('animate-spin');
     expect(htmlLoading).toContain('disabled=""');
 
     const htmlBothDisabledAndLoading = renderToStaticMarkup(
@@ -106,6 +112,8 @@ describe('prompt character counter', () => {
       <PromptInput prompt="Hello" onPromptChange={() => {}} onSubmit={() => {}} isLoading={false} disabled={false} />
     );
     expect(htmlReady).toContain('title="Start race with prompt"');
+    expect(htmlReady).toContain('aria-label="Start Race"');
+    expect(htmlReady).toContain('<span>Start</span>');
     expect(htmlReady).not.toContain('disabled=""');
   });
 
@@ -113,14 +121,15 @@ describe('prompt character counter', () => {
     const onSubmit = vi.fn();
     view = mount(<PromptInput prompt="Hello" onPromptChange={() => {}} onSubmit={onSubmit} isLoading={false} disabled={true} />);
 
-    const startBtn = view.container.querySelector('button[aria-label="Start Race"]') as HTMLButtonElement;
+    const startBtn = view.container.querySelector('button[title="Select a model and add its API key"]') as HTMLButtonElement;
     expect(startBtn.disabled).toBe(true);
     click(startBtn);
     expect(onSubmit).not.toHaveBeenCalled();
 
     view.rerender(<PromptInput prompt="Hello" onPromptChange={() => {}} onSubmit={onSubmit} isLoading={false} disabled={false} />);
-    expect(startBtn.disabled).toBe(false);
-    click(startBtn);
+    const activeStartBtn = view.container.querySelector('button[aria-label="Start Race"]') as HTMLButtonElement;
+    expect(activeStartBtn.disabled).toBe(false);
+    click(activeStartBtn);
     expect(onSubmit).toHaveBeenCalledTimes(1);
   });
 });
