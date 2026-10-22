@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { boundedNumber, corsHeadersForRequest, isAllowedRequestOrigin, readJsonBodyWithLimit, redactCredentials, sanitizeApiKey, validateRaceRequestBody } from './requestSecurity';
+import { boundedNumber, corsHeadersForRequest, isAllowedRequestOrigin, readJsonBodyWithLimit, redactCredentials, sanitizeApiKey, sanitizeModelId, sanitizeModelIds, validateRaceRequestBody } from './requestSecurity';
 
 function request(url: string, origin?: string) {
   return new Request(url, { headers: origin ? { origin } : {} });
@@ -53,6 +53,21 @@ describe('request security', () => {
       body: JSON.stringify({ payload: 'x'.repeat(20_000) }),
     });
     expect(await readJsonBodyWithLimit(streamed, 16_384)).toMatchObject({ ok: false, status: 413 });
+  });
+});
+
+describe('model ID sanitization', () => {
+  it('sanitizes model IDs removing control characters, whitespace, and enforcing length limit', () => {
+    expect(sanitizeModelId('  gpt-4o\r\n  ')).toBe('gpt-4o');
+    expect(sanitizeModelId('model\x00-id\x1F')).toBe('model-id');
+    expect(sanitizeModelId(null)).toBe('');
+    expect(sanitizeModelId(123)).toBe('');
+    expect(sanitizeModelId('a'.repeat(600))).toBe('a'.repeat(512));
+  });
+
+  it('sanitizes and deduplicates arrays of model IDs', () => {
+    expect(sanitizeModelIds([' gpt-4o ', 'gpt-4o', 'claude-3-5-sonnet\x00', null, 42, '']))
+      .toEqual(['gpt-4o', 'claude-3-5-sonnet']);
   });
 });
 

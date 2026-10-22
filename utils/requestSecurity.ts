@@ -82,6 +82,25 @@ export function sanitizeApiKey(key: string): string {
     .trim();
 }
 
+export function sanitizeModelId(id: unknown): string {
+  if (typeof id !== 'string' || !id) return '';
+  return id
+    // eslint-disable-next-line no-control-regex
+    .replace(/[\x00-\x1F\x7F]/g, '')
+    .trim()
+    .slice(0, 512);
+}
+
+export function sanitizeModelIds(items: unknown[]): string[] {
+  if (!Array.isArray(items)) return [];
+  const set = new Set<string>();
+  for (const item of items) {
+    const clean = sanitizeModelId(item);
+    if (clean) set.add(clean);
+  }
+  return Array.from(set);
+}
+
 export function validateRaceRequestBody(body: unknown):
   | { ok: true; value: { prompt: string; model: string; apiKey: string; settings: Record<string, unknown> } }
   | { ok: false; error: string } {

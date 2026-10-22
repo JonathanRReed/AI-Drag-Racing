@@ -95,4 +95,25 @@ describe('models proxy error handling', () => {
     expect(response.status).toBe(500);
     expect(await response.json()).toEqual({ data: [], error: 'Failed to fetch models' });
   });
+
+  it('sanitizes model IDs returned from upstream provider responses', async () => {
+    const rawUpstreamData = {
+      data: [
+        { id: '  gpt-4o\r\n  ' },
+        { id: 'gpt-4o' },
+        { id: 'claude-3-5-sonnet\x00' },
+        { id: null },
+        { invalid: 'no id field' },
+      ],
+    };
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(JSON.stringify(rawUpstreamData))));
+    const response = await handler(request('openai'));
+    expect(response.status).toBe(200);
+    const body = await response.json();
+    expect(body.data).toContain('gpt-4o');
+    expect(body.data).toContain('claude-3-5-sonnet');
+    expect(body.data.filter((id: string) => id === 'gpt-4o').length).toBe(1);
+    // eslint-disable-next-line no-control-regex
+    expect(body.data.every((id: string) => typeof id === 'string' && id.length > 0 && !/[\x00-\x1F\x7F]/.test(id))).toBe(true);
+  });
 });
