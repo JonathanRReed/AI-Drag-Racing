@@ -186,4 +186,8 @@ const StandingsTicker: React.FC<StandingsTickerProps> = ({
   );
 };
 
-export default StandingsTicker;
+// Bolt optimization: Wrap StandingsTicker in React.memo to prevent parent state updates
+// (such as COMMIT_TEXT dispatches ~11x/sec during streaming) from triggering unnecessary React
+// re-renders when input props (lanes, buffersRef, running, mode, reducedMotion) are shallowly equal.
+// The ticker updates independently on its own throttled 150ms interval.
+export default React.memo(StandingsTicker);

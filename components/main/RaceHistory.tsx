@@ -30,6 +30,10 @@ function fastestLane(receipt: RaceReceipt) {
     .sort((a, b) => (a.browser.totalMs ?? Number.POSITIVE_INFINITY) - (b.browser.totalMs ?? Number.POSITIVE_INFINITY))[0];
 }
 
+// Bolt optimization: Cache the Intl.DateTimeFormat instance to avoid instantiating native ICU
+// locale objects repeatedly on every render cycle when formatting race timestamps.
+const historyDateFormatter = new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', timeStyle: 'short' });
+
 export default function RaceHistory({
   receipts,
   onDelete,
@@ -113,7 +117,7 @@ export default function RaceHistory({
       <div className="race-history-list">
         {receipts.map((receipt) => {
           const leader = fastestLane(receipt);
-          const formattedDate = new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(receipt.createdAt));
+          const formattedDate = historyDateFormatter.format(new Date(receipt.createdAt));
           const exportLabel = exportedState[receipt.id] ? 'Exported ✓' : 'Export JSON';
           const shareLabel = shareState[receipt.id] === 'sharing'
             ? 'Creating link…'
