@@ -27,12 +27,9 @@ export async function* parseSseJson<T = unknown>(
     try {
       return { done: false, value: JSON.parse(data) as T };
     } catch (error) {
-      if (error instanceof Error) {
-        error.message = redactCredentials(error.message);
-        console.error(`Error parsing ${sourceLabel} stream data:`, error);
-      } else {
-        console.error(`Error parsing ${sourceLabel} stream data:`, redactCredentials(error));
-      }
+      // Log only the sanitized message. Mutating Error.message leaves cached
+      // stacks and other exception properties available to console inspectors.
+      console.error(`Error parsing ${sourceLabel} stream data:`, redactCredentials(error));
       return { done: false };
     }
   };

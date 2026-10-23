@@ -42,6 +42,19 @@ describe('parseSseJson', () => {
     expect(events).toEqual([{ value: 1 }]);
   });
 
+  it('does not log exception objects with cached credential-bearing stacks', async () => {
+    const log = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const error = new SyntaxError('Invalid sk-synthetic-credential');
+    const originalStack = 'SyntaxError: Invalid sk-synthetic-credential\n    at synthetic-test';
+    Object.defineProperty(error, 'stack', { value: originalStack, writable: false });
+    vi.spyOn(JSON, 'parse').mockImplementationOnce(() => { throw error; });
+    const response = responseFromChunks(['data: invalid\n\n']);
+    for await (const event of parseSseJson(response, 'test')) void event;
+    expect(log.mock.calls[0][1]).toBe('Invalid [REDACTED]');
+    expect(error.stack).toBe(originalStack);
+    expect(error.message).toBe('Invalid sk-synthetic-credential');
+  });
+
   it('redacts sensitive credentials when logging JSON parse errors', async () => {
     const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
     const response = responseFromChunks([
@@ -53,10 +66,10 @@ describe('parseSseJson', () => {
     expect(events).toEqual([]);
     expect(consoleSpy).toHaveBeenCalledWith(
       'Error parsing test-stream stream data:',
-      expect.any(SyntaxError),
+      expect.any(String),
     );
-    const loggedError = consoleSpy.mock.calls[0][1] as Error;
-    expect(loggedError.message).toContain('[REDACTED]');
-    expect(loggedError.message).not.toContain('sk-secret123');
+    const loggedMessage = consoleSpy.mock.calls[0][1] as string;
+    expect(loggedMessage).toContain('[REDACTED]');
+    expect(loggedMessage).not.toContain('sk-secret123');
   });
 });
