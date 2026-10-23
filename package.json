@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "license": "SEE LICENSE IN LICENSE",
   "private": true,
-  "packageManager": "bun@1.4.3",
+  "packageManager": "bun@1.4.4",
   "scripts": {
     "dev": "next dev",
     "build": "bun run build:theme && bun scripts/verify-react-runtime.mjs && next build",

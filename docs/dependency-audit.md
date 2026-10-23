@@ -1,8 +1,18 @@
-# Temporary braces audit exception
+# Dependency audit policy and history
 
-Expires **2026-10-18 at 05:00 UTC**. No automatic extension.
+## October 23, 2026 advisory withdrawal
 
-## October 22, 2026 maintenance status
+GitHub withdrew [GHSA-vfj7-8cjw-p6xm](https://github.com/advisories/GHSA-vfj7-8cjw-p6xm)
+on October 23 because it was not practically exploitable. A fresh unfiltered
+full audit of this branch returns an empty report; the production audit also
+reports no findings. No exception was extended and no findings were filtered.
+The existing fail-closed audit and packaging controls remain enforced. Release
+still requires the complete application and Cloudflare packaging gates.
+
+The sections below preserve the historical exception and its original expired
+deadline: **2026-10-18 at 05:00 UTC**. No automatic extension.
+
+## Historical October 22, 2026 maintenance status
 
 The original deadline remains expired. The unrelated extension to October 2027
 has been removed; there is no renewed exception. Next.js and its ESLint config
@@ -53,8 +63,9 @@ JavaScript and glob dependencies are not deployed by this application.
   Audit and runtime evidence are retained as CI artifacts.
 - Existing lint, typecheck, test and production-build gates remain required.
 
-Run `bun run audit:dependencies` for the policy-aware audit. Plain `bun audit`
-continues to report the known high finding and return a failing status.
+Run `bun run audit:dependencies` for the policy-aware audit. Before the
+October 23 withdrawal, plain `bun audit` reported the known high finding and
+returned a failing status; the current unfiltered result is recorded above.
 
 At expiry the residual fails again. A clean successful audit does not need an
 exception, including after expiry. Remove this policy when a patched package or
