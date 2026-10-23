@@ -1,3 +1,5 @@
+import { redactCredentials } from './requestSecurity';
+
 export async function* parseSseJson<T = unknown>(
   response: Response,
   sourceLabel = 'SSE',
@@ -25,7 +27,12 @@ export async function* parseSseJson<T = unknown>(
     try {
       return { done: false, value: JSON.parse(data) as T };
     } catch (error) {
-      console.error(`Error parsing ${sourceLabel} stream data:`, error);
+      if (error instanceof Error) {
+        error.message = redactCredentials(error.message);
+        console.error(`Error parsing ${sourceLabel} stream data:`, error);
+      } else {
+        console.error(`Error parsing ${sourceLabel} stream data:`, redactCredentials(error));
+      }
       return { done: false };
     }
   };

@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { parseSseJson } from './sse';
 
 function responseFromChunks(chunks: string[]): Response {
@@ -12,6 +12,10 @@ function responseFromChunks(chunks: string[]): Response {
 }
 
 describe('parseSseJson', () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
   it('preserves JSON split across network chunks and CRLF event boundaries', async () => {
     const response = responseFromChunks([
       'data: {"type":"chunk","cont',
@@ -36,5 +40,23 @@ describe('parseSseJson', () => {
     const events = [];
     for await (const event of parseSseJson(response, 'test')) events.push(event);
     expect(events).toEqual([{ value: 1 }]);
+  });
+
+  it('redacts sensitive credentials when logging JSON parse errors', async () => {
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const response = responseFromChunks([
+      'data: sk-secret123\n\n',
+    ]);
+    const events = [];
+    for await (const event of parseSseJson(response, 'test-stream')) events.push(event);
+
+    expect(events).toEqual([]);
+    expect(consoleSpy).toHaveBeenCalledWith(
+      'Error parsing test-stream stream data:',
+      expect.any(SyntaxError),
+    );
+    const loggedError = consoleSpy.mock.calls[0][1] as Error;
+    expect(loggedError.message).toContain('[REDACTED]');
+    expect(loggedError.message).not.toContain('sk-secret123');
   });
 });
