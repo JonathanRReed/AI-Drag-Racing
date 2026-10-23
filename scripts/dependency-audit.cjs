@@ -4,7 +4,7 @@ const crypto = require('node:crypto');
 const { execFileSync, spawnSync } = require('node:child_process');
 
 const ADVISORY = 'https://github.com/advisories/GHSA-vfj7-8cjw-p6xm';
-const EXPIRES_AT = '2027-10-18T05:00:00.000Z';
+const EXPIRES_AT = '2026-10-18T05:00:00.000Z';
 const FIELDS = ['dependencies', 'devDependencies', 'optionalDependencies', 'peerDependencies'];
 const CACHE = '.cache/dependency-audit';
 const GRAPH_DIR = '.next/dependency-audit';
@@ -206,16 +206,14 @@ function warn(message) {
 
 function runAudit(cwd) {
   const result = spawnSync(process.execPath, ['audit', '--json'], { cwd, encoding: 'utf8', timeout: 60000, maxBuffer: 4 * 1024 * 1024 });
-  if (result.error || result.signal) fail('audit process did not complete');
-  let report = parseJSONEvidence(result.stdout);
-  if (report && typeof report === 'object' && !Array.isArray(report) && 'braces' in report) {
-    report = { braces: report.braces };
-  }
+  // Preserve the full unfiltered response, including failure output, before validating it.
   const reportFile = path.join(cwd, CACHE, 'report.json');
   fs.mkdirSync(path.dirname(reportFile), { recursive: true });
-  fs.writeFileSync(reportFile, JSON.stringify(report, null, 2));
+  fs.writeFileSync(reportFile, result.stdout || '');
   fs.writeFileSync(path.join(cwd, CACHE, 'process-stderr.txt'), result.stderr || '');
   writeJSON(path.join(cwd, CACHE, 'result.json'), { status: result.status, processFailed: !!(result.error || result.signal), source: sourceStamp(cwd), capturedAt: new Date().toISOString() });
+  if (result.error || result.signal) fail('audit process did not complete');
+  const report = parseJSONEvidence(result.stdout);
   console.log(JSON.stringify(report, null, 2));
   const validation = validateCurrentAudit(cwd);
   warn(validation.warning);
