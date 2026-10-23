@@ -4,7 +4,7 @@ const crypto = require('node:crypto');
 const { execFileSync, spawnSync } = require('node:child_process');
 
 const ADVISORY = 'https://github.com/advisories/GHSA-vfj7-8cjw-p6xm';
-const EXPIRES_AT = '2027-10-18T05:00:00.000Z';
+const EXPIRES_AT = '2026-10-18T05:00:00.000Z';
 const FIELDS = ['dependencies', 'devDependencies', 'optionalDependencies', 'peerDependencies'];
 const CACHE = '.cache/dependency-audit';
 const GRAPH_DIR = '.next/dependency-audit';
@@ -79,16 +79,6 @@ function collectConsumerGraph(lock) {
   };
 }
 
-const ALLOWED_BUILD_PACKAGES = new Set([
-  'braces',
-  '@modelcontextprotocol/sdk',
-  '@vitest/mocker',
-  'hono',
-  'ip-address',
-  'next',
-  'vite',
-]);
-
 function validateAudit({ report, status, stderr = '', lock, installedBracesVersion, now = new Date(), policy }) {
   if (typeof stderr !== 'string' || stderr.trim()) fail('audit process reported error output');
   if (!isRecord(report) || ![0, 1].includes(status)) fail('failed audit process or malformed report');
@@ -97,13 +87,8 @@ function validateAudit({ report, status, stderr = '', lock, installedBracesVersi
     if (status !== 0) fail('audit request failed');
     return { accepted: false, warning: null };
   }
-  if (status !== 1) fail('unexpected audit status');
-  const unapproved = entries.filter(([pkg]) => !ALLOWED_BUILD_PACKAGES.has(pkg));
-  if (unapproved.length > 0) fail('unapproved vulnerability');
-
-  const bracesEntries = report.braces;
-  if (!Array.isArray(bracesEntries) || bracesEntries.length !== 1) fail('unapproved vulnerability');
-  const finding = bracesEntries[0];
+  if (status !== 1 || entries.length !== 1 || entries[0][0] !== 'braces' || !Array.isArray(entries[0][1]) || entries[0][1].length !== 1) fail('unapproved vulnerability');
+  const finding = entries[0][1][0];
   if (!isRecord(finding) || finding.id !== 1240992 || finding.url !== ADVISORY || finding.severity !== 'high' || finding.vulnerable_versions !== '<=3.0.3' || typeof finding.title !== 'string' || !finding.title) fail('unapproved or malformed advisory');
   if (!isRecord(policy) || policy.expiresAt !== EXPIRES_AT || !Number.isFinite(now.getTime())) fail('invalid exception policy or date');
   if (now.getTime() >= Date.parse(EXPIRES_AT)) fail('temporary braces exception expired');
