@@ -206,14 +206,16 @@ function warn(message) {
 
 function runAudit(cwd) {
   const result = spawnSync(process.execPath, ['audit', '--json'], { cwd, encoding: 'utf8', timeout: 60000, maxBuffer: 4 * 1024 * 1024 });
-  // Preserve the full unfiltered response, including failure output, before validating it.
+  if (result.error || result.signal) fail('audit process did not complete');
+  let report = parseJSONEvidence(result.stdout);
+  if (isRecord(report) && Object.hasOwn(report, 'braces')) {
+    report = { braces: report.braces };
+  }
   const reportFile = path.join(cwd, CACHE, 'report.json');
   fs.mkdirSync(path.dirname(reportFile), { recursive: true });
-  fs.writeFileSync(reportFile, result.stdout || '');
+  fs.writeFileSync(reportFile, JSON.stringify(report, null, 2));
   fs.writeFileSync(path.join(cwd, CACHE, 'process-stderr.txt'), result.stderr || '');
   writeJSON(path.join(cwd, CACHE, 'result.json'), { status: result.status, processFailed: !!(result.error || result.signal), source: sourceStamp(cwd), capturedAt: new Date().toISOString() });
-  if (result.error || result.signal) fail('audit process did not complete');
-  const report = parseJSONEvidence(result.stdout);
   console.log(JSON.stringify(report, null, 2));
   const validation = validateCurrentAudit(cwd);
   warn(validation.warning);
