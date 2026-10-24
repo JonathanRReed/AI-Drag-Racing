@@ -5,7 +5,7 @@ import GlassCard from '../layout/GlassCard';
 import { CompletionMetrics } from '../../utils/providerService';
 import { getProviderById } from '../../utils/providers';
 import { getOutputThroughput } from '../../utils/outputThroughput';
-import { presentOutputCount, timingSourceDetail } from '../../utils/measurementPresentation';
+import { measuredDuration, presentOutputCount, timingSourceDetail } from '../../utils/measurementPresentation';
 
 export type LaneStatus = 'staging' | 'green' | 'finish' | 'error';
 
@@ -23,7 +23,7 @@ export interface RaceLaneProps {
   initialExpanded?: boolean;
 }
 
-function formatMs(ms?: number) {
+function formatMs(ms?: number | null) {
   return typeof ms === 'number' && !Number.isNaN(ms) ? `${ms.toFixed(0)} ms` : 'N/A';
 }
 
@@ -165,8 +165,8 @@ const RaceLane: React.FC<RaceLaneProps> = ({
 
   const throughput = getOutputThroughput(metrics);
   const outputCount = presentOutputCount(metrics?.outputTokens, metrics?.tokenCountSource, metrics?.timingSource);
-  const ttft = metrics?.firstTokenTime ? metrics.firstTokenTime - metrics.startTime : undefined;
-  const total = metrics?.finishTime ? metrics.finishTime - metrics.startTime : undefined;
+  const ttft = measuredDuration(metrics?.startTime, metrics?.firstTokenTime);
+  const total = measuredDuration(metrics?.startTime, metrics?.finishTime);
 
   // Expanded state for the response area
   const [expanded, setExpanded] = useState(initialExpanded);

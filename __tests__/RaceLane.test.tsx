@@ -221,6 +221,41 @@ describe('expanded race telemetry', () => {
   });
 });
 
+describe('RaceLane timing boundaries', () => {
+  const timing = (label: string) => [...view!.container.querySelectorAll('span')]
+    .find(node => node.textContent === label)?.nextElementSibling?.textContent;
+
+  test.each([
+    { name: 'zero timestamps', startTime: 0, firstTokenTime: 0, finishTime: 0, ttft: '0 ms', total: '0 ms' },
+    { name: 'equal nonzero timestamps', startTime: 1000, firstTokenTime: 1000, finishTime: 1000, ttft: '0 ms', total: '0 ms' },
+    { name: 'zero first-token timestamp', startTime: 0, firstTokenTime: 0, finishTime: 200, ttft: '0 ms', total: '200 ms' },
+    { name: 'missing first-token timestamp', startTime: 1000, firstTokenTime: undefined, finishTime: 2000, ttft: 'N/A', total: '1000 ms' },
+    { name: 'wall-clock rollback', startTime: 1000, firstTokenTime: 900, finishTime: 500, ttft: 'N/A', total: 'N/A' },
+    { name: 'reversed first-token interval only', startTime: 1000, firstTokenTime: 900, finishTime: 2000, ttft: 'N/A', total: '1000 ms' },
+    { name: 'reversed total interval only', startTime: 1000, firstTokenTime: 1200, finishTime: 500, ttft: '200 ms', total: 'N/A' },
+    { name: 'infinite start', startTime: Infinity, firstTokenTime: 1200, finishTime: 2000, ttft: 'N/A', total: 'N/A' },
+    { name: 'negative infinite start', startTime: -Infinity, firstTokenTime: 1200, finishTime: 2000, ttft: 'N/A', total: 'N/A' },
+    { name: 'NaN start', startTime: NaN, firstTokenTime: 1200, finishTime: 2000, ttft: 'N/A', total: 'N/A' },
+    { name: 'infinite first-token timestamp', startTime: 1000, firstTokenTime: Infinity, finishTime: 2000, ttft: 'N/A', total: '1000 ms' },
+    { name: 'negative infinite first-token timestamp', startTime: 1000, firstTokenTime: -Infinity, finishTime: 2000, ttft: 'N/A', total: '1000 ms' },
+    { name: 'NaN first-token timestamp', startTime: 1000, firstTokenTime: NaN, finishTime: 2000, ttft: 'N/A', total: '1000 ms' },
+    { name: 'infinite finish', startTime: 1000, firstTokenTime: 1200, finishTime: Infinity, ttft: '200 ms', total: 'N/A' },
+    { name: 'negative infinite finish', startTime: 1000, firstTokenTime: 1200, finishTime: -Infinity, ttft: '200 ms', total: 'N/A' },
+    { name: 'NaN finish', startTime: 1000, firstTokenTime: 1200, finishTime: NaN, ttft: '200 ms', total: 'N/A' },
+    { name: 'overflow from finite timestamps', startTime: -Number.MAX_VALUE, firstTokenTime: Number.MAX_VALUE, finishTime: Number.MAX_VALUE, ttft: 'N/A', total: 'N/A' },
+  ])('$name preserves available durations without inventing invalid ones', ({ startTime, firstTokenTime, finishTime, ttft, total }) => {
+    view = mount(lane({ metrics: { ...METRICS, startTime, firstTokenTime, finishTime } }));
+    expect(timing('TTFT')).toBe(ttft);
+    expect(timing('Total')).toBe(total);
+  });
+
+  test('missing metrics leave both durations unavailable', () => {
+    view = mount(lane({ metrics: null }));
+    expect(timing('TTFT')).toBe('N/A');
+    expect(timing('Total')).toBe('N/A');
+  });
+});
+
 test('does not substitute total input plus output when output usage is missing', () => {
   view = mount(lane({ metrics: { ...METRICS, outputTokens: undefined, inputTokens: 999970, tokenCount: 1000000 } }));
   const explanation = [...view.container.querySelectorAll('p')].find(node => node.textContent?.includes('TTFT:'))!;
