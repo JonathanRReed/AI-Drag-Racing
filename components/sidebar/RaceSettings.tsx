@@ -273,7 +273,7 @@ const RaceSettings: React.FC<RaceSettingsProps> = ({ config, onChange, selectedP
                 type="range"
                 min="100"
                 max="4096"
-                step="100"
+                step="1"
                 value={config.modelSettings.maxTokens}
                 aria-valuetext={`${config.modelSettings.maxTokens} tokens`}
                 onChange={(e) => updateModelSettings('maxTokens', parseInt(e.target.value))}
