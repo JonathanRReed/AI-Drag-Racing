@@ -123,4 +123,29 @@ describe('prompt character counter', () => {
     click(startBtn);
     expect(onSubmit).toHaveBeenCalledTimes(1);
   });
+
+  it('associates aria-describedby with prompt hint and renders shortcut badge', () => {
+    const html = renderToStaticMarkup(
+      <PromptInput prompt="Hello" onPromptChange={() => {}} onSubmit={() => {}} isLoading={false} />
+    );
+    expect(html).toContain('aria-describedby="prompt-hint"');
+    expect(html).toContain('id="prompt-hint"');
+    expect(html).toContain('⌘L');
+  });
+
+  it('clears prompt via clear button or Escape key press', () => {
+    const onPromptChange = vi.fn();
+    view = mount(
+      <PromptInput prompt="Sample prompt" onPromptChange={onPromptChange} onSubmit={() => {}} isLoading={false} />
+    );
+
+    const clearBtn = view.container.querySelector('button[aria-label="Clear prompt text"]') as HTMLButtonElement;
+    expect(clearBtn).not.toBeNull();
+    click(clearBtn);
+    expect(onPromptChange).toHaveBeenLastCalledWith('');
+
+    const textarea = view.container.querySelector('#prompt-input') as HTMLTextAreaElement;
+    textarea.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+    expect(onPromptChange).toHaveBeenLastCalledWith('');
+  });
 });
