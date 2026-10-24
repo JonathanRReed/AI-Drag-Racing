@@ -7,7 +7,10 @@ const ms = (value: number | null): string => {
 };
 
 export default function SharedRaceView({ record }: { record: RaceShareRecord }) {
-  const lanes = [...record.payload.lanes].sort((a, b) =>
+  const isTimeTrial = record.payload.mode === 'time_limit';
+  // v1 shares intentionally omit local output length. Preserve neutral source
+  // order rather than presenting fastest time as the Time Trial ranking.
+  const lanes = isTimeTrial ? record.payload.lanes : [...record.payload.lanes].sort((a, b) =>
     Number(a.status === 'failed') - Number(b.status === 'failed') ||
     (a.browser.totalMs ?? Number.POSITIVE_INFINITY) - (b.browser.totalMs ?? Number.POSITIVE_INFINITY));
 
@@ -20,6 +23,7 @@ export default function SharedRaceView({ record }: { record: RaceShareRecord }) 
       </header>
       <div className="shared-race-scope">
         <strong>One observation, not a global ranking.</strong>
+        {isTimeTrial && <span>Time Trial ranking unavailable. Output length is not included in this shared receipt; lanes are shown in original order.</span>}
         <span>{record.payload.prompt.characters} prompt characters</span>
         <span>{record.payload.environment.edgeRegion ? `Cloudflare ${record.payload.environment.edgeRegion}` : 'Edge region unavailable'}</span>
       </div>

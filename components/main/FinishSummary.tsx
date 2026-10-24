@@ -1,6 +1,8 @@
 import ModelIdentifier from '../ModelIdentifier';
 import React, { useMemo } from 'react';
 import type { ResultState } from './ResultsDisplay';
+import type { RaceMode } from '../../utils/raceReceipts';
+import { rankCompletedRace } from '../../utils/raceRanking';
 
 function edgeDuration(result: ResultState): number | null {
   const metrics = result.metrics;
@@ -14,15 +16,13 @@ function formatMs(value: number | null | undefined): string {
   return `${(value / 1000).toFixed(value < 10_000 ? 2 : 1)} s`;
 }
 
-export default function FinishSummary({ results }: { results: ResultState[] }) {
+export default function FinishSummary({ results, mode }: { results: ResultState[]; mode: RaceMode }) {
   const finished = useMemo(
-    () => results
-      .filter((result) => !result.error && (result.browserTiming?.totalMs != null || edgeDuration(result) != null))
-      .sort((a, b) => (
-        (a.browserTiming?.totalMs ?? edgeDuration(a) ?? Number.POSITIVE_INFINITY)
-        - (b.browserTiming?.totalMs ?? edgeDuration(b) ?? Number.POSITIVE_INFINITY)
-      )),
-    [results],
+    () => rankCompletedRace(mode,
+      results.filter((result) => !result.error && (result.browserTiming?.totalMs != null || edgeDuration(result) != null)),
+      (result) => ({ outputCharacters: result.responseText.length, totalMs: result.browserTiming?.totalMs ?? edgeDuration(result) }),
+    ).lanes,
+    [results, mode],
   );
   // A lane that failed is evidence about this route too, so it stays on the
   // board instead of disappearing and making the race look cleaner than it was.
@@ -32,6 +32,7 @@ export default function FinishSummary({ results }: { results: ResultState[] }) {
 
   const isDemo = results.some((result) => result.metrics?.timingSource === 'demo');
   const leader = finished[0] ?? null;
+  const isTimeTrial = mode === 'time_limit';
   const edgeRegion = finished.find((result) => result.edgeRegion)?.edgeRegion ?? null;
 
   return (
@@ -39,7 +40,7 @@ export default function FinishSummary({ results }: { results: ResultState[] }) {
       <div className="finish-board-lead">
         <div>
           <h2 id="finish-heading">
-            {isDemo ? 'Simulated demo, not a measurement' : leader ? 'Fastest here, this run' : 'No lane finished'}
+            {isDemo ? 'Simulated demo, not a measurement' : leader ? isTimeTrial ? 'Most output, this Time Trial' : 'Fastest here, this run' : 'No lane finished'}
           </h2>
           <p>
             {leader ? (
@@ -54,8 +55,8 @@ export default function FinishSummary({ results }: { results: ResultState[] }) {
         </div>
         {leader && (
           <div className="finish-board-time">
-            <strong>{formatMs(leader.browserTiming?.totalMs ?? edgeDuration(leader))}</strong>
-            <span>browser to final token</span>
+            <strong>{isTimeTrial ? leader.responseText.length : formatMs(leader.browserTiming?.totalMs ?? edgeDuration(leader))}</strong>
+            <span>{isTimeTrial ? 'UTF-16 code units received' : 'browser to final token'}</span>
           </div>
         )}
       </div>
@@ -69,6 +70,7 @@ export default function FinishSummary({ results }: { results: ResultState[] }) {
               <th scope="col">Edge first token</th>
               <th scope="col">Browser total</th>
               <th scope="col">Output tokens</th>
+              {isTimeTrial && <th scope="col">Output length (UTF-16 code units)</th>}
             </tr>
           </thead>
           <tbody>
@@ -91,6 +93,7 @@ export default function FinishSummary({ results }: { results: ResultState[] }) {
                   <td data-label="Edge first token">{formatMs(edgeTtft)}</td>
                   <td data-label="Browser total">{formatMs(result.browserTiming?.totalMs ?? edgeDuration(result))}</td>
                   <td data-label="Output tokens">{result.metrics?.outputTokens ?? 'Estimate unavailable'}</td>
+                  {isTimeTrial && <td data-label="Output length (UTF-16 code units)">{result.responseText.length}</td>}
                 </tr>
               );
             })}
@@ -105,7 +108,7 @@ export default function FinishSummary({ results }: { results: ResultState[] }) {
                     </div>
                   </div>
                 </th>
-                <td colSpan={4} data-label="Outcome">
+                <td colSpan={isTimeTrial ? 5 : 4} data-label="Outcome">
                   Did not finish{result.error ? `: ${result.error}` : ''}
                 </td>
               </tr>
@@ -115,6 +118,7 @@ export default function FinishSummary({ results }: { results: ResultState[] }) {
       </div>
 
       <p className="finish-board-note">
+        {isTimeTrial && 'Time Trial ranks received output by JavaScript text.length (UTF-16 code units), not tokens or visible characters. Ties keep lane order. '}
         {finished.length} of {results.length} {results.length === 1 ? 'lane' : 'lanes'} finished.{' '}
         {isDemo
           ? 'These timings are simulated. No provider was contacted and nothing was saved.'

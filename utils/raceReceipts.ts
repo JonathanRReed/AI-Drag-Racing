@@ -1,4 +1,5 @@
 import type { CompletionMetrics } from './providerService';
+import { isOutputCharacterCount } from './raceRanking';
 
 export const RACE_RECEIPT_SCHEMA = 'ai-drag-race-receipt.v1' as const;
 export const RACE_HISTORY_STORAGE_KEY = 'ai-drag-racing:history:v1';
@@ -27,6 +28,8 @@ export interface EdgeTiming {
 }
 
 export interface RaceReceiptLane {
+  /** Accepted output text.length (UTF-16 code units). Absent in legacy receipts. */
+  outputCharacters?: number;
   providerId: string;
   modelId: string;
   browser: BrowserTiming;
@@ -66,6 +69,7 @@ export interface RaceReceipt {
 }
 
 export interface ReceiptLaneInput {
+  outputCharacters?: number;
   providerId: string;
   modelId: string;
   metrics: CompletionMetrics | null;
@@ -142,6 +146,7 @@ export async function createRaceReceipt(input: ReceiptInput): Promise<RaceReceip
     },
     settings: input.settings,
     lanes: input.lanes.map((lane) => ({
+      ...(isOutputCharacterCount(lane.outputCharacters) ? { outputCharacters: lane.outputCharacters } : {}),
       providerId: lane.providerId,
       modelId: lane.modelId,
       browser: lane.browser,

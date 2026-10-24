@@ -51,6 +51,7 @@ interface AppState {
   countdownValue: number | 'Go!' | null;
   enabledProviders: Record<string, boolean>;
   raceConfig: RaceConfig;
+  resultMode: RaceConfig['mode'];
 }
 
 type AppAction =
@@ -58,7 +59,7 @@ type AppAction =
   | { type: 'SET_API_KEY'; payload: { providerId: string; apiKey: string } }
   | { type: 'TOGGLE_MODEL_SELECTION'; payload: { providerId: string; modelId: string } }
   | { type: 'CLEAR_PROVIDER_SELECTIONS'; payload: { providerId: string } }
-  | { type: 'START_COMPARISON'; payload: { providersToTest: { providerId: string; modelId: string }[] } }
+  | { type: 'START_COMPARISON'; payload: { providersToTest: { providerId: string; modelId: string }[]; mode?: RaceConfig['mode'] } }
   | { type: 'RECEIVE_CHUNK'; payload: { resultId: string; chunk: string } }
   | { type: 'COMMIT_TEXT'; payload: Record<string, string> }
   | { type: 'FINISH_STREAM'; payload: { resultId: string; metrics: CompletionMetrics; browserTiming: BrowserTiming } }
@@ -80,6 +81,7 @@ const initialState: AppState = {
   raceState: 'idle',
   countdownValue: null,
   enabledProviders: {},
+  resultMode: 'drag',
   raceConfig: {
     mode: 'drag',
     tokenLimit: 500,
@@ -114,6 +116,7 @@ function appReducer(state: AppState, action: AppAction): AppState {
       return {
         ...state,
         isLoading: true,
+        resultMode: action.payload.mode ?? state.raceConfig.mode,
         results: action.payload.providersToTest.map(p => ({
           id: `${p.providerId}-${p.modelId}`,
           providerName: p.providerId,
@@ -552,12 +555,16 @@ export default function Home() {
       },
       lanes: providersToTest.map((pair) => {
         const id = `${pair.providerId}-${pair.modelId}`;
-        return receiptLanesRef.current[id] ?? {
-          providerId: pair.providerId,
-          modelId: pair.modelId,
-          metrics: null,
-          browser: { ttftMs: null, totalMs: null },
-          error: 'No receipt data was produced',
+        return {
+          ...(receiptLanesRef.current[id] ?? {
+            providerId: pair.providerId,
+            modelId: pair.modelId,
+            metrics: null,
+            browser: { ttftMs: null, totalMs: null },
+            error: 'No receipt data was produced',
+          }),
+          // Read accepted stream data, not the stale results captured at Start.
+          outputCharacters: laneBuffersRef.current[id]?.chars,
         };
       }),
     });
@@ -582,7 +589,7 @@ export default function Home() {
     }
     laneBuffersRef.current = initialBuffers;
     pendingTextRef.current = {};
-    dispatch({ type: 'START_COMPARISON', payload: { providersToTest: pairs } });
+    dispatch({ type: 'START_COMPARISON', payload: { providersToTest: pairs, mode: 'drag' } });
 
     const flushLane = (id: string) => {
       const t = pendingTextRef.current[id];
@@ -1109,13 +1116,13 @@ export default function Home() {
                       lanes={paceLanes}
                       buffersRef={laneBuffersRef}
                       running={state.raceState === 'racing'}
-                      mode={state.raceConfig.mode}
+                      mode={state.resultMode}
                       reducedMotion={reducedMotion}
                     />
                   </GlassCard>
                 </div>
               )}
-              {state.raceState === 'finished' && <FinishSummary results={state.results} />}
+              {state.raceState === 'finished' && <FinishSummary results={state.results} mode={state.resultMode} />}
               <ResultsDisplay results={state.results} hideFailed={hideFailed} force={force} compact={showStage} onDemo={handleRunDemo} />
               <RaceHistory
                 receipts={history}
