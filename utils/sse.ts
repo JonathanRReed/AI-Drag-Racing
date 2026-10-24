@@ -3,6 +3,7 @@ import { redactCredentials } from './requestSecurity';
 export async function* parseSseJson<T = unknown>(
   response: Response,
   sourceLabel = 'SSE',
+  signal?: AbortSignal,
 ): AsyncGenerator<T, void, unknown> {
   const reader = response.body?.getReader();
   if (!reader) throw new Error('No response body');
@@ -35,13 +36,24 @@ export async function* parseSseJson<T = unknown>(
   };
 
   let reachedEof = false;
+  let cancellation: Promise<void> | undefined;
+  const cancelReader = () => {
+    // Cancel the reader itself: aborting fetch alone cannot release every body
+    // implementation, and iterator.return() queues behind a pending next().
+    cancellation ??= reader.cancel(signal?.reason).catch(() => {});
+  };
+  signal?.addEventListener('abort', cancelReader, { once: true });
   try {
+    if (signal?.aborted) { cancelReader(); signal.throwIfAborted(); }
     while (true) {
       let done: boolean;
       let value: Uint8Array | undefined;
       try {
         ({ done, value } = await reader.read());
+        signal?.throwIfAborted();
       } catch (error) {
+        // Client callers distinguish an intentional deadline from provider failure.
+        if (signal) throw signal.aborted ? signal.reason : error;
         const message = String(error instanceof Error ? error.message : error);
         const code = error && typeof error === 'object' && 'code' in error
           ? String((error as { code?: unknown }).code ?? '')
@@ -61,6 +73,7 @@ export async function* parseSseJson<T = unknown>(
         buffer = buffer.slice(boundary + 2);
         const parsed = parseEvent(event);
         if (parsed.done) return;
+        signal?.throwIfAborted();
         if (parsed.value !== undefined) yield parsed.value;
         boundary = buffer.indexOf('\n\n');
       }
@@ -71,10 +84,28 @@ export async function* parseSseJson<T = unknown>(
     const finalEvent = parseEvent(buffer);
     if (!finalEvent.done && finalEvent.value !== undefined) yield finalEvent.value;
   } finally {
+    signal?.removeEventListener('abort', cancelReader);
     // A consumer break, DONE sentinel or read error must release upstream work.
     // Cleanup failure must never replace the parser's original result/error.
     if (!reachedEof) {
-      try { await reader.cancel(); } catch {}
+      cancelReader();
+      // Cancelling closes the reader and settles pending reads immediately, but
+      // an underlying source may never settle its own cleanup promise. A signal
+      // stop must release the lane now; cancelReader already handles rejection.
+      if (!signal) {
+        await cancellation;
+      } else if (!signal.aborted) {
+        // Cleanup may have started before the deadline (for example at [DONE]).
+        // Keep that wait interruptible if the source's cancel hook hangs.
+        let stopWaiting!: () => void;
+        const stopped = new Promise<void>(resolve => { stopWaiting = resolve; });
+        signal.addEventListener('abort', stopWaiting, { once: true });
+        try {
+          await Promise.race([cancellation, stopped]);
+        } finally {
+          signal.removeEventListener('abort', stopWaiting);
+        }
+      }
     }
     reader.releaseLock();
   }
