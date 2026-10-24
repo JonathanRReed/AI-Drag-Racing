@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-import React from 'react';
+import React, { act } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import PromptInput from '../components/main/PromptInput';
@@ -122,5 +122,101 @@ describe('prompt character counter', () => {
     expect(startBtn.disabled).toBe(false);
     click(startBtn);
     expect(onSubmit).toHaveBeenCalledTimes(1);
+  });
+
+  it('associates the prompt with helper text for submitting and adding lines', () => {
+    view = mount(<PromptInput prompt="Hello" onPromptChange={() => {}} onSubmit={() => {}} isLoading={false} />);
+    const textarea = view.container.querySelector('textarea')!;
+    const hint = document.getElementById(textarea.getAttribute('aria-describedby')!);
+    expect(hint).not.toBeNull();
+    expect(hint!.textContent).toContain('Enter starts race.');
+    expect(hint!.textContent).toContain('Shift+Enter adds line.');
+  });
+
+  function mountControlledPrompt(isLoading = false, initialPrompt = 'Sample prompt') {
+    const onPromptChange = vi.fn();
+    const onSubmit = vi.fn();
+    const onFormSubmit = vi.fn();
+    function ControlledPrompt() {
+      const [prompt, setPrompt] = React.useState(initialPrompt);
+      return (
+        <form onSubmit={(event) => { event.preventDefault(); onFormSubmit(); }}>
+          <PromptInput prompt={prompt} onPromptChange={(value) => {
+            onPromptChange(value);
+            setPrompt(value);
+          }} onSubmit={onSubmit} isLoading={isLoading} />
+        </form>
+      );
+    }
+    view = mount(<ControlledPrompt />);
+    const textarea = view.container.querySelector('textarea')!;
+    return { textarea, onPromptChange, onSubmit, onFormSubmit };
+  }
+
+  it('clears the controlled prompt using the clear button', () => {
+    const { textarea, onPromptChange, onSubmit, onFormSubmit } = mountControlledPrompt();
+    click(view!.container.querySelector<HTMLButtonElement>('button[aria-label="Clear prompt text"]')!);
+    expect(textarea.value).toBe('');
+    expect(onPromptChange).toHaveBeenCalledExactlyOnceWith('');
+    expect(onSubmit).not.toHaveBeenCalled();
+    expect(view!.container.querySelector('button[aria-label="Clear prompt text"]')).toBeNull();
+    expect(onFormSubmit).not.toHaveBeenCalled();
+  });
+
+  it('clears the controlled prompt with Escape independently of the clear button', () => {
+    const { textarea, onPromptChange, onSubmit } = mountControlledPrompt();
+    act(() => textarea.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })));
+    expect(textarea.value).toBe('');
+    expect(onPromptChange).toHaveBeenCalledExactlyOnceWith('');
+    expect(onSubmit).not.toHaveBeenCalled();
+  });
+
+  it.each(['Escape', 'Enter'])('does not treat composing %s as a prompt shortcut', (key) => {
+    const { textarea, onPromptChange, onSubmit } = mountControlledPrompt();
+    const event = new KeyboardEvent('keydown', { key, bubbles: true, cancelable: true, isComposing: true });
+    act(() => textarea.dispatchEvent(event));
+    expect(textarea.value).toBe('Sample prompt');
+    expect(onPromptChange).not.toHaveBeenCalled();
+    expect(onSubmit).not.toHaveBeenCalled();
+    expect(event.defaultPrevented).toBe(false);
+  });
+
+  it.each(['Escape', 'Enter'])('preserves the prompt for IME keyCode 229 on %s', (key) => {
+    const { textarea, onPromptChange, onSubmit } = mountControlledPrompt();
+    const event = new KeyboardEvent('keydown', { key, bubbles: true, cancelable: true });
+    Object.defineProperty(event, 'keyCode', { value: 229 });
+    act(() => textarea.dispatchEvent(event));
+    expect(textarea.value).toBe('Sample prompt');
+    expect(onPromptChange).not.toHaveBeenCalled();
+    expect(onSubmit).not.toHaveBeenCalled();
+    expect(event.defaultPrevented).toBe(false);
+  });
+
+  it('does not clear a prompt while a race is loading', () => {
+    const { textarea, onPromptChange } = mountControlledPrompt(true);
+    expect(view!.container.querySelector('button[aria-label="Clear prompt text"]')).toBeNull();
+    act(() => textarea.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })));
+    expect(textarea.value).toBe('Sample prompt');
+    expect(onPromptChange).not.toHaveBeenCalled();
+  });
+
+  it('does not fire a redundant clear action for an empty prompt', () => {
+    const { textarea, onPromptChange } = mountControlledPrompt(false, '');
+    expect(view!.container.querySelector('button[aria-label="Clear prompt text"]')).toBeNull();
+    act(() => textarea.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })));
+    expect(onPromptChange).not.toHaveBeenCalled();
+  });
+
+  it('still submits once on ordinary Enter and leaves Shift+Enter for a new line', () => {
+    const { textarea, onSubmit, onFormSubmit } = mountControlledPrompt();
+    const newline = new KeyboardEvent('keydown', { key: 'Enter', shiftKey: true, bubbles: true, cancelable: true });
+    act(() => textarea.dispatchEvent(newline));
+    expect(newline.defaultPrevented).toBe(false);
+    expect(onSubmit).not.toHaveBeenCalled();
+    const submit = new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true });
+    act(() => textarea.dispatchEvent(submit));
+    expect(submit.defaultPrevented).toBe(true);
+    expect(onSubmit).toHaveBeenCalledTimes(1);
+    expect(onFormSubmit).not.toHaveBeenCalled();
   });
 });
