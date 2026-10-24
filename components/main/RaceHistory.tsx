@@ -14,6 +14,10 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 
+// Bolt optimization: Cache Intl.DateTimeFormat instance at module scope.
+// Creating `new Intl.DateTimeFormat` inside render loops allocates ICU locale formatters repeatedly.
+const raceDateFormatter = new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', timeStyle: 'short' });
+
 function downloadReceipt(receipt: RaceReceipt) {
   const blob = new Blob([serializeSanitizedReceipt(receipt)], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
@@ -24,13 +28,24 @@ function downloadReceipt(receipt: RaceReceipt) {
   URL.revokeObjectURL(url);
 }
 
+// Bolt optimization: O(n) single pass to find the fastest completed lane without array allocations (.filter / .sort).
 function fastestLane(receipt: RaceReceipt) {
-  return receipt.lanes
-    .filter((lane) => lane.status === 'completed')
-    .sort((a, b) => (a.browser.totalMs ?? Number.POSITIVE_INFINITY) - (b.browser.totalMs ?? Number.POSITIVE_INFINITY))[0];
+  let bestLane: RaceReceipt['lanes'][number] | undefined;
+  let minMs = Number.POSITIVE_INFINITY;
+  for (let i = 0; i < receipt.lanes.length; i++) {
+    const lane = receipt.lanes[i];
+    if (lane.status === 'completed') {
+      const ms = lane.browser.totalMs ?? Number.POSITIVE_INFINITY;
+      if (ms < minMs) {
+        minMs = ms;
+        bestLane = lane;
+      }
+    }
+  }
+  return bestLane;
 }
 
-export default function RaceHistory({
+function RaceHistory({
   receipts,
   onDelete,
   onClear,
@@ -113,7 +128,7 @@ export default function RaceHistory({
       <div className="race-history-list">
         {receipts.map((receipt) => {
           const leader = fastestLane(receipt);
-          const formattedDate = new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(receipt.createdAt));
+          const formattedDate = raceDateFormatter.format(new Date(receipt.createdAt));
           const exportLabel = exportedState[receipt.id] ? 'Exported ✓' : 'Export JSON';
           const shareLabel = shareState[receipt.id] === 'sharing'
             ? 'Creating link…'
@@ -182,3 +197,6 @@ export default function RaceHistory({
     </section>
   );
 }
+
+// Bolt optimization: Wrap RaceHistory in React.memo to skip reconciliations when history props remain unchanged.
+export default React.memo(RaceHistory);
