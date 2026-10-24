@@ -31,8 +31,8 @@ export async function* streamCompletion(
 
   if (!response.ok || !response.body) {
     const errorText = await response.text();
-    const safeError = redactCredentials(errorText, apiKey) || 'Failed to connect';
-    throw new Error(`API Error (${response.status}): ${safeError}`);
+    // Redact the complete diagnostic, including fallback text, before constructing an Error.
+    throw new Error(redactCredentials(`API Error (${response.status}): ${errorText || 'Failed to connect'}`, apiKey));
   }
 
   yield* parseSseJson<CompletionResult>(response, 'AI Drag Racing');
