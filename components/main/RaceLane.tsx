@@ -400,6 +400,9 @@ const RaceLane: React.FC<RaceLaneProps> = ({
                   {metrics && typeof metrics.outputTokens === 'number' ? metrics.outputTokens : 'Not measured'}
                 </span>
               </div>
+              <p className="col-span-4 text-zinc-400 leading-relaxed">
+                TTFT: time to first token. TPS: tokens per second.
+              </p>
             </div>
           </div>
         </div>

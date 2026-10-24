@@ -43,7 +43,7 @@ describe('comparison charts', () => {
       expect(chart.data.datasets[0].backgroundColor[0]).toBe(getProviderColor('Anthropic').soft);
     }
     click(view.container.querySelector('button')!);
-    expect(view.container.textContent).toContain('Sort: Low → High');
+    expect(view.container.textContent).toContain('Order: Low → High');
     expect(charts()[0].data.datasets[0].data).toEqual([500, 1000]);
     expect(charts()[0].options.plugins.tooltip.callbacks.title([{ dataIndex: 0 }])).toEqual(['Lane 1: OpenAI (long-model-name-that-needs-an-ellipsis)']);
   });
@@ -114,5 +114,25 @@ describe('canvas isolation boundaries', () => {
     expect(charts()[0].data.labels).toEqual(['Lane 1']);
     expect(charts()[0].options.plugins.tooltip.callbacks.title([{ dataIndex: 0 }])).toEqual([`Lane 1: \u2068提供者\u2069 (\u2068${modelName}\u2069)`]);
     expect(view.container.querySelector('[aria-label="Chart model identifiers"]')?.textContent).toContain(modelName);
+  });
+});
+
+describe('chart sort action semantics', () => {
+  it('names the next action without pressed state and keeps current order distinct through two reversals', () => {
+    view = mount(<ComparisonCharts results={fixtures} />);
+    const button = view.container.querySelector('button')!;
+    expect(button.textContent).toBe('Sort low to high');
+    expect(button.hasAttribute('aria-pressed')).toBe(false);
+    expect(button.hasAttribute('aria-label')).toBe(false);
+    expect(button.parentElement!.textContent).toContain('Order: High → Low');
+    click(button);
+    expect(button.textContent).toBe('Sort high to low');
+    expect(button.hasAttribute('aria-pressed')).toBe(false);
+    expect(button.parentElement!.textContent).toContain('Order: Low → High');
+    expect(charts().map(chart => chart.data.datasets[0].data)).toEqual([[500, 1000], [100 / .4, 200 / .7], [100, 300], [100, 200]]);
+    click(button);
+    expect(button.textContent).toBe('Sort low to high');
+    expect(button.parentElement!.textContent).toContain('Order: High → Low');
+    expect(charts().map(chart => chart.data.datasets[0].data)).toEqual([[1000, 500], [200 / .7, 100 / .4], [300, 100], [200, 100]]);
   });
 });

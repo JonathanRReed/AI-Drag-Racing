@@ -88,7 +88,7 @@ describe('prompt character counter', () => {
     const htmlDisabled = renderToStaticMarkup(
       <PromptInput prompt="Hello" onPromptChange={() => {}} onSubmit={() => {}} isLoading={false} disabled={true} />
     );
-    expect(htmlDisabled).toContain('title="Select a model and add its API key"');
+    expect(htmlDisabled).toContain('title="Select a model from an enabled provider with an API key"');
     expect(htmlDisabled).toContain('disabled=""');
 
     const htmlLoading = renderToStaticMarkup(
@@ -218,5 +218,60 @@ describe('prompt character counter', () => {
     expect(submit.defaultPrevented).toBe(true);
     expect(onSubmit).toHaveBeenCalledTimes(1);
     expect(onFormSubmit).not.toHaveBeenCalled();
+  });
+});
+
+describe('prompt start feedback', () => {
+  const cases = [
+    { prompt: '', disabled: false, isLoading: false, isCountingDown: false, reason: 'Enter a prompt to start' },
+    { prompt: 'Hello', disabled: true, isLoading: false, isCountingDown: false, reason: 'Select a model from an enabled provider with an API key' },
+    { prompt: '', disabled: true, isLoading: false, isCountingDown: false, reason: 'Enter a prompt and select a model from an enabled provider with an API key' },
+    { prompt: 'Hello', disabled: false, isLoading: false, isCountingDown: true, reason: 'Countdown in progress' },
+    { prompt: '', disabled: true, isLoading: true, isCountingDown: true, reason: 'Countdown in progress' },
+    { prompt: '', disabled: true, isLoading: true, isCountingDown: false, reason: 'Race in progress' },
+  ];
+
+  it.each(cases)('shows and associates the reason "$reason" without replacing the Start action name', ({ reason, ...props }) => {
+    const onSubmit = vi.fn();
+    const onPromptChange = vi.fn();
+    view = mount(<PromptInput {...props} onPromptChange={onPromptChange} onSubmit={onSubmit} />);
+    const button = view.container.querySelector<HTMLButtonElement>('button[aria-label="Start Race"]')!;
+    expect(button).not.toBeNull();
+    expect(button.textContent).toBe('Start');
+    expect(button.disabled).toBe(true);
+    const description = document.getElementById(button.getAttribute('aria-describedby') ?? '');
+    expect(description).not.toBeNull();
+    expect(description!.textContent).toBe(reason);
+    expect(description!.hidden).toBe(false);
+    expect(description!.classList.contains('sr-only')).toBe(false);
+    expect(description!.closest('[aria-live], [role="status"]')).toBeNull();
+    click(button);
+    act(() => view!.container.querySelector('textarea')!.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true })));
+    expect(onSubmit).not.toHaveBeenCalled();
+    if (props.isLoading || props.isCountingDown) {
+      expect(button.getAttribute('aria-busy')).toBe('true');
+      const icon = button.querySelector('svg');
+      expect(icon!.getAttribute('aria-hidden')).toBe('true');
+      expect(icon!.classList.contains('animate-spin')).toBe(true);
+      expect(view!.container.querySelector('[aria-label="Clear prompt text"]')).toBeNull();
+      act(() => view!.container.querySelector('textarea')!.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })));
+      expect(onPromptChange).not.toHaveBeenCalled();
+    }
+  });
+
+  it('clears busy/setup feedback and keeps one-click submission when ready again', () => {
+    const onSubmit = vi.fn();
+    const props = { prompt: 'Hello', onPromptChange: vi.fn(), onSubmit };
+    view = mount(<PromptInput {...props} isLoading isCountingDown />);
+    const button = view.container.querySelector<HTMLButtonElement>('[aria-label="Start Race"]')!;
+    view.rerender(<PromptInput {...props} isLoading />);
+    expect(document.getElementById(button.getAttribute('aria-describedby')!)?.textContent).toBe('Race in progress');
+    view.rerender(<PromptInput {...props} isLoading={false} />);
+    expect(button.disabled).toBe(false);
+    expect(button.getAttribute('aria-describedby')).toBeNull();
+    expect(button.getAttribute('aria-busy')).not.toBe('true');
+    expect(button.querySelector('.animate-spin')).toBeNull();
+    click(button);
+    expect(onSubmit).toHaveBeenCalledTimes(1);
   });
 });

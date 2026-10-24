@@ -752,7 +752,8 @@ export default function Home() {
               prompt={state.prompt}
               onPromptChange={(p) => dispatch({ type: 'SET_PROMPT', payload: p })}
               onSubmit={handleRunComparison}
-              isLoading={state.isLoading || state.raceState === 'countingDown'}
+              isLoading={state.isLoading}
+              isCountingDown={state.raceState === 'countingDown'}
               disabled={
                 !state.selectedPairs.some(
                   (p) => state.enabledProviders[p.providerId] !== false && !!state.apiKeys[p.providerId] && !!p.modelId

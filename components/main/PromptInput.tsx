@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef } from 'react';
+import React, { useEffect, useId, useMemo, useRef } from 'react';
 import GlassCard from '../layout/GlassCard';
 import { measurePromptCharacters } from '../../utils/promptCharacters';
 
@@ -7,6 +7,7 @@ interface PromptInputProps {
   onPromptChange: (value: string) => void;
   onSubmit: () => void;
   isLoading: boolean;
+  isCountingDown?: boolean;
   disabled?: boolean;
 }
 
@@ -15,9 +16,11 @@ const PromptInput: React.FC<PromptInputProps> = ({
   onPromptChange,
   onSubmit,
   isLoading,
+  isCountingDown = false,
   disabled,
 }) => {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const feedbackId = useId();
   const [counterReady, setCounterReady] = React.useState(false);
   useEffect(() => setCounterReady(true), []);
   const counter = useMemo(() => measurePromptCharacters(prompt), [prompt]);
@@ -41,15 +44,18 @@ const PromptInput: React.FC<PromptInputProps> = ({
     return () => window.removeEventListener('keydown', handleShortcut);
   }, []);
 
-  const canSubmit = !disabled && !isLoading && prompt.trim().length > 0;
+  const isBusy = isLoading || isCountingDown;
+  const canSubmit = !disabled && !isBusy && prompt.trim().length > 0;
 
-  const buttonTitle = !prompt.trim()
-    ? 'Enter a prompt to start'
+  const buttonTitle = isCountingDown
+    ? 'Countdown in progress'
     : isLoading
       ? 'Race in progress'
-      : disabled
-        ? 'Select a model and add its API key'
-        : 'Start race with prompt';
+      : !prompt.trim()
+        ? disabled ? 'Enter a prompt and select a model from an enabled provider with an API key' : 'Enter a prompt to start'
+        : disabled
+          ? 'Select a model from an enabled provider with an API key'
+          : 'Start race with prompt';
 
   return (
     <GlassCard className="prompt-card p-3" hover={false} spotlight={false}>
@@ -67,7 +73,7 @@ const PromptInput: React.FC<PromptInputProps> = ({
           if (event.key === 'Enter' && !event.shiftKey) {
             event.preventDefault();
             if (canSubmit) onSubmit();
-          } else if (event.key === 'Escape' && prompt.length > 0 && !isLoading) {
+          } else if (event.key === 'Escape' && prompt.length > 0 && !isBusy) {
             onPromptChange('');
           }
         }}
@@ -88,7 +94,7 @@ const PromptInput: React.FC<PromptInputProps> = ({
       <div className="mt-2 flex items-center justify-between gap-2">
         <span id="prompt-hint" className="text-xs text-zinc-600 truncate">Enter starts race. Shift+Enter adds line.</span>
         <div className="flex items-center gap-2 shrink-0">
-          {prompt.length > 0 && !isLoading && (
+          {prompt.length > 0 && !isBusy && (
             <button
               type="button"
               onClick={() => onPromptChange('')}
@@ -109,16 +115,30 @@ const PromptInput: React.FC<PromptInputProps> = ({
             onClick={onSubmit}
             disabled={!canSubmit}
             aria-label="Start Race"
+            aria-describedby={!canSubmit ? feedbackId : undefined}
+            aria-busy={isBusy || undefined}
             title={buttonTitle}
             className="inline-flex min-h-[var(--control-h)] items-center gap-1 rounded-md bg-cyan-500/20 px-2.5 py-1 text-xs font-semibold text-cyan-300 border border-cyan-500/40 hover:bg-cyan-500/30 disabled:opacity-40 disabled:cursor-not-allowed transition-colors focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-cyan-400"
           >
-            <svg viewBox="0 0 24 24" className="w-3 h-3 fill-current" aria-hidden="true">
-              <path d="M5 3l14 9-14 9V3z" />
-            </svg>
+            {isBusy ? (
+              <svg viewBox="0 0 24 24" className="w-3 h-3 animate-spin motion-reduce:animate-none" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true" focusable="false">
+                <circle cx="12" cy="12" r="9" opacity="0.25" />
+                <path d="M12 3a9 9 0 0 1 9 9" strokeLinecap="round" />
+              </svg>
+            ) : (
+              <svg viewBox="0 0 24 24" className="w-3 h-3 fill-current" aria-hidden="true" focusable="false">
+                <path d="M5 3l14 9-14 9V3z" />
+              </svg>
+            )}
             <span>Start</span>
           </button>
         </div>
       </div>
+      {!canSubmit && (
+        <p id={feedbackId} className="mt-2 text-xs text-zinc-400">
+          {buttonTitle}
+        </p>
+      )}
     </GlassCard>
   );
 };

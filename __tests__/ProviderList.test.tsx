@@ -224,3 +224,25 @@ describe('escaped model picker presentation', () => {
     expect(search().closest('li')?.textContent).toContain('No models match');
   });
 });
+
+describe('provider key icon', () => {
+  it.each([false, true])('keeps the %s configured-key action named and opens the correct provider dialog', async hasKey => {
+    const dispatch = vi.fn();
+    await act(async () => { view = mount(<ProviderList apiKeys={hasKey ? { openai: 'synthetic-key' } : {}} dispatch={dispatch} selectedPairs={[]} />); });
+    const label = `${hasKey ? 'Edit' : 'Add'} API key for OpenAI`;
+    const button = view.container.querySelector<HTMLButtonElement>(`button[aria-label="${label}"]`)!;
+    expect(button.title).toBe(label);
+    const icon = button.querySelector('svg');
+    expect(icon).not.toBeNull();
+    expect(icon!.getAttribute('aria-hidden')).toBe('true');
+    expect(icon!.getAttribute('focusable')).toBe('false');
+    expect(icon!.getAttribute('stroke')).toBe('currentColor');
+    click(button);
+    const dialog = view.container.querySelector('[role="dialog"]')!;
+    expect(dialog.querySelector('h2')?.textContent).toBe('Enter API Key for OpenAI');
+    inputValue(dialog.querySelector<HTMLInputElement>('input')!, 'synthetic-replacement-key');
+    await act(async () => { click([...dialog.querySelectorAll<HTMLButtonElement>('button')].find(control => control.textContent === 'Save Key')!); });
+    expect(dispatch).toHaveBeenCalledWith({ type: 'SET_API_KEY', payload: { providerId: 'openai', apiKey: 'synthetic-replacement-key' } });
+    expect(view.container.querySelector('[role="dialog"]')).toBeNull();
+  });
+});

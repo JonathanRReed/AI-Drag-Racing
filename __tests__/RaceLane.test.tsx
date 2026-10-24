@@ -196,3 +196,36 @@ describe('RaceLane copy response', () => {
     expect(status()).toBe('Copied OpenAI response.');
   });
 });
+
+describe('expanded race telemetry', () => {
+  test('makes TTFT and TPS meanings available with the unchanged measured values, without hover', () => {
+    view = mount(lane());
+    const explanation = [...view.container.querySelectorAll('p')].find(node => node.textContent?.includes('TTFT:'));
+    expect(explanation).toBeDefined();
+    expect(explanation!.textContent).toContain('TTFT: time to first token.');
+    expect(explanation!.textContent).toContain('TPS: tokens per second.');
+    expect(explanation!.classList.contains('sr-only')).toBe(false);
+    expect(explanation!.hidden).toBe(false);
+    const telemetry = explanation!.parentElement!;
+    expect(telemetry.classList.contains('hidden')).toBe(false);
+    expect(telemetry.textContent).toContain('200 ms');
+    expect(telemetry.textContent).toContain('1000 ms');
+    expect(telemetry.textContent).toContain('12.50');
+    expect(explanation!.querySelector('[tabindex]')).toBeNull();
+    click(view.container.querySelector('[aria-label="Collapse OpenAI response"]')!);
+    expect(telemetry.classList.contains('hidden')).toBe(true);
+    click(view.container.querySelector('[aria-label="Expand OpenAI response"]')!);
+    expect(telemetry.classList.contains('hidden')).toBe(false);
+    expect(telemetry.textContent).toContain('12.50');
+  });
+});
+
+// The legacy fallback is retained here, not redefined by the help copy.
+test('keeps TPS fallback values without describing missing output usage as measured output', () => {
+  view = mount(lane({ metrics: { ...METRICS, outputTokens: undefined, tokenCount: 30 } }));
+  const explanation = [...view.container.querySelectorAll('p')].find(node => node.textContent?.includes('TTFT:'))!;
+  expect(explanation.textContent).toContain('TPS: tokens per second.');
+  expect(explanation.textContent).not.toContain('output tokens');
+  expect(explanation.parentElement!.textContent).toContain('37.50');
+  expect(explanation.parentElement!.textContent).toContain('Not measured');
+});

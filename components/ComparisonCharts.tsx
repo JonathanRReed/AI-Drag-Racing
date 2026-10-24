@@ -255,14 +255,14 @@ const ComparisonCharts: React.FC<ComparisonChartsProps> = ({ results }) => {
 
   return (
     <GlassCard className="p-4">
-      <div className="mb-2 flex items-center justify-end">
+      <div className="mb-2 flex flex-wrap items-center justify-end gap-2 text-xs">
+        <span className="text-zinc-400">Order: {descending ? 'High → Low' : 'Low → High'}</span>
         <button
           type="button"
           className="btn-ghost text-xs"
           onClick={() => setDescending(v => !v)}
-          title={descending ? 'Sorted: High → Low (click to reverse)' : 'Sorted: Low → High (click to reverse)'}
         >
-          Sort: {descending ? 'High → Low' : 'Low → High'}
+          Sort {descending ? 'low to high' : 'high to low'}
         </button>
       </div>
       {needsMapping && (
