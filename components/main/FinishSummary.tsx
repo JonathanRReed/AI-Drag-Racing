@@ -3,6 +3,7 @@ import React, { useMemo } from 'react';
 import type { ResultState } from './ResultsDisplay';
 import type { RaceMode } from '../../utils/raceReceipts';
 import { rankCompletedRace } from '../../utils/raceRanking';
+import { measuredEdgeTiming, presentOutputCount, timingSourceDetail } from '../../utils/measurementPresentation';
 
 function edgeDuration(result: ResultState): number | null {
   const metrics = result.metrics;
@@ -55,7 +56,7 @@ export default function FinishSummary({ results, mode }: { results: ResultState[
         </div>
         {leader && (
           <div className="finish-board-time">
-            <strong>{isTimeTrial ? leader.responseText.length : formatMs(leader.browserTiming?.totalMs ?? edgeDuration(leader))}</strong>
+            <strong>{isTimeTrial ? leader.responseText.length : formatMs(leader.browserTiming?.totalMs)}</strong>
             <span>{isTimeTrial ? 'UTF-16 code units received' : 'browser to final token'}</span>
           </div>
         )}
@@ -69,15 +70,14 @@ export default function FinishSummary({ results, mode }: { results: ResultState[
               <th scope="col">Browser first token</th>
               <th scope="col">Edge first token</th>
               <th scope="col">Browser total</th>
-              <th scope="col">Output tokens</th>
+              <th scope="col">Output count</th>
               {isTimeTrial && <th scope="col">Output length (UTF-16 code units)</th>}
             </tr>
           </thead>
           <tbody>
             {finished.map((result, index) => {
-              const edgeTtft = result.metrics?.firstTokenTime && result.metrics.startTime
-                ? result.metrics.firstTokenTime - result.metrics.startTime
-                : null;
+              const edge = measuredEdgeTiming(result.metrics);
+              const outputCount = presentOutputCount(result.metrics?.outputTokens, result.metrics?.tokenCountSource, result.metrics?.timingSource);
               return (
                 <tr key={result.id} data-leader={index === 0 ? 'true' : 'false'}>
                   <th scope="row">
@@ -86,13 +86,14 @@ export default function FinishSummary({ results, mode }: { results: ResultState[
                       <div>
                         <strong><ModelIdentifier value={result.modelName} /></strong>
                         <small>{result.providerName}</small>
+                        <small>{timingSourceDetail(result.metrics?.timingSource, edge.ttftMs !== null || edge.totalMs !== null)}</small>
                       </div>
                     </div>
                   </th>
                   <td data-label="Browser first token">{formatMs(result.browserTiming?.ttftMs)}</td>
-                  <td data-label="Edge first token">{formatMs(edgeTtft)}</td>
-                  <td data-label="Browser total">{formatMs(result.browserTiming?.totalMs ?? edgeDuration(result))}</td>
-                  <td data-label="Output tokens">{result.metrics?.outputTokens ?? 'Estimate unavailable'}</td>
+                  <td data-label="Edge first token">{formatMs(edge.ttftMs)}</td>
+                  <td data-label="Browser total">{formatMs(result.browserTiming?.totalMs)}</td>
+                  <td data-label="Output count"><span>{outputCount.text}<small className="block">{outputCount.detail}</small></span></td>
                   {isTimeTrial && <td data-label="Output length (UTF-16 code units)">{result.responseText.length}</td>}
                 </tr>
               );

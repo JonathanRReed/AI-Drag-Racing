@@ -31,9 +31,11 @@ Choose a mode in Race Settings:
 | Mode | Finish condition |
 | --- | --- |
 | Drag Race | First model to finish wins |
-| Token Sprint | Generate a fixed number of tokens |
+| Chunk Sprint | Receive a fixed number of content chunks (stream events, not tokenizer tokens) |
 | Time Trial | Generate as much as possible within a time limit |
 | Free Run | Watch completions without an explicit race limit |
+
+Chunk Sprint keeps the legacy internal `token_limit` mode ID and whole-chunk stopping behavior. Chunk sizes vary by provider. A client-limited lane shows chunk counts and browser-synthetic timing; it does not claim edge timing or token throughput. Natural early completions retain their edge metrics.
 
 Set temperature, max tokens, and top-p as needed. The app passes these settings to providers that support them. Enter a prompt and click Start Race. A short countdown precedes the streaming requests; reduced-motion mode is supported.
 

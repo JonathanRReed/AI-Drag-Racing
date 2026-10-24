@@ -8,6 +8,11 @@ import {
 } from '../providerService';
 import { approxTokensFromText } from '../tokens';
 
+// Missing fields can retain earlier reports; a present invalid field cannot.
+function reportedCount(value: unknown): number | undefined {
+  return typeof value === 'number' && Number.isSafeInteger(value) && value >= 0 ? value : undefined;
+}
+
 // Parse Server-Sent Events (SSE) from Google Gemini streamGenerateContent
 async function* streamGoogleResponse(
   response: Response
@@ -85,12 +90,10 @@ const googleService: ProviderService = {
   ): AsyncGenerator<CompletionResult> {
     const startTime = Date.now();
     let firstTokenTime: number | undefined;
-    let tokenCount = 0; // approximate generated tokens
-    let usageCandidates = 0; // server-reported output tokens
-    let usagePrompt = 0; // server-reported input tokens
-    let usageTotal = 0; // server-reported total tokens
+    let usageCandidates: number | undefined;
+    let usagePrompt: number | undefined;
+    let usageTotal: number | undefined;
     let generatedText = '';
-    const promptApprox = Math.ceil((prompt || '').length / 4);
 
     // Use alt=sse and send API key via header per docs
     // Gemini expects the path segment to include the 'models/' prefix
@@ -123,10 +126,10 @@ const googleService: ProviderService = {
     for await (const chunk of streamGoogleResponse(response)) {
       // Capture usage if present on any event
       const usage = chunk.usageMetadata;
-      if (usage) {
-        usageCandidates = usage.candidatesTokenCount ?? usageCandidates;
-        usagePrompt = usage.promptTokenCount ?? usagePrompt;
-        usageTotal = usage.totalTokenCount ?? usageTotal;
+      if (usage && typeof usage === 'object' && !Array.isArray(usage)) {
+        if (Object.hasOwn(usage, 'candidatesTokenCount')) usageCandidates = reportedCount(usage.candidatesTokenCount);
+        if (Object.hasOwn(usage, 'promptTokenCount')) usagePrompt = reportedCount(usage.promptTokenCount);
+        if (Object.hasOwn(usage, 'totalTokenCount')) usageTotal = reportedCount(usage.totalTokenCount);
       }
 
       // Extract any textual parts from the first candidate
@@ -137,8 +140,6 @@ const googleService: ProviderService = {
 
       if (text) {
         if (!firstTokenTime) firstTokenTime = Date.now();
-        // Approximate token count by characters/parts when usage not yet available
-        tokenCount += Math.max(1, Math.ceil(text.length / 4));
         generatedText += text;
         yield { type: 'chunk', content: text };
       }
@@ -146,12 +147,16 @@ const googleService: ProviderService = {
 
     const finishTime = Date.now();
     // Derive breakdown with preference for server usage; fallback to approximations
-    const inputTokens = usagePrompt > 0 ? usagePrompt : approxTokensFromText(prompt);
-    const outputTokens = usageCandidates > 0 ? usageCandidates : approxTokensFromText(generatedText);
-    const finalTokenCount = usageTotal > 0 ? usageTotal : (inputTokens + outputTokens);
+    const inputTokens = usagePrompt ?? approxTokensFromText(prompt);
+    const outputTokens = usageCandidates ?? approxTokensFromText(generatedText);
+    const finalTokenCount = usageTotal ?? (inputTokens + outputTokens);
+    // This source describes the whole breakdown, not each field. A mixed or
+    // derived tuple stays conservative; reported totals may include other usage.
+    const tokenCountSource = usagePrompt !== undefined && usageCandidates !== undefined && usageTotal !== undefined
+      ? 'provider-reported' : 'estimated';
     yield {
       type: 'metrics',
-      data: { startTime, firstTokenTime, finishTime, tokenCount: finalTokenCount, inputTokens, outputTokens },
+      data: { startTime, firstTokenTime, finishTime, tokenCount: finalTokenCount, inputTokens, outputTokens, tokenCountSource },
     };
   },
 };

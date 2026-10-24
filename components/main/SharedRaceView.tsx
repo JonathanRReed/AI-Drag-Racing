@@ -1,5 +1,6 @@
 import ModelIdentifier from '../ModelIdentifier';
 import type { RaceShareRecord } from '../../utils/raceShares';
+import { displayedEdgeValue, measuredDuration, presentOutputCount, timingSourceDetail } from '../../utils/measurementPresentation';
 
 const ms = (value: number | null): string => {
   if (value == null) return 'Not reported';
@@ -29,20 +30,27 @@ export default function SharedRaceView({ record }: { record: RaceShareRecord }) 
       </div>
       <div className="finish-table-wrap" role="region" aria-label="Race timing measurements, scroll horizontally for all columns" tabIndex={0}>
         <table className="finish-table">
-          <caption>TTFT means time to first token. Browser timings include your connection; edge timings measure the provider route.</caption>
+          <caption>TTFT means time to first token. Browser timings include your connection; edge timings are shown only for explicit edge measurements.</caption>
           <thead>
-            <tr><th scope="col">Lane</th><th scope="col">Browser TTFT</th><th scope="col">Edge TTFT</th><th scope="col">Browser total</th><th scope="col">Output tokens</th></tr>
+            <tr><th scope="col">Lane</th><th scope="col">Browser TTFT</th><th scope="col">Edge TTFT</th><th scope="col">Browser total</th><th scope="col">Output count</th></tr>
           </thead>
           <tbody>
-            {lanes.map((lane, index) => (
-              <tr key={`${lane.providerId}:${lane.modelId}:${index}`}>
-                <th scope="row"><span>{lane.status === 'failed' ? 'Failed' : `Lane ${index + 1}`}</span><strong><ModelIdentifier value={lane.modelId} /></strong><small>{lane.providerId}</small></th>
-                <td>{ms(lane.browser.ttftMs)}</td>
-                <td>{ms(lane.edge.ttftMs)}</td>
-                <td>{ms(lane.browser.totalMs)}</td>
-                <td>{lane.outputTokens ?? 'Not reported'}</td>
-              </tr>
-            ))}
+            {lanes.map((lane, index) => {
+              const outputCount = presentOutputCount(lane.outputTokens, lane.tokenSource, lane.timingSource);
+              const edgeTtft = displayedEdgeValue(lane.edge.ttftMs, lane.timingSource);
+              const hasTiming = lane.timingSource === 'edge-measured'
+                ? edgeTtft !== null || displayedEdgeValue(lane.edge.totalMs, lane.timingSource) !== null
+                : measuredDuration(0, lane.browser.ttftMs) !== null || measuredDuration(0, lane.browser.totalMs) !== null;
+              return (
+                <tr key={`${lane.providerId}:${lane.modelId}:${index}`}>
+                  <th scope="row"><span>{lane.status === 'failed' ? 'Failed' : `Lane ${index + 1}`}</span><strong><ModelIdentifier value={lane.modelId} /></strong><small>{lane.providerId}</small><small>{timingSourceDetail(lane.timingSource, hasTiming)}</small></th>
+                  <td>{ms(lane.browser.ttftMs)}</td>
+                  <td>{ms(edgeTtft)}</td>
+                  <td>{ms(lane.browser.totalMs)}</td>
+                  <td>{outputCount.text}<small className="block">{outputCount.detail}</small></td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>

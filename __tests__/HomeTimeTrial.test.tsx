@@ -272,8 +272,8 @@ describe('real Home Time Trial deadline', () => {
     expect(history()[0].lanes[0]).toMatchObject({ outputTokens: 40, timingSource: 'edge-measured', browser: { totalMs: 6000 } });
     expect(vi.getTimerCount()).toBe(0);
   });
-  it('retains Token Sprint whole-event counting and early reader cancellation', async () => {
-    await setup(); click(button('Token Sprint')); inputValue(view!.container.querySelector('#race-token-limit')!, '50');
+  it('retains Chunk Sprint whole-event counting and early reader cancellation', async () => {
+    await setup(); click(button('Chunk Sprint')); inputValue(view!.container.querySelector('#race-token-limit')!, '50');
     const fixture = bodyFixture(); installBodies(fixture); await start(); await advance(1000);
     await act(async () => { for (let i = 0; i < 51; i++) fixture.emit({ type: 'chunk', content: 'x' }); }); await settle();
     expect(history()[0].lanes[0]).toMatchObject({ outputTokens: 50, timingSource: 'browser-synthetic', browser: { totalMs: 1000 } });

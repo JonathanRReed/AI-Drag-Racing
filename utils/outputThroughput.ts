@@ -28,7 +28,7 @@ export function getOutputThroughput(metrics: CompletionMetrics | null | undefine
   const value = outputTokens / (windowMs / 1000);
   if (!Number.isFinite(value)) return unavailable('calculated rate is not finite.');
 
-  const countDetail = metrics.tokenCountSource === 'estimated' ? 'estimated output tokens'
+  const countDetail = metrics.tokenCountSource === 'estimated' ? 'output tokens from an estimated or mixed breakdown'
     : metrics.tokenCountSource === 'provider-reported' ? 'provider-reported output tokens'
       : 'output tokens (count source unspecified)';
   const prefix = metrics.timingSource === 'demo' ? 'Demo throughput using' : 'Throughput using';

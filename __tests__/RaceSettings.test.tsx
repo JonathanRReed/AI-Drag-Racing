@@ -13,7 +13,7 @@ afterEach(() => {
 });
 
 const sliders = [
-  { id: 'race-token-limit', label: 'Token limit', mode: 'token_limit', min: '50', max: '2000', step: '50', value: '500', text: '500 tokens', next: '750', patch: { tokenLimit: 750 } },
+  { id: 'race-token-limit', label: 'Chunk limit', mode: 'token_limit', min: '50', max: '2000', step: '50', value: '500', text: '500 chunks', next: '750', patch: { tokenLimit: 750 } },
   { id: 'race-time-limit', label: 'Time limit (seconds)', mode: 'time_limit', min: '5', max: '120', step: '5', value: '30', text: '30 seconds', next: '45', patch: { timeLimit: 45 } },
   { id: 'race-temperature', label: 'Temperature', mode: 'drag', min: '0', max: '2', step: '0.1', value: '0.7', text: '0.70 of 2', next: '1.2', patch: { modelSettings: { temperature: 1.2, maxTokens: 1000, topP: 0.9 } } },
   { id: 'race-max-tokens', label: 'Max tokens', mode: 'drag', min: '100', max: '4096', step: '1', value: '1000', text: '1000 tokens', next: '1500', patch: { modelSettings: { temperature: 0.7, maxTokens: 1500, topP: 0.9 } } },
