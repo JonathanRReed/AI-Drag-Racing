@@ -62,6 +62,8 @@ const PromptInput: React.FC<PromptInputProps> = ({
         value={prompt}
         onChange={(event) => onPromptChange(event.target.value)}
         onKeyDown={(event) => {
+          // IME confirmation/cancellation belongs to text entry, not race shortcuts.
+          if (event.nativeEvent.isComposing || event.nativeEvent.keyCode === 229) return;
           if (event.key === 'Enter' && !event.shiftKey) {
             event.preventDefault();
             if (canSubmit) onSubmit();
@@ -84,15 +86,7 @@ const PromptInput: React.FC<PromptInputProps> = ({
         dir="auto"
       />
       <div className="mt-2 flex items-center justify-between gap-2">
-        <span id="prompt-hint" className="text-xs text-zinc-600 flex items-center gap-1.5">
-          <span>Enter starts race.</span>
-          <kbd
-            className="hidden sm:inline-block px-1 py-0.5 text-[10px] font-mono rounded bg-white/5 border border-white/10 text-zinc-400 select-none"
-            title="Press Ctrl+L or ⌘L to focus prompt"
-          >
-            ⌘L
-          </kbd>
-        </span>
+        <span id="prompt-hint" className="text-xs text-zinc-600 truncate">Enter starts race. Shift+Enter adds line.</span>
         <div className="flex items-center gap-2 shrink-0">
           {prompt.length > 0 && !isLoading && (
             <button
