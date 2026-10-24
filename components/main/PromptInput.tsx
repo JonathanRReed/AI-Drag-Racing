@@ -62,19 +62,14 @@ const PromptInput: React.FC<PromptInputProps> = ({
         value={prompt}
         onChange={(event) => onPromptChange(event.target.value)}
         onKeyDown={(event) => {
-          // IME confirmation/cancellation belongs to text entry, not race shortcuts.
-          if (event.nativeEvent.isComposing || event.nativeEvent.keyCode === 229) return;
           if (event.key === 'Enter' && !event.shiftKey) {
             event.preventDefault();
             if (canSubmit) onSubmit();
-          } else if (event.key === 'Escape' && prompt.length > 0 && !isLoading) {
-            onPromptChange('');
           }
         }}
         className="input-glass min-h-12 max-h-[120px] w-full resize-none overflow-y-auto text-sm leading-5 scrollbar-none"
         placeholder="Write a prompt. Shift+Enter adds a line."
         aria-label="Enter prompt"
-        aria-describedby="prompt-hint"
         spellCheck={false}
         autoCapitalize="off"
         autoComplete="off"
@@ -86,19 +81,8 @@ const PromptInput: React.FC<PromptInputProps> = ({
         dir="auto"
       />
       <div className="mt-2 flex items-center justify-between gap-2">
-        <span id="prompt-hint" className="text-xs text-zinc-600 truncate">Enter starts race. Shift+Enter adds line.</span>
+        <span className="text-xs text-zinc-600 truncate">Enter starts race. Shift+Enter adds line.</span>
         <div className="flex items-center gap-2 shrink-0">
-          {prompt.length > 0 && !isLoading && (
-            <button
-              type="button"
-              onClick={() => onPromptChange('')}
-              aria-label="Clear prompt text"
-              title="Clear prompt (Esc)"
-              className="text-xs text-zinc-500 hover:text-zinc-300 transition-colors p-0.5 rounded focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-cyan-400"
-            >
-              Clear
-            </button>
-          )}
           {counterReady && prompt.length > 0 && (
             <span className="text-xs font-mono text-zinc-500" aria-label={counter.label}>
               {counter.count.toLocaleString()} {counter.shortUnit}{counter.count === 1 ? '' : 's'}

@@ -1,11 +1,6 @@
-// Pages must use the audited native packaging path, even if dashboard settings drift.
-require('./scripts/dependency-audit.cjs').verifyPagesBuildContext(__dirname);
-
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
-  // Only the Pages artifact exports HTML. Local Next dev/start remain supported.
-  ...(process.env.PAGES_BUILD === '1' ? { output: 'export' } : {}),
   images: {
     unoptimized: true,
   },
@@ -19,7 +14,13 @@ const nextConfig = {
     return [
       {
         source: '/:path*',
-        headers: Object.entries(require('./lib/security-headers.json')).map(([key, value]) => ({ key, value })),
+        headers: [
+          { key: 'X-Content-Type-Options', value: 'nosniff' },
+          { key: 'X-Frame-Options', value: 'DENY' },
+          { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
+          { key: 'X-XSS-Protection', value: '0' },
+          { key: 'Permissions-Policy', value: 'camera=(), microphone=(), geolocation=(), payment=(), usb=(), serial=(), bluetooth=(), accelerometer=(), gyroscope=(), magnetometer=()' },
+        ],
       },
     ];
   },

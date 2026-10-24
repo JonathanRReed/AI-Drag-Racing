@@ -1,5 +1,5 @@
 // components/main/ResultsDisplay.tsx
-import React, { useMemo } from 'react';
+import React from 'react';
 import RaceLane from './RaceLane';
 import GlassCard from '../layout/GlassCard';
 import { CompletionMetrics } from '../../utils/providerService';
@@ -36,12 +36,6 @@ const STEPS = [
 ];
 
 const ResultsDisplay: React.FC<ResultsDisplayProps> = ({ results, hideFailed = false, force, compact = false, onDemo }) => {
-  // Memoize displayed results to avoid creating new array allocations on parent re-renders.
-  const displayed = useMemo(
-    () => (hideFailed ? results.filter((r) => !r.error) : results),
-    [hideFailed, results]
-  );
-
   if (results.length === 0) {
     return (
       <GlassCard className="px-6 py-12" spotlight={false}>
@@ -84,6 +78,10 @@ const ResultsDisplay: React.FC<ResultsDisplayProps> = ({ results, hideFailed = f
     );
   }
 
+  const displayed = hideFailed
+    ? results.filter(r => !r.error)
+    : results;
+
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
       {displayed.map((result, index) => (
@@ -109,6 +107,4 @@ const ResultsDisplay: React.FC<ResultsDisplayProps> = ({ results, hideFailed = f
   );
 };
 
-// Memoize ResultsDisplay to skip reconciliation of the results grid during high-frequency
-// parent state updates (e.g. state changes in Home outside of results array updates).
-export default React.memo(ResultsDisplay);
+export default ResultsDisplay;

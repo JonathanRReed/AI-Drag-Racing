@@ -28,21 +28,9 @@ function frame(time: number) {
 
 // Happy DOM does not parse modern calc() multiplication, so capture authored
 // position writes separately; the browser renderer still owns this property.
-function interceptStyleProperty(style: CSSStyleDeclaration, property: string, read: () => string, write: (value: string) => void) {
-  // Happy DOM 21 implements CSS properties through a Proxy rather than own
-  // accessors. Intercept its CSSOM methods while forwarding unrelated styles.
-  const getPropertyValue = style.getPropertyValue.bind(style);
-  const setProperty = style.setProperty.bind(style);
-  vi.spyOn(style, 'getPropertyValue').mockImplementation((name) => name === property ? read() : getPropertyValue(name));
-  vi.spyOn(style, 'setProperty').mockImplementation((name, value, priority) => {
-    if (name === property) write(String(value));
-    else setProperty(name, value, priority);
-  });
-}
-
 function trackPosition(car: HTMLDivElement) {
   let left = car.style.left;
-  interceptStyleProperty(car.style, 'left', () => left, (value) => { left = value; });
+  Object.defineProperty(car.style, 'left', { configurable: true, get: () => left, set: (value: string) => { left = value; } });
 }
 
 function watch() {
@@ -70,7 +58,7 @@ describe('race animation DOM writes', () => {
     const streak = view.container.querySelector<HTMLDivElement>('.speed-streak')!;
     const writes: string[] = [];
     for (const [style, property, serialized] of [[car.style, 'left', 'calc(82% - 49.2px)'], [streak.style, 'opacity', '0.516667']] as const) {
-      interceptStyleProperty(style, property, () => serialized, (value) => writes.push(`${property}:${value}`));
+      Object.defineProperty(style, property, { configurable: true, get: () => serialized, set: (value: string) => writes.push(`${property}:${value}`) });
     }
     frame(200);
     const initial = writes.length;

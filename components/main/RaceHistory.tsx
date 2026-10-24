@@ -24,21 +24,10 @@ function downloadReceipt(receipt: RaceReceipt) {
   URL.revokeObjectURL(url);
 }
 
-// Keep the first completed lane on ties, including when all timings are unavailable.
 function fastestLane(receipt: RaceReceipt) {
-  let bestLane: RaceReceipt['lanes'][number] | undefined;
-  let minMs = Number.POSITIVE_INFINITY;
-  for (let i = 0; i < receipt.lanes.length; i++) {
-    const lane = receipt.lanes[i];
-    if (lane.status === 'completed') {
-      const ms = lane.browser.totalMs ?? Number.POSITIVE_INFINITY;
-      if (!bestLane || ms < minMs) {
-        minMs = ms;
-        bestLane = lane;
-      }
-    }
-  }
-  return bestLane;
+  return receipt.lanes
+    .filter((lane) => lane.status === 'completed')
+    .sort((a, b) => (a.browser.totalMs ?? Number.POSITIVE_INFINITY) - (b.browser.totalMs ?? Number.POSITIVE_INFINITY))[0];
 }
 
 export default function RaceHistory({
@@ -64,9 +53,6 @@ export default function RaceHistory({
   }, []);
 
   if (!receipts.length) return null;
-
-  // Share one formatter across rows without freezing locale/timezone defaults.
-  const raceDateFormatter = new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', timeStyle: 'short' });
 
   const handleExport = (receipt: RaceReceipt) => {
     downloadReceipt(receipt);
@@ -127,7 +113,7 @@ export default function RaceHistory({
       <div className="race-history-list">
         {receipts.map((receipt) => {
           const leader = fastestLane(receipt);
-          const formattedDate = raceDateFormatter.format(new Date(receipt.createdAt));
+          const formattedDate = new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(receipt.createdAt));
           const exportLabel = exportedState[receipt.id] ? 'Exported ✓' : 'Export JSON';
           const shareLabel = shareState[receipt.id] === 'sharing'
             ? 'Creating link…'

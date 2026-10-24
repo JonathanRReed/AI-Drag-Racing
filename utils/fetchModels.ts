@@ -1,7 +1,6 @@
 // Utility to fetch available model names for each provider
 // Centralized approach: use provider config
 import { getProviderById } from './providers';
-import { redactCredentials } from './requestSecurity';
 
 export async function fetchModels(providerId: string, apiKey: string, endpoint?: string): Promise<string[]> {
   const provider = getProviderById(providerId);
@@ -32,7 +31,7 @@ async function fetchViaProxy(providerId: string, apiKey: string): Promise<string
     if (json.error) throw new Error(json.error);
     return json.data || [];
   } catch (e) {
-    console.error(`Fetch failed for ${providerId}:`, redactCredentials(e, apiKey));
+    console.error(`Fetch failed for ${providerId}:`, e);
     // Return empty to let specific fallbacks handle it if needed
     throw e;
   }
@@ -77,7 +76,7 @@ export async function fetchGroqModels(apiKey: string): Promise<string[]> {
   try {
     return await fetchViaProxy('groq', apiKey);
   } catch (e) {
-    console.warn('[Groq] fetchGroqModels failed, using static fallback:', redactCredentials(e, apiKey));
+    console.warn('[Groq] fetchGroqModels failed, using static fallback:', e);
     // Exhaustive fallback (Dec 2025)
     return [
       // Llama 3/3.1/3.3 Series
@@ -254,7 +253,7 @@ export async function fetchMoonshotModels(apiKey: string): Promise<string[]> {
     const merged = new Set([...models, ...MOONSHOT_FALLBACK]);
     return Array.from(merged);
   } catch (e) {
-    console.warn('[Moonshot] fetchMoonshotModels failed, using fallback:', redactCredentials(e, apiKey));
+    console.warn('[Moonshot] fetchMoonshotModels failed, using fallback:', e);
     return MOONSHOT_FALLBACK;
   }
 }
@@ -284,7 +283,7 @@ export async function fetchZhipuModels(apiKey: string): Promise<string[]> {
     const merged = new Set([...models, ...ZHIPU_FALLBACK]);
     return Array.from(merged);
   } catch (e) {
-    console.warn('[Zhipu] fetchZhipuModels failed, using fallback:', redactCredentials(e, apiKey));
+    console.warn('[Zhipu] fetchZhipuModels failed, using fallback:', e);
     return ZHIPU_FALLBACK;
   }
 }

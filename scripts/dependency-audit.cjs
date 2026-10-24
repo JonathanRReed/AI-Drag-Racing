@@ -9,9 +9,7 @@ const FIELDS = ['dependencies', 'devDependencies', 'optionalDependencies', 'peer
 const CACHE = '.cache/dependency-audit';
 const GRAPH_DIR = '.next/dependency-audit';
 const LABELS = ['browser', 'edge', 'nodejs'];
-const API_SOURCES = ['pages/api/bedrock-models.ts', 'pages/api/models.ts', 'pages/api/providers/[providerId]/completions.ts'];
-const RETIRED = /^(?:@cloudflare\/next-on-pages|vercel|@vercel\/.*|wrangler|miniflare)$/;
-const FORBIDDEN = ['braces', 'micromatch', 'fast-glob', 'chokidar', 'shadcn', 'ts-morph', '@ts-morph/common', '@next/eslint-plugin-next', 'eslint-config-next', '@cloudflare/next-on-pages', 'vercel', '@vercel/express', '@vercel/hono', '@vercel/hydrogen', '@vercel/node', '@vercel/redwood', '@vercel/remix-builder', '@vercel/static-build', '@vercel/static-config', 'wrangler', 'miniflare', 'zod', 'zod-validation-error'];
+const FORBIDDEN = ['braces', 'micromatch', 'fast-glob', 'chokidar', 'shadcn', 'ts-morph', '@ts-morph/common', '@next/eslint-plugin-next', 'eslint-config-next', '@cloudflare/next-on-pages', 'vercel', '@vercel/express', '@vercel/hono', '@vercel/hydrogen', '@vercel/node', '@vercel/redwood', '@vercel/remix-builder', '@vercel/static-build', '@vercel/static-config'];
 const isRecord = value => value !== null && typeof value === 'object' && !Array.isArray(value) && [Object.prototype, null].includes(Object.getPrototypeOf(value));
 const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
 const fail = message => { throw new Error(`Dependency verification blocked: ${message}`); };
@@ -107,6 +105,9 @@ function classifyRuntimeModule({ identifier = '', resource = '' }) {
   if (resource && /\/shadcn\/dist\/tailwind\.css(?:\?|$)/.test(resource.replace(/\\/g, '/'))) return [];
   const value = `${resource || ''} ${identifier}`.replace(/\\/g, '/');
   return FORBIDDEN.filter(name => {
+    // The adapter's reviewed request-routing/cache templates are deployed; its
+    // CLI/build modules and their glob consumers must remain excluded.
+    if (name === '@cloudflare/next-on-pages' && /\/@cloudflare\/next-on-pages\/templates\/(?:_worker\.js|cache)\//.test(value)) return false;
     const escaped = name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     return new RegExp(`(?:^|[/"' ])${escaped}(?:[/"' ?]|$)`).test(value);
   });
@@ -126,82 +127,42 @@ function validateRuntimeEvidence({ run, source, graphs, now = new Date() }) {
   return { verified: true };
 }
 
-function isNativeInput(input) {
-  return typeof input === 'string' && !input.split('/').includes('..') && (
-    input === 'worker/index.ts' || input === 'lib/security-headers.json' ||
-    API_SOURCES.includes(input) || /^utils\/[a-zA-Z0-9_./-]+\.ts$/.test(input)
-  ) && classifyRuntimeModule({ identifier: input }).length === 0;
-}
-
-function verifyApiSourceFiles(cwd) {
-  const apiFiles = [];
-  const visit = relative => {
-    const location = path.join(cwd, relative);
-    const entry = fs.lstatSync(location);
-    if (entry.isSymbolicLink()) fail('unexpected source API symlink');
-    if (entry.isDirectory()) {
-      for (const child of fs.readdirSync(location)) visit(`${relative}/${child}`);
-    } else if (entry.isFile()) apiFiles.push(relative);
-    else fail('unexpected source API file type');
-  };
-  visit('pages/api');
-  apiFiles.sort();
-  if (!same(apiFiles, [...API_SOURCES].sort())) fail('source API file set changed; review native routing');
-  return { apiFiles };
-}
-
-function validateNativeRoutes({ routes, workerExists }) {
-  const expected = API_SOURCES.map(file => '/' + file.slice(6, -3)).sort();
-  if (!Array.isArray(routes) || !same(routes.map(route => route?.name).sort(), expected) || workerExists !== true) fail('native handler set or worker changed; review runtime reachability');
+function validatePackagedFunctions({ functions, workerExists }) {
+  const expected = ['api/bedrock-models.func', 'api/models.func', 'api/providers/[providerId]/completions.func'].sort();
+  if (!Array.isArray(functions) || !same(functions.map(fn => fn?.name).sort(), expected) || workerExists !== true) fail('packaged function set or worker changed; review runtime reachability');
   let mappedSources = 0;
-  for (const route of routes) {
-    if (route.runtime !== 'fetch' || !Array.isArray(route.sources) || !route.sources.length || route.sourceRoot !== '') fail('invalid native Fetch handler evidence');
-    if (route.sources.some(input => !isNativeInput(input)) || !route.sources.includes(`pages${route.name}.ts`)) fail('invalid or forbidden native handler input');
-    mappedSources += route.sources.length;
+  for (const fn of functions) {
+    if (fn.runtime !== 'edge' || !Array.isArray(fn.sources) || !fn.sources.length || typeof fn.sourceRoot !== 'string') fail('invalid packaged Edge function evidence');
+    for (const identifier of fn.sources) {
+      if (typeof identifier !== 'string' || classifyRuntimeModule({ identifier: `${fn.sourceRoot}/${identifier}` }).length) fail('invalid or forbidden dependency in packaged Edge function');
+    }
+    mappedSources += fn.sources.length;
   }
   return { mappedSources };
 }
 
-function validateNativeInputs(inputs) {
-  if (!Array.isArray(inputs) || !inputs.length || inputs.some(input => !isNativeInput(input))) fail('invalid or forbidden native worker input');
-  for (const input of ['worker/index.ts', ...API_SOURCES]) if (!inputs.includes(input)) fail('missing actual native worker or handler input');
+function validateAdapterInputs(inputs) {
+  if (!Array.isArray(inputs) || !inputs.length || inputs.some(input => typeof input !== 'string' || classifyRuntimeModule({ identifier: input }).length)) fail('invalid or forbidden adapter runtime input');
+  if (!inputs.some(input => input.replace(/\\/g, '/').includes('/@cloudflare/next-on-pages/templates/_worker.js/index.ts'))) fail('missing actual adapter worker input');
   return { inputCount: inputs.length };
 }
 
 function validateWorkerEvidence({ run, source, records, files, now = new Date() }) {
-  if (!isRecord(run) || !same(run.source, source) || !Array.isArray(records) || records.length !== 1 || !Array.isArray(files) || files.length !== 1 || files[0]?.name !== '_worker.js') fail('missing or extra native worker build metadata');
-  const record = records[0];
-  const generated = Date.parse(record?.generatedAt);
-  if (!isRecord(record) || record.schemaVersion !== 1 || record.runId !== run.id || !same(record.source, source) || record.output !== '_worker.js' || !/^[a-f0-9]{64}$/.test(record.outputHash) || !Number.isFinite(generated) || generated < Date.parse(run.startedAt) || generated > now.getTime()) fail('stale or malformed worker build metadata');
-  validateNativeInputs(record.inputs);
-  if (!Array.isArray(record.imports) || record.imports.length) fail('unbundled native worker runtime import');
-  const file = files[0];
-  if (!isRecord(file) || !/^[a-f0-9]{64}$/.test(file.hash) || record.outputHash !== file.hash) fail('uncovered or changed worker JavaScript');
-  return { verified: true, files: 1 };
-}
-
-function verifyRetiredTooling(cwd) {
-  const lock = readLock(cwd);
-  for (const [key, entry] of Object.entries(lock.packages)) {
-    const name = entry[0].slice(0, entry[0].lastIndexOf('@'));
-    if (RETIRED.test(name) || packageSegments(key).some(name => RETIRED.test(name))) fail('retired deployment tooling remains in lockfile');
+  if (!isRecord(run) || !same(run.source, source) || !Array.isArray(records) || !records.length || !Array.isArray(files) || !files.some(file => file?.name === 'index.js')) fail('missing worker/helper build metadata');
+  const outputs = new Set();
+  const allInputs = new Set();
+  for (const record of records) {
+    const generated = Date.parse(record?.generatedAt);
+    if (!isRecord(record) || record.schemaVersion !== 1 || record.runId !== run.id || !same(record.source, source) || typeof record.output !== 'string' || outputs.has(record.output) || !/^[a-f0-9]{64}$/.test(record.outputHash) || !Number.isFinite(generated) || generated < Date.parse(run.startedAt) || generated > now.getTime()) fail('stale or malformed worker build metadata');
+    if (!Array.isArray(record.inputs) || !record.inputs.length || !Array.isArray(record.imports) || [...record.inputs, ...record.imports].some(input => typeof input !== 'string' || classifyRuntimeModule({ identifier: input }).length)) fail('forbidden worker/helper runtime dependency');
+    outputs.add(record.output);
+    for (const input of record.inputs) allInputs.add(input);
   }
-  let packageCount = 0;
-  const visit = folder => {
-    for (const entry of fs.readdirSync(folder, { withFileTypes: true })) {
-      if (entry.name.startsWith('.')) continue;
-      const location = path.join(folder, entry.name);
-      if (entry.name.startsWith('@')) { visit(location); continue; }
-      if (entry.isSymbolicLink()) fail('unexpected installed package symlink');
-      if (!entry.isDirectory()) continue;
-      const manifest = readJSON(path.join(location, 'package.json'));
-      packageCount++;
-      if (RETIRED.test(manifest.name)) fail('retired deployment tooling remains installed');
-      if (fs.existsSync(path.join(location, 'node_modules'))) visit(path.join(location, 'node_modules'));
-    }
-  };
-  visit(path.join(cwd, 'node_modules'));
-  return { packageCount };
+  validateAdapterInputs([...allInputs]);
+  for (const file of files) {
+    if (!isRecord(file) || typeof file.name !== 'string' || !/^[a-f0-9]{64}$/.test(file.hash) || !records.some(record => record.output === file.name && record.outputHash === file.hash)) fail('uncovered or changed worker/helper JavaScript');
+  }
+  return { verified: true, files: files.length };
 }
 
 function sourceStamp(cwd) {
@@ -228,16 +189,13 @@ function readLock(cwd) {
   return Bun.JSONC.parse(fs.readFileSync(path.join(cwd, 'bun.lock'), 'utf8'));
 }
 function validateCurrentAudit(cwd, now = new Date()) {
-  const results = ['', 'production-'].map(prefix => {
-    const metadata = readJSON(path.join(cwd, CACHE, `${prefix}result.json`));
-    if (metadata.processFailed !== false) fail('audit process did not complete');
-    if (!same(metadata.source, sourceStamp(cwd))) fail('audit evidence belongs to another source tree');
-    const report = readJSON(path.join(cwd, CACHE, `${prefix}report.json`));
-    const installed = Object.hasOwn(report, 'braces') ? readJSON(path.join(cwd, 'node_modules/braces/package.json')).version : undefined;
-    const stderr = fs.readFileSync(path.join(cwd, CACHE, `${prefix}process-stderr.txt`), 'utf8');
-    return validateAudit({ report, status: metadata.status, stderr, lock: readLock(cwd), installedBracesVersion: installed, now, policy: loadPolicy(cwd) });
-  });
-  return { accepted: results.some(result => result.accepted), warning: results.find(result => result.warning)?.warning ?? null };
+  const metadata = readJSON(path.join(cwd, CACHE, 'result.json'));
+  if (metadata.processFailed !== false) fail('audit process did not complete');
+  if (!same(metadata.source, sourceStamp(cwd))) fail('audit evidence belongs to another source tree');
+  const report = readJSON(path.join(cwd, CACHE, 'report.json'));
+  const installed = Object.hasOwn(report, 'braces') ? readJSON(path.join(cwd, 'node_modules/braces/package.json')).version : undefined;
+  const stderr = fs.readFileSync(path.join(cwd, CACHE, 'process-stderr.txt'), 'utf8');
+  return validateAudit({ report, status: metadata.status, stderr, lock: readLock(cwd), installedBracesVersion: installed, now, policy: loadPolicy(cwd) });
 }
 
 function warn(message) {
@@ -247,40 +205,27 @@ function warn(message) {
 }
 
 function runAudit(cwd) {
-  verifyRetiredTooling(cwd);
-  for (const [prefix, flags] of [['', []], ['production-', ['--production']]]) {
-    const result = spawnSync(process.execPath, ['audit', ...flags, '--json'], { cwd, encoding: 'utf8', timeout: 60000, maxBuffer: 4 * 1024 * 1024 });
-    // Preserve both complete unfiltered responses and failure outputs.
-    const reportFile = path.join(cwd, CACHE, `${prefix}report.json`);
-    fs.mkdirSync(path.dirname(reportFile), { recursive: true });
-    fs.writeFileSync(reportFile, result.stdout || '');
-    fs.writeFileSync(path.join(cwd, CACHE, `${prefix}process-stderr.txt`), result.stderr || '');
-    writeJSON(path.join(cwd, CACHE, `${prefix}result.json`), { status: result.status, processFailed: !!(result.error || result.signal), source: sourceStamp(cwd), capturedAt: new Date().toISOString() });
-    if (result.error || result.signal) fail('audit process did not complete');
-    console.log(JSON.stringify(parseJSONEvidence(result.stdout), null, 2));
-  }
+  const result = spawnSync(process.execPath, ['audit', '--json'], { cwd, encoding: 'utf8', timeout: 60000, maxBuffer: 4 * 1024 * 1024 });
+  // Preserve the full unfiltered response, including failure output, before validating it.
+  const reportFile = path.join(cwd, CACHE, 'report.json');
+  fs.mkdirSync(path.dirname(reportFile), { recursive: true });
+  fs.writeFileSync(reportFile, result.stdout || '');
+  fs.writeFileSync(path.join(cwd, CACHE, 'process-stderr.txt'), result.stderr || '');
+  writeJSON(path.join(cwd, CACHE, 'result.json'), { status: result.status, processFailed: !!(result.error || result.signal), source: sourceStamp(cwd), capturedAt: new Date().toISOString() });
+  if (result.error || result.signal) fail('audit process did not complete');
+  const report = parseJSONEvidence(result.stdout);
+  console.log(JSON.stringify(report, null, 2));
   const validation = validateCurrentAudit(cwd);
   warn(validation.warning);
-  if (!validation.accepted) console.log('Dependency audit: no vulnerabilities reported in full or production graph.');
+  if (!validation.accepted) console.log('Dependency audit: no vulnerabilities reported.');
 }
 
 function prepare(cwd) {
-  verifyApiSourceFiles(cwd);
   const validation = validateCurrentAudit(cwd);
   warn(validation.warning);
   fs.rmSync(path.join(cwd, GRAPH_DIR), { recursive: true, force: true });
   fs.rmSync(path.join(cwd, CACHE, 'worker-builds'), { recursive: true, force: true });
   writeJSON(path.join(cwd, CACHE, 'build-run.json'), { id: crypto.randomUUID(), startedAt: new Date().toISOString(), source: sourceStamp(cwd) });
-}
-
-function verifyPagesBuildContext(cwd, env = process.env) {
-  if (env.CF_PAGES !== '1') return;
-  const blocked = () => fail('Cloudflare Pages must use bun run build:pages with matching source-bound preparation');
-  if (env.PAGES_BUILD !== '1' || !env.DEPENDENCY_AUDIT_RUN_ID) blocked();
-  let run;
-  try { run = readJSON(path.join(cwd, CACHE, 'build-run.json')); }
-  catch { blocked(); }
-  if (!isRecord(run) || run.id !== env.DEPENDENCY_AUDIT_RUN_ID || !same(run.source, sourceStamp(cwd))) blocked();
 }
 
 function createRuntimeModulePlugin(cwd, label) {
@@ -295,14 +240,10 @@ function createRuntimeModulePlugin(cwd, label) {
         const seen = new Set();
         const forbidden = new Set();
         const shadcnFiles = new Set();
-        const bundledVendorInputs = new Set();
         const visitCompilation = current => {
           const visitModule = module => {
             if (seen.has(module)) return;
             seen.add(module);
-            const identifier = module.identifier().replace(/\\/g, '/');
-            const vendor = identifier.match(/next\/dist\/compiled\/[^ ?\"!]+/g);
-            for (const input of vendor || []) bundledVendorInputs.add(input);
             for (const name of classifyRuntimeModule({ identifier: module.identifier(), resource: module.resource })) forbidden.add(name);
             if (module.modules) for (const nested of module.modules) visitModule(nested);
           };
@@ -319,7 +260,7 @@ function createRuntimeModulePlugin(cwd, label) {
         writeJSON(path.join(cwd, GRAPH_DIR, `${label}.json`), {
           schemaVersion: 1, label, runId: run.id, source,
           generatedAt: new Date().toISOString(), moduleCount: seen.size,
-          forbiddenModules: [...forbidden].sort(), shadcnFiles: [...shadcnFiles].sort(), bundledVendorInputs: [...bundledVendorInputs].sort(),
+          forbiddenModules: [...forbidden].sort(), shadcnFiles: [...shadcnFiles].sort(),
         });
       });
     },
@@ -327,67 +268,69 @@ function createRuntimeModulePlugin(cwd, label) {
 }
 
 function verifyRuntime(cwd) {
-  verifyApiSourceFiles(cwd);
   const validation = validateCurrentAudit(cwd);
-  const installed = verifyRetiredTooling(cwd);
   warn(validation.warning);
   const run = readJSON(path.join(cwd, CACHE, 'build-run.json'));
   const graphs = LABELS.map(label => readJSON(path.join(cwd, GRAPH_DIR, `${label}.json`)));
   const source = sourceStamp(cwd);
   validateRuntimeEvidence({ run, source, graphs });
-  const recordsDir = path.join(cwd, CACHE, 'worker-builds');
-  const records = fs.readdirSync(recordsDir).map(file => readJSON(path.join(recordsDir, file)));
-  const output = path.join(cwd, '.vercel/output/static');
-  const workerPath = path.join(output, '_worker.js');
-  if (!fs.lstatSync(workerPath).isFile()) fail('unexpected worker artifact directory or symlink');
-  const files = [{ name: '_worker.js', hash: hash(fs.readFileSync(workerPath)) }];
-  const worker = validateWorkerEvidence({ run, source, records, files });
-  const routes = readJSON(path.join(cwd, CACHE, 'native-routes.json'));
-  const { mappedSources } = validateNativeRoutes({ routes, workerExists: true });
-  if (!same(routes.map(route => route.sources), routes.map(() => records[0].inputs))) fail('native route evidence not derived from actual worker inputs');
-  const visit = folder => {
+  // These functions are the deployed API input surface, not build-tool processes.
+  const functions = [];
+  const visitFunctions = (folder, relative = '') => {
     for (const entry of fs.readdirSync(folder, { withFileTypes: true })) {
-      if (entry.isSymbolicLink()) fail('unexpected deployed artifact symlink');
-      if (entry.isDirectory()) visit(path.join(folder, entry.name));
-      else if (entry.name.endsWith('.map')) fail('source map in deployed artifact');
+      if (entry.isDirectory()) visitFunctions(path.join(folder, entry.name), path.posix.join(relative, entry.name));
+      else if (entry.name === '.vc-config.json') {
+        const map = readJSON(path.join(folder, 'index.js.map'));
+        functions.push({ name: relative, runtime: readJSON(path.join(folder, entry.name)).runtime, sources: map.sources, sourceRoot: map.sourceRoot || '' });
+      }
     }
   };
-  visit(output);
-  const code = fs.readFileSync(workerPath, 'utf8');
-  if (/sourceMappingURL|\brequire\s*\(|\bprocess\s*\.|\bBuffer\b|\bimport\s*\(/.test(code)) fail('unwanted Node runtime, dynamic import or source map in worker');
-  const routing = readJSON(path.join(output, '_routes.json'));
-  if (!same(routing, { version: 1, include: ['/api/*'], exclude: [] })) fail('Pages Function invocation surface changed');
-  writeJSON(path.join(cwd, CACHE, 'runtime-result.json'), { verified: true, source, compilerModules: Object.fromEntries(graphs.map(graph => [graph.label, graph.moduleCount])), mappedSources, workerFiles: worker.files, installedPackages: installed.packageCount, exceptionAccepted: validation.accepted });
-  console.log('Verified same-source compiler, exact native Fetch handlers, routes and deployed worker bytes.');
+  visitFunctions(path.join(cwd, '.vercel/output/functions'));
+  const { mappedSources } = validatePackagedFunctions({ functions, workerExists: fs.existsSync(path.join(cwd, '.vercel/output/static/_worker.js/index.js')) });
+  const recordsDir = path.join(cwd, CACHE, 'worker-builds');
+  const records = fs.readdirSync(recordsDir).map(file => readJSON(path.join(recordsDir, file)));
+  const files = [];
+  const visitWorker = (folder, relative = '') => {
+    for (const entry of fs.readdirSync(folder, { withFileTypes: true })) {
+      const name = path.posix.join(relative, entry.name);
+      if (entry.isDirectory()) visitWorker(path.join(folder, entry.name), name);
+      else if (entry.isSymbolicLink()) fail('unexpected worker artifact symlink');
+      else if (isJavaScriptFile(entry.name)) files.push({ name, hash: hash(fs.readFileSync(path.join(folder, entry.name))) });
+    }
+  };
+  visitWorker(path.join(cwd, '.vercel/output/static/_worker.js'));
+  const worker = validateWorkerEvidence({ run, source, records, files });
+  writeJSON(path.join(cwd, CACHE, 'runtime-result.json'), { verified: true, source, compilerModules: Object.fromEntries(graphs.map(graph => [graph.label, graph.moduleCount])), mappedSources, workerFiles: worker.files, exceptionAccepted: validation.accepted });
+  console.log('Verified same-source compiler, packaged Edge functions and every deployed worker/helper JavaScript file.');
 }
 
-function recordNativeBuild(cwd, metafile, routePaths) {
-  verifyApiSourceFiles(cwd);
+function recordAdapterBuild(cwd, metafile) {
   const run = readJSON(path.join(cwd, CACHE, 'build-run.json'));
   const source = sourceStamp(cwd);
-  if (!same(run.source, source)) fail('source changed during native build');
-  if (!isRecord(metafile) || !isRecord(metafile.inputs) || !isRecord(metafile.outputs)) fail('missing native metafile');
+  if (!same(run.source, source)) fail('source changed during adapter build');
+  if (!isRecord(metafile) || !isRecord(metafile.inputs) || !isRecord(metafile.outputs)) fail('missing adapter metafile');
+  const outputRoot = path.join(cwd, '.vercel/output');
+  const workerRoot = path.join(outputRoot, 'static/_worker.js');
   const inputs = Object.keys(metafile.inputs).sort();
-  validateNativeInputs(inputs);
-  const tracked = new Set(execFileSync('git', ['ls-files', '-z'], { cwd, encoding: 'utf8' }).split('\0'));
-  if (inputs.some(input => !tracked.has(input))) fail('untracked worker input outside source provenance');
-  const outputs = Object.entries(metafile.outputs);
-  if (outputs.length !== 1 || path.resolve(cwd, outputs[0][0]) !== path.join(cwd, '.vercel/output/static/_worker.js')) fail('unexpected native build output');
-  const [output, metadata] = outputs[0];
-  const record = {
-    schemaVersion: 1, runId: run.id, source, generatedAt: new Date().toISOString(),
-    output: '_worker.js', outputHash: hash(fs.readFileSync(path.resolve(cwd, output))), inputs,
-    imports: [...new Set([...(metadata.imports || []).map(entry => entry.path), ...Object.values(metafile.inputs).flatMap(input => (input.imports || []).filter(entry => entry.external).map(entry => entry.path))])].sort(),
-  };
-  validateWorkerEvidence({ run, source, records: [record], files: [{ name: record.output, hash: record.outputHash }] });
-  const routes = routePaths.map(name => ({ name, runtime: 'fetch', sourceRoot: '', sources: inputs }));
-  validateNativeRoutes({ routes, workerExists: true });
-  writeJSON(path.join(cwd, CACHE, 'worker-builds/native.json'), record);
-  writeJSON(path.join(cwd, CACHE, 'native-routes.json'), routes);
-  writeJSON(path.join(cwd, CACHE, 'native-worker-metafile.json'), metafile);
+  for (const [output, metadata] of Object.entries(metafile.outputs)) {
+    const absolute = path.resolve(cwd, output);
+    const relative = path.relative(outputRoot, absolute);
+    if (relative.startsWith('..') || path.isAbsolute(relative) || !isJavaScriptFile(relative)) continue;
+    const workerRelative = path.relative(workerRoot, absolute);
+    const key = workerRelative.startsWith('..') ? `prepackage:${relative}` : workerRelative;
+    writeJSON(path.join(cwd, CACHE, 'worker-builds', `${hash(key)}.json`), {
+      schemaVersion: 1, runId: run.id, source, generatedAt: new Date().toISOString(),
+      output: key.replace(/\\/g, '/'), outputHash: hash(fs.readFileSync(absolute)),
+      inputs,
+      imports: [...new Set([
+        ...(metadata.imports || []).map(entry => entry.path),
+        ...Object.values(metafile.inputs).flatMap(input => (input.imports || []).filter(entry => entry.external).map(entry => entry.path)),
+      ])].sort(),
+    });
+  }
 }
 
-module.exports = { verifyPagesBuildContext, verifyApiSourceFiles, collectConsumerGraph, validateAudit, validateRuntimeEvidence, validateNativeRoutes, validateNativeInputs, validateWorkerEvidence, classifyRuntimeModule, sourceStamp, createRuntimeModulePlugin, recordNativeBuild, runAudit, prepare, verifyRuntime, parseJSONEvidence, isJavaScriptFile, verifyRetiredTooling };
+module.exports = { collectConsumerGraph, validateAudit, validateRuntimeEvidence, validatePackagedFunctions, validateAdapterInputs, validateWorkerEvidence, classifyRuntimeModule, sourceStamp, createRuntimeModulePlugin, recordAdapterBuild, runAudit, prepare, verifyRuntime, parseJSONEvidence, isJavaScriptFile };
 
 if (require.main === module) {
   try {

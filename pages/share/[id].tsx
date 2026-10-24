@@ -12,21 +12,12 @@ export default function SharedRacePage() {
 
   useEffect(() => {
     if (!router.isReady || typeof router.query.id !== 'string') return;
-    let active = true;
-    setRecord(null);
-    setState('loading');
     getRaceShare(router.query.id)
       .then((result) => {
-        if (!active) return;
         setRecord(result);
         setState(result ? 'ready' : 'missing');
       })
-      .catch(() => {
-        if (active) setState('error');
-      });
-    return () => {
-      active = false;
-    };
+      .catch(() => setState('error'));
   }, [router.isReady, router.query.id]);
 
   return (

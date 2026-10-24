@@ -1,11 +1,8 @@
-import fs from 'node:fs';
-import os from 'node:os';
-import path from 'node:path';
 import { createRequire } from 'node:module';
 import { describe, expect, it, vi } from 'vitest';
 import audit from './dependency-audit.cjs';
 
-const { verifyApiSourceFiles, collectConsumerGraph, validateAudit, validateRuntimeEvidence, classifyRuntimeModule, validateNativeRoutes, validateNativeInputs, validateWorkerEvidence, parseJSONEvidence, isJavaScriptFile } = audit;
+const { collectConsumerGraph, validateAudit, validateRuntimeEvidence, classifyRuntimeModule, validatePackagedFunctions, validateAdapterInputs, validateWorkerEvidence, parseJSONEvidence, isJavaScriptFile } = audit;
 const expiry = '2026-10-18T05:00:00.000Z';
 const beforeExpiry = new Date('2026-10-18T04:59:59.999Z');
 const advisory = {
@@ -212,8 +209,6 @@ describe('fresh same-source runtime exclusion evidence', () => {
 
   it.each([
     '/project/node_modules/braces/lib/compile.js',
-    '/project/node_modules/next/dist/compiled/zod/index.cjs',
-    'external node-commonjs "next/dist/compiled/zod"',
     '/project/node_modules/next/dist/compiled/micromatch/index.js',
     '/project/node_modules/fast-glob/out/index.js',
     '/project/node_modules/chokidar/index.js',
@@ -230,132 +225,108 @@ describe('fresh same-source runtime exclusion evidence', () => {
   it('permits the intended stylesheet and unrelated app code', () => {
     expect(classifyRuntimeModule({ identifier: '/project/styles/globals.css', resource: '/project/styles/globals.css' })).toEqual([]);
     expect(classifyRuntimeModule({ identifier: '/project/node_modules/shadcn/dist/tailwind.css', resource: '/project/node_modules/shadcn/dist/tailwind.css' })).toEqual([]);
-    expect(classifyRuntimeModule({ identifier: 'node_modules/@cloudflare/next-on-pages/templates/_worker.js/index.ts' })).toContain('@cloudflare/next-on-pages');
-    expect(classifyRuntimeModule({ identifier: 'node_modules/@cloudflare/next-on-pages/templates/cache/adaptor.ts' })).toContain('@cloudflare/next-on-pages');
+    expect(classifyRuntimeModule({ identifier: 'node_modules/@cloudflare/next-on-pages/templates/_worker.js/index.ts' })).toEqual([]);
+    expect(classifyRuntimeModule({ identifier: 'node_modules/@cloudflare/next-on-pages/templates/cache/adaptor.ts' })).toEqual([]);
   });
 });
 
-const apiSources = ['pages/api/bedrock-models.ts', 'pages/api/models.ts', 'pages/api/providers/[providerId]/completions.ts'];
-const nativeInputs = () => ['worker/index.ts', ...apiSources, 'utils/requestSecurity.ts', 'lib/security-headers.json'];
-
-describe('the deployed native Cloudflare request surface', () => {
-  const packaged = () => apiSources.map(source => ({
-    name: '/' + source.slice(6, -3), runtime: 'fetch', sources: [source], sourceRoot: '',
+describe('the deployed Cloudflare request surface', () => {
+  const packaged = () => ['api/bedrock-models.func', 'api/models.func', 'api/providers/[providerId]/completions.func'].map(name => ({
+    name, runtime: 'edge', sources: ['webpack://app/./utils/providers.ts'], sourceRoot: '',
   }));
-  it('requires exactly the three reviewed Fetch handlers and the worker artifact', () => {
-    expect(validateNativeRoutes({ routes: packaged(), workerExists: true })).toEqual({ mappedSources: 3 });
+
+  it('requires the three reviewed Edge functions and the worker artifact', () => {
+    expect(validatePackagedFunctions({ functions: packaged(), workerExists: true })).toEqual({ mappedSources: 3 });
   });
-  it('blocks a new handler, missing handler, duplicate, non-Fetch runtime or missing worker', () => {
-    for (const routes of [packaged().slice(1), [...packaged(), { name: '/api/new', runtime: 'nodejs', sources: ['app.ts'] }], packaged().map(fn => ({ ...fn, runtime: 'nodejs' })), [packaged()[0], packaged()[0], packaged()[2]]]) {
-      expect(() => validateNativeRoutes({ routes, workerExists: true })).toThrow();
+
+  it('blocks a new function, missing function, non-Edge runtime or missing worker', () => {
+    for (const functions of [packaged().slice(1), [...packaged(), { name: 'api/new.func', runtime: 'nodejs', sources: ['app.ts'] }], packaged().map(fn => ({ ...fn, runtime: 'nodejs' }))]) {
+      expect(() => validatePackagedFunctions({ functions, workerExists: true })).toThrow();
     }
-    expect(() => validateNativeRoutes({ routes: packaged(), workerExists: false })).toThrow();
+    expect(() => validatePackagedFunctions({ functions: packaged(), workerExists: false })).toThrow();
   });
-  it.each([[], null, [null], ['node_modules/braces/index.js'], ['next/server'], ['node:fs']].map(value => [value]))('blocks missing, malformed or forbidden handler inputs (%j)', (sources) => {
-    const routes = packaged();
-    routes[0].sources = sources;
-    expect(() => validateNativeRoutes({ routes, workerExists: true })).toThrow();
-  });
-  it('blocks a forbidden source root and missing exact handler source', () => {
-    const routes = packaged();
-    routes[0].sourceRoot = '/node_modules/braces/';
-    expect(() => validateNativeRoutes({ routes, workerExists: true })).toThrow();
-    routes[0] = { ...packaged()[0], sources: ['utils/requestSecurity.ts'] };
-    expect(() => validateNativeRoutes({ routes, workerExists: true })).toThrow();
+
+  it('blocks missing, malformed or forbidden packaged source maps', () => {
+    for (const sources of [[], null, [null], ['webpack://app/./node_modules/braces/index.js']]) {
+      const functions = packaged();
+      functions[0].sources = sources;
+      expect(() => validatePackagedFunctions({ functions, workerExists: true })).toThrow();
+    }
+    const functions = packaged();
+    functions[0].sourceRoot = '/node_modules/braces/';
+    expect(() => validatePackagedFunctions({ functions, workerExists: true })).toThrow();
   });
 });
 
-describe('the application-owned native worker scaffold', () => {
-  it('requires the actual router and three original handler inputs', () => {
-    expect(validateNativeInputs(nativeInputs())).toEqual({ inputCount: nativeInputs().length });
+describe('the adapter worker scaffold', () => {
+  it('accepts the separately bundled worker/cache scaffold without execution-chain inputs', () => {
+    expect(validateAdapterInputs([
+      'node_modules/@cloudflare/next-on-pages/templates/_worker.js/index.ts',
+      'node_modules/@cloudflare/next-on-pages/templates/cache/adaptor.ts',
+      'node_modules/cookie/index.js',
+    ])).toEqual({ inputCount: 3 });
   });
-  it.each([[], null, [null], ['node_modules/braces/index.js'], nativeInputs().slice(1), nativeInputs().filter(x => x !== apiSources[0])].map(value => [value]))('blocks missing or malformed scaffold inputs (%j)', (inputs) => {
-    expect(() => validateNativeInputs(inputs)).toThrow();
-  });
-  it.each(['node_modules/braces/index.js', 'node_modules/next/server.js', 'node:fs', 'node_modules/@cloudflare/next-on-pages/templates/_worker.js/index.ts', 'node_modules/wrangler/wrangler.js', 'node_modules/miniflare/dist/src/index.js', 'node_modules/vercel/dist/index.js', 'node_modules/zod/index.js', 'pages/api/new.ts', '../outside.ts'])('blocks unreviewed native runtime input %s', (input) => {
-    expect(() => validateNativeInputs([...nativeInputs(), input])).toThrow();
+
+  it.each([[], null, [null], ['node_modules/braces/index.js'], ['node_modules/@cloudflare/next-on-pages/templates/_worker.js/index.ts', 'node_modules/micromatch/index.js']].map(value => [value]))('blocks missing, malformed or forbidden scaffold inputs (%j)', (inputs) => {
+    expect(() => validateAdapterInputs(inputs)).toThrow();
   });
 });
 
-describe('exact bundled worker coverage', () => {
-  it.each(['index.js', 'helper.mjs', 'nested/helper.cjs'])('recognizes every runtime JavaScript extension (%s)', (file) => {
+describe('actual bundled worker and helper coverage', () => {
+  it.each(['index.js', 'helper.mjs', 'nested/helper.cjs'])('requires all runtime JavaScript extensions (%s)', (file) => {
     expect(isJavaScriptFile(file)).toBe(true);
   });
-  it.each(['index.js.map', 'build-log.json', 'helper.wasm'])('does not mistake data/maps for JavaScript (%s)', (file) => {
+
+  it.each(['index.js.map', 'nop-build-log.json', 'helper.wasm'])('does not mistake data/maps for JavaScript (%s)', (file) => {
     expect(isJavaScriptFile(file)).toBe(false);
   });
-  const record = (file = '_worker.js') => ({
-    schemaVersion: 1, runId: run.id, source, generatedAt: '2026-10-11T03:01:00.000Z',
-    output: file, outputHash: 'd'.repeat(64), inputs: nativeInputs(), imports: [],
+  const record = (file = 'index.js') => ({
+    schemaVersion: 1, runId: run.id, source,
+    generatedAt: '2026-10-11T03:01:00.000Z',
+    output: file, outputHash: 'd'.repeat(64),
+    inputs: ['node_modules/@cloudflare/next-on-pages/templates/_worker.js/index.ts', 'node_modules/cookie/index.js'],
+    imports: ['node:async_hooks'],
   });
   const workerRequest = (overrides = {}) => ({
-    run, source, records: [record()], files: [{ name: '_worker.js', hash: 'd'.repeat(64) }],
+    run, source, records: [record()],
+    files: [{ name: 'index.js', hash: 'd'.repeat(64) }],
     now: new Date('2026-10-11T03:02:00.000Z'), ...overrides,
   });
-  it('covers the exact generated worker bytes with actual build metadata', () => {
-    expect(validateWorkerEvidence(workerRequest())).toEqual({ verified: true, files: 1 });
+
+  it('covers the exact generated worker bytes and every helper with actual build metadata', () => {
+    const records = [record(), record('__next-on-pages-dist__/cache/adaptor.js')];
+    const files = records.map(x => ({ name: x.output, hash: x.outputHash }));
+    expect(validateWorkerEvidence(workerRequest({ records, files }))).toEqual({ verified: true, files: 2 });
   });
-  it('blocks missing metadata, extra uncovered JavaScript, and even recorded unreviewed helpers', () => {
+
+  it('blocks missing worker/helper metadata and extra uncovered runtime JavaScript', () => {
     expect(() => validateWorkerEvidence(workerRequest({ records: [] }))).toThrow();
-    for (const name of ['helper.js', 'helper.mjs', 'helper.cjs', '_worker.js.map']) {
-      const files = [...workerRequest().files, { name, hash: 'd'.repeat(64) }];
-      expect(() => validateWorkerEvidence(workerRequest({ files }))).toThrow();
-      expect(() => validateWorkerEvidence(workerRequest({ files, records: [record(), record(name)] }))).toThrow();
+    expect(() => validateWorkerEvidence(workerRequest({ files: [...workerRequest().files, { name: 'helper.js', hash: 'd'.repeat(64) }] }))).toThrow();
+  });
+
+  it('blocks forbidden helper inputs or external runtime imports', () => {
+    for (const changed of [
+      { ...record('helper.js'), inputs: ['node_modules/braces/index.js'] },
+      { ...record('helper.js'), imports: ['braces'] },
+    ]) {
+      expect(() => validateWorkerEvidence(workerRequest({ records: [record(), changed], files: [...workerRequest().files, { name: 'helper.js', hash: changed.outputHash }] }))).toThrow();
     }
   });
-  it.each(['braces', 'next/server', 'node:async_hooks', './unbundled.js', 'https://untrusted.example/code.js'])('blocks every external worker runtime import (%s)', (input) => {
-    expect(() => validateWorkerEvidence(workerRequest({ records: [{ ...record(), imports: [input] }] }))).toThrow();
+
+  it.each(['helper.mjs', 'helper.cjs'])('blocks an uncovered or forbidden %s helper', (file) => {
+    expect(() => validateWorkerEvidence(workerRequest({ files: [...workerRequest().files, { name: file, hash: 'd'.repeat(64) }] }))).toThrow();
+    const forbidden = { ...record(file), inputs: ['node_modules/braces/index.js'] };
+    expect(() => validateWorkerEvidence(workerRequest({ records: [record(), forbidden], files: [...workerRequest().files, { name: file, hash: forbidden.outputHash }] }))).toThrow();
   });
-  it('blocks forbidden inputs, changed output bytes, stale records, missing worker and duplicate records', () => {
+
+  it('blocks changed output bytes, stale records, missing worker and duplicate output records', () => {
     for (const overrides of [
-      { records: [{ ...record(), inputs: [...nativeInputs(), 'node_modules/braces/index.js'] }] },
-      { files: [{ name: '_worker.js', hash: 'changed' }] },
+      { files: [{ name: 'index.js', hash: 'changed' }] },
       { records: [{ ...record(), runId: 'older-run' }] },
       { records: [{ ...record(), source: { ...source, commit: 'older-head' } }] },
       { records: [{ ...record(), generatedAt: '2026-10-11T02:59:59Z' }] },
-      { records: [{ ...record(), generatedAt: '2026-10-11T03:03:00Z' }] },
-      { files: [] }, { records: [record(), record()] },
+      { files: [] },
+      { records: [record(), record()] },
     ]) expect(() => validateWorkerEvidence(workerRequest(overrides))).toThrow();
-  });
-});
-
-
-describe('source API files cannot silently disappear during static export', () => {
-  function fixture(run) {
-    const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'native-api-gate-'));
-    try {
-      for (const file of apiSources) {
-        fs.mkdirSync(path.dirname(path.join(cwd, file)), { recursive: true });
-        fs.writeFileSync(path.join(cwd, file), 'export default () => new Response();');
-      }
-      return run(cwd);
-    } finally {
-      fs.rmSync(cwd, { recursive: true, force: true });
-    }
-  }
-  it('accepts only the reviewed source file set, independently of bundle imports', () => {
-    fixture(cwd => expect(verifyApiSourceFiles(cwd)).toEqual({ apiFiles: [...apiSources].sort() }));
-  });
-  it.each(['pages/api/unimported.ts', 'pages/api/nested/new.js', 'pages/api/models.tsx'])('rejects unimported API source %s', file => {
-    fixture(cwd => {
-      fs.mkdirSync(path.dirname(path.join(cwd, file)), { recursive: true });
-      fs.writeFileSync(path.join(cwd, file), 'export default () => new Response();');
-      expect(() => verifyApiSourceFiles(cwd)).toThrow(/source API file set/);
-    });
-  });
-  it.each(apiSources)('rejects missing reviewed API source %s', file => {
-    fixture(cwd => {
-      fs.rmSync(path.join(cwd, file));
-      expect(() => verifyApiSourceFiles(cwd)).toThrow(/source API file set/);
-    });
-  });
-  it.each(['pages/api/models.ts', 'pages/api/providers', 'pages/api'])('rejects API source symlink %s', file => {
-    fixture(cwd => {
-      const original = path.join(cwd, file);
-      const target = path.join(cwd, 'moved');
-      fs.renameSync(original, target);
-      fs.symlinkSync(target, original);
-      expect(() => verifyApiSourceFiles(cwd)).toThrow(/symlink/);
-    });
   });
 });

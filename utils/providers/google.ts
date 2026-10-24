@@ -18,50 +18,43 @@ async function* streamGoogleResponse(
   let buffer = '';
   // Inactivity watchdog to avoid hanging if the server never closes the stream
   const IDLE_TIMEOUT_MS = 30000; // 30s without data
-  try {
-    while (true) {
-      // Race the read against an inactivity timeout
-      let timeoutId: ReturnType<typeof setTimeout> | undefined;
-      let result: { done: boolean; value?: Uint8Array };
-      try {
-        const timeoutPromise = new Promise<{ done: boolean; value?: Uint8Array }>((resolve) => {
-          timeoutId = setTimeout(() => resolve({ done: true }), IDLE_TIMEOUT_MS);
-        });
-        result = await Promise.race([reader.read(), timeoutPromise]);
-      } finally {
-        clearTimeout(timeoutId);
+  while (true) {
+    // Race the read against an inactivity timeout
+    let timeoutId: any;
+    const readPromise = reader.read();
+    const timeoutPromise = new Promise<{ done: boolean; value?: Uint8Array }>((resolve) => {
+      timeoutId = setTimeout(() => resolve({ done: true }), IDLE_TIMEOUT_MS);
+    });
+    const { done, value } = await Promise.race([readPromise, timeoutPromise]);
+    clearTimeout(timeoutId);
+    if (done) {
+      try { await reader.cancel('idle-timeout-or-eos'); } catch {}
+      break;
+    }
+    buffer += decoder.decode(value, { stream: true });
+    // Split on double newlines with optional CRs
+    const parts = buffer.split(/\r?\n\r?\n/);
+    buffer = parts.pop() || '';
+    for (const part of parts) {
+      // Collect all data: lines for this event
+      const dataLines: string[] = [];
+      for (const rawLine of part.split(/\r?\n/)) {
+        const line = rawLine.trim();
+        if (!line) continue;
+        if (line.startsWith('data:')) {
+          dataLines.push(line.slice(5).trim());
+        }
       }
-      const { done, value } = result;
-      if (done) break;
-      buffer += decoder.decode(value, { stream: true });
-      // Split on double newlines with optional CRs
-      const parts = buffer.split(/\r?\n\r?\n/);
-      buffer = parts.pop() || '';
-      for (const part of parts) {
-        // Collect all data: lines for this event
-        const dataLines: string[] = [];
-        for (const rawLine of part.split(/\r?\n/)) {
-          const line = rawLine.trim();
-          if (!line) continue;
-          if (line.startsWith('data:')) {
-            dataLines.push(line.slice(5).trim());
-          }
-        }
-        if (dataLines.length === 0) continue;
-        const dataJoined = dataLines.join('\n');
-        if (!dataJoined || dataJoined === '[DONE]') continue;
-        try {
-          yield JSON.parse(dataJoined);
-        } catch {
-          // ignore malformed chunk
-        }
+      if (dataLines.length === 0) continue;
+      const dataJoined = dataLines.join('\n');
+      if (!dataJoined || dataJoined === '[DONE]') continue;
+      try {
+        yield JSON.parse(dataJoined);
+      } catch {
+        // ignore malformed chunk
       }
     }
-  } finally {
-    try { await reader.cancel('stream-closed'); } catch {}
-    reader.releaseLock();
   }
-
 }
 
 const googleService: ProviderService = {

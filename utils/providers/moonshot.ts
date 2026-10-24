@@ -4,7 +4,6 @@ import {
     registerProviderService,
     ModelSettings,
 } from '../providerService';
-import { redactCredentials } from '../requestSecurity';
 import { finalTokenTotal, approxTokensFromText } from '../tokens';
 import { parseSseJson } from '../sse';
 
@@ -44,7 +43,7 @@ const moonshotService: ProviderService = {
             const allModels = new Set([...fetchedModels, ...MOONSHOT_MODELS]);
             return Array.from(allModels);
         } catch (e) {
-            console.warn('Moonshot fetch models failed, using comprehensive fallback:', redactCredentials(e, apiKey));
+            console.warn('Moonshot fetch models failed, using comprehensive fallback:', e);
             return MOONSHOT_MODELS;
         }
     },

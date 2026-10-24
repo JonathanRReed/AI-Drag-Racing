@@ -1,5 +1,5 @@
-# Cloudflare Pages Git-build configuration. The project identity and compatibility
-# settings are preserved; the native worker does not depend on Node polyfills.
+# Cloudflare Pages configuration (Wrangler on Pages)
+# This enables Node.js compatibility polyfills required by next-on-pages worker output.
 # Docs: https://developers.cloudflare.com/pages/configuration/wrangler/
 
 name = "ai-provider-api-latency-tester"
@@ -13,5 +13,5 @@ NEXT_PUBLIC_SUPABASE_URL = "https://bgbqdzmgxkwstjihgeef.supabase.co"
 # NEXT_PUBLIC_SUPABASE_ANON_KEY is stored in Pages encrypted environment
 # configuration, never in the repository. Both values are build-time inputs.
 
-# Note: You do not need to set `main` for Pages. The application-owned
-# .vercel/output/static/_worker.js is bundled from worker/index.ts during build:pages.
+# Note: You do not need to set `main` for Pages. The adapter generates
+# .vercel/output/static/_worker.js automatically during the build.
