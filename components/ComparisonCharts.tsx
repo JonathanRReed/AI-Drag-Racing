@@ -15,6 +15,7 @@ import { ResultState } from './main/ResultsDisplay';
 import GlassCard from './layout/GlassCard';
 import { getProviderColor } from '../utils/providerColors';
 import { getOutputThroughput } from '../utils/outputThroughput';
+import { measuredDuration, presentOutputCount, timingSourceDetail } from '../utils/measurementPresentation';
 
 // Register only what we use (Legend is disabled)
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip);
@@ -107,6 +108,7 @@ function createChartOptions(
 const ComparisonCharts: React.FC<ComparisonChartsProps> = ({ results }) => {
   const theme = useThemeColors();
   const throughputDescriptionId = useId();
+  const countDescriptionId = useId();
   // Sort toggle: High → Low (default), can flip to Low → High
   const [descending, setDescending] = useState(true);
 
@@ -139,6 +141,8 @@ const ComparisonCharts: React.FC<ComparisonChartsProps> = ({ results }) => {
     tpsData,
     tokensSorted,
     tokensData,
+    outputCounts,
+    timingDetails,
   } = useMemo(() => {
     const sortForChart = (vals: (number | null)[]) => {
       const idx = vals.map((_, i) => i);
@@ -159,8 +163,10 @@ const ComparisonCharts: React.FC<ComparisonChartsProps> = ({ results }) => {
       };
     };
 
-    const latencyVals = validResults.map(r => r.metrics!.finishTime - r.metrics!.startTime);
-    const latSorted = sortForChart(latencyVals);
+    const timingDetails = validResults.map(r => timingSourceDetail(r.metrics?.timingSource));
+    const latencyVals = validResults.map(r => measuredDuration(r.metrics?.startTime, r.metrics?.finishTime));
+    const latOrder = sortForChart(latencyVals);
+    const latSorted = { ...latOrder, details: latOrder.indices.map(i => timingDetails[i]) };
     const latData = {
       labels: latSorted.labels,
       datasets: [{
@@ -173,11 +179,9 @@ const ComparisonCharts: React.FC<ComparisonChartsProps> = ({ results }) => {
       }],
     };
 
-    const ttftVals = validResults.map(r => {
-      const m = r.metrics!;
-      return m.firstTokenTime ? (m.firstTokenTime - m.startTime) : 0;
-    });
-    const ttSorted = sortForChart(ttftVals);
+    const ttftVals = validResults.map(r => measuredDuration(r.metrics?.startTime, r.metrics?.firstTokenTime));
+    const ttOrder = sortForChart(ttftVals);
+    const ttSorted = { ...ttOrder, details: ttOrder.indices.map(i => timingDetails[i]) };
     const ttData = {
       labels: ttSorted.labels,
       datasets: [{
@@ -205,12 +209,9 @@ const ComparisonCharts: React.FC<ComparisonChartsProps> = ({ results }) => {
       }],
     };
 
-    const tokensVals = validResults.map(r => {
-      const m = r.metrics;
-      if (!m) return 0;
-      return typeof m.outputTokens === 'number' ? m.outputTokens : 0;
-    });
-    const tokSorted = sortForChart(tokensVals);
+    const outputCounts = validResults.map(r => presentOutputCount(r.metrics?.outputTokens, r.metrics?.tokenCountSource, r.metrics?.timingSource));
+    const tokOrder = sortForChart(outputCounts.map(count => count.tokenValue));
+    const tokSorted = { ...tokOrder, details: tokOrder.indices.map(i => outputCounts[i].detail) };
     const tokData = {
       labels: tokSorted.labels,
       datasets: [{
@@ -232,25 +233,27 @@ const ComparisonCharts: React.FC<ComparisonChartsProps> = ({ results }) => {
       tpsData: tpData,
       tokensSorted: tokSorted,
       tokensData: tokData,
+      outputCounts,
+      timingDetails,
     };
   }, [validResults, labels, fullLabels, baseBgColors, baseBorderColors, descending]);
 
   // Stable option references avoid unnecessary react-chartjs-2 option updates.
   const latencyOptions = useMemo(
-    () => createChartOptions(theme, 'Total Response Time (ms)', latencySorted.full),
-    [theme, latencySorted.full]
+    () => createChartOptions(theme, 'Total Response Time (ms)', latencySorted.full, latencySorted.details),
+    [theme, latencySorted.full, latencySorted.details]
   );
   const tpsOptions = useMemo(
     () => createChartOptions(theme, 'Output Tokens per Second (TPS)', tpsSorted.full, tpsSorted.details),
     [theme, tpsSorted.full, tpsSorted.details]
   );
   const ttftOptions = useMemo(
-    () => createChartOptions(theme, 'Time To First Token (ms)', ttftSorted.full),
-    [theme, ttftSorted.full]
+    () => createChartOptions(theme, 'Time To First Token (ms)', ttftSorted.full, ttftSorted.details),
+    [theme, ttftSorted.full, ttftSorted.details]
   );
   const tokensOptions = useMemo(
-    () => createChartOptions(theme, 'Output Tokens', tokensSorted.full),
-    [theme, tokensSorted.full]
+    () => createChartOptions(theme, 'Output Tokens (chunks excluded)', tokensSorted.full, tokensSorted.details),
+    [theme, tokensSorted.full, tokensSorted.details]
   );
 
   const chartHeight = useMemo(() => {
@@ -293,9 +296,18 @@ const ComparisonCharts: React.FC<ComparisonChartsProps> = ({ results }) => {
         <div style={{ height: chartHeight }} role="img" aria-label="Bar chart showing time to first token in milliseconds for each AI model">
           <Bar options={ttftOptions} data={ttftData} />
         </div>
-        <div style={{ height: chartHeight }} role="img" aria-label="Bar chart showing total output tokens for each AI model">
+        <div style={{ height: chartHeight }} role="img" aria-label="Bar chart showing total output tokens for each AI model" aria-describedby={countDescriptionId}>
           <Bar options={tokensOptions} data={tokensData} />
         </div>
+      </div>
+      <div id={countDescriptionId} className="mt-4 text-xs text-zinc-400 leading-relaxed">
+        <p>The token count chart excludes chunks and unknown units, not treating them as zero. Missing or invalid timing intervals are unavailable, not zero. A valid observed zero interval stays zero. Timing charts may use different clocks; sources are listed below.</p>
+        <ul aria-label="Output counts and measurement sources" className="mt-2 space-y-1">
+          {tokensSorted.indices.map(index => <li key={validResults[index].id}>
+            {needsMapping ? `Lane ${index + 1}` : <><ModelIdentifier value={validResults[index].modelName} /> via <ModelIdentifier value={validResults[index].providerName} /></>}
+            {': '}{outputCounts[index].text}. {outputCounts[index].detail} {timingDetails[index]}
+          </li>)}
+        </ul>
       </div>
       <div id={throughputDescriptionId} className="mt-4 text-xs text-zinc-400 leading-relaxed">
         <p>TPS uses output tokens over the streaming window, excluding initial waiting. Windows below 150 ms, missing or invalid data, and stream-event counts are unavailable, not zero. Unavailable lanes have no throughput bar and sort last.</p>

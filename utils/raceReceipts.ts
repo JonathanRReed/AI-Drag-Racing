@@ -1,5 +1,6 @@
 import type { CompletionMetrics } from './providerService';
 import { isOutputCharacterCount } from './raceRanking';
+import { measuredEdgeTiming } from './measurementPresentation';
 
 export const RACE_RECEIPT_SCHEMA = 'ai-drag-race-receipt.v1' as const;
 export const RACE_HISTORY_STORAGE_KEY = 'ai-drag-racing:history:v1';
@@ -92,12 +93,6 @@ export interface ReceiptInput {
 
 type StorageLike = Pick<Storage, 'getItem' | 'setItem' | 'removeItem'>;
 
-function duration(start: number | undefined, end: number | undefined): number | null {
-  if (!Number.isFinite(start) || !Number.isFinite(end)) return null;
-  const value = Number(end) - Number(start);
-  return value >= 0 ? Math.round(value) : null;
-}
-
 function sanitizeError(error: string | null): string | null {
   if (!error) return null;
   const normalized = error.toLowerCase();
@@ -145,22 +140,25 @@ export async function createRaceReceipt(input: ReceiptInput): Promise<RaceReceip
       userAgentFamily: input.userAgentFamily ?? null,
     },
     settings: input.settings,
-    lanes: input.lanes.map((lane) => ({
-      ...(isOutputCharacterCount(lane.outputCharacters) ? { outputCharacters: lane.outputCharacters } : {}),
-      providerId: lane.providerId,
-      modelId: lane.modelId,
-      browser: lane.browser,
-      edge: {
-        ttftMs: duration(lane.metrics?.startTime, lane.metrics?.firstTokenTime),
-        totalMs: duration(lane.metrics?.startTime, lane.metrics?.finishTime),
-      },
-      inputTokens: lane.metrics?.inputTokens ?? null,
-      outputTokens: lane.metrics?.outputTokens ?? null,
-      tokenSource: isDemo ? 'demo' : lane.metrics?.tokenCountSource ?? 'estimated',
-      timingSource: isDemo ? 'demo' : lane.metrics?.timingSource ?? 'edge-measured',
-      status: lane.error ? 'failed' : 'completed',
-      errorCode: sanitizeError(lane.error),
-    })),
+    lanes: input.lanes.map((lane) => {
+      const edge = isDemo ? { ttftMs: null, totalMs: null } : measuredEdgeTiming(lane.metrics);
+      return {
+        ...(isOutputCharacterCount(lane.outputCharacters) ? { outputCharacters: lane.outputCharacters } : {}),
+        providerId: lane.providerId,
+        modelId: lane.modelId,
+        browser: lane.browser,
+        edge: {
+          ttftMs: edge.ttftMs === null ? null : Math.round(edge.ttftMs),
+          totalMs: edge.totalMs === null ? null : Math.round(edge.totalMs),
+        },
+        inputTokens: lane.metrics?.inputTokens ?? null,
+        outputTokens: lane.metrics?.outputTokens ?? null,
+        tokenSource: isDemo ? 'demo' : lane.metrics?.tokenCountSource ?? 'estimated',
+        timingSource: isDemo ? 'demo' : lane.metrics?.timingSource ?? 'browser-measured',
+        status: lane.error ? 'failed' : 'completed',
+        errorCode: sanitizeError(lane.error),
+      };
+    }),
     isDemo,
   };
 }

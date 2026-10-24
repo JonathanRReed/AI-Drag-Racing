@@ -82,9 +82,9 @@ describe('shared output-throughput validity on real lane and chart components', 
   });
 
   it.each([
-    ['estimated', { tokenCountSource: 'estimated' }, /estimated output tokens/i],
+    ['estimated', { tokenCountSource: 'estimated' }, /estimated or mixed breakdown/i],
     ['provider reported', { tokenCountSource: 'provider-reported' }, /provider-reported output tokens/i],
-    ['demo', { tokenCountSource: 'estimated', timingSource: 'demo' }, /demo.*estimated output tokens/i],
+    ['demo', { tokenCountSource: 'estimated', timingSource: 'demo' }, /demo.*estimated or mixed breakdown/i],
     ['legacy unspecified source', { tokenCountSource: undefined }, /source unspecified/i],
   ] as const)('qualifies %s without discarding a valid numeric rate', (_name, overrides, qualification) => {
     show(result(overrides));
@@ -124,7 +124,7 @@ describe('shared output-throughput validity on real lane and chart components', 
     };
     assertOrder([200, 20, 0, null, null, null], ['Lane 5', 'Lane 2', 'Lane 3', 'Lane 1', 'Lane 4', 'Lane 6'], ['Google', 'Anthropic', 'Groq', 'OpenAI', 'Cohere', 'Mistral']);
     expect(tpsChart().options.plugins.tooltip.callbacks.title([{ dataIndex: 1 }])).toEqual(['Lane 2: Anthropic (x\\\\u{200B}y)']);
-    expect(tpsChart().options.plugins.tooltip.callbacks.label({ raw: 20, dataIndex: 1 })).toMatch(/estimated output tokens/i);
+    expect(tpsChart().options.plugins.tooltip.callbacks.label({ raw: 20, dataIndex: 1 })).toMatch(/estimated or mixed breakdown/i);
     expect(tpsChart().options.plugins.tooltip.callbacks.title([{ dataIndex: 3 }])).toEqual(['Lane 1: OpenAI (x\\u{200B}y)']);
     click(view.container.querySelector('button')!);
     assertOrder([0, 20, 200, null, null, null], ['Lane 3', 'Lane 2', 'Lane 5', 'Lane 1', 'Lane 4', 'Lane 6'], ['Groq', 'Anthropic', 'Google', 'OpenAI', 'Cohere', 'Mistral']);

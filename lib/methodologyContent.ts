@@ -21,7 +21,7 @@ export const DEFINITIONS: Definition[] = [
   },
   {
     term: 'Total time',
-    definition: 'The finish timestamp minus the start timestamp. Finish is stamped when the provider closes its stream.',
+    definition: 'The finish timestamp minus the start timestamp. Finish is stamped when the provider closes its stream, or observed by the browser when a client limit stops the lane.',
   },
   {
     term: 'Tokens per second',
@@ -32,12 +32,12 @@ export const DEFINITIONS: Definition[] = [
   {
     term: 'Browser clock and edge clock',
     definition:
-      'Browser timings include your connection to Cloudflare. Edge timings describe the leg from the Cloudflare worker to the provider. The two are never blended.',
+      'Browser timings include your connection to Cloudflare. Edge timings describe the leg from the Cloudflare worker to the provider. Browser-synthetic and demo intervals are not edge measurements; edge fields are unavailable without explicit edge provenance.',
   },
   {
     term: 'Token count',
     definition:
-      'Google Gemini reports usage in its stream and those numbers are used directly. Every other provider gets an estimate: characters divided by four, rounded up.',
+      'Google Gemini uses valid reported usage where available, including zero; missing or invalid fields fall back to estimates or a derived total. The whole breakdown is labeled provider-reported only when all three fields are reported, otherwise estimated or mixed. Other raceable providers estimate characters divided by four, rounded up. Client-limited counts are content chunks, not tokens.',
   },
   {
     term: 'Colo',
@@ -61,7 +61,7 @@ export const HOW_TO_COMPARE: Step[] = [
   },
   {
     name: 'Stay in one race mode',
-    text: 'Drag Race and Free Run read the edge clock. Token Sprint and Time Trial cut the stream off in the browser and synthesize their metrics, so do not mix the two families.',
+    text: 'Drag Race and Free Run use edge metrics. Chunk Sprint and Time Trial may stop in the browser and synthesize metrics; a lane that completes naturally first retains its edge metrics. Read each lane’s source before comparing.',
   },
   {
     name: 'Repeat before believing an ordering',
@@ -73,7 +73,7 @@ export const HOW_TO_COMPARE: Step[] = [
   },
   {
     name: 'Cite with the context attached',
-    text: 'Include the date, the exact model IDs, the prompt, the sampling settings, and the number of runs. State that token counts are estimated for every provider except Google.',
+    text: 'Include the date, the exact model IDs, the prompt, the sampling settings, and the number of runs. State the count and clock sources: Google can report, estimate, or mix usage fields; other raceable providers estimate tokens, and client-limited lanes count chunks.',
   },
 ];
 
@@ -90,7 +90,7 @@ export const SECTIONS: Section[] = [
       {
         type: 'p',
         text:
-          'The finish receipt keeps both clocks separate. Browser TTFT and browser total include your connection to Cloudflare. Edge TTFT and edge total describe the worker-to-provider leg. The app does not blend them into one ambiguous latency number.',
+          'The finish receipt keeps both clocks separate. Browser TTFT and browser total include your connection to Cloudflare. Edge TTFT and edge total describe the worker-to-provider leg. Synthetic browser intervals and demo timings are not shown as edge measurements. New non-edge receipts store null edge fields and default to the observed browser clock if metric provenance is absent; old values remain unchanged in storage and exports, but are masked in the display.',
       },
     ],
   },
@@ -148,17 +148,17 @@ export const SECTIONS: Section[] = [
       {
         type: 'p',
         text:
-          '**Total time** is the finish timestamp minus the start timestamp, where finish is stamped as the provider’s stream closes.',
+          '**Total time** is the finish timestamp minus the start timestamp, where finish is stamped as the provider’s stream closes, or observed in the browser when a client limit stops the lane. The displayed source identifies the clock.',
       },
       {
         type: 'p',
         text:
-          '**Tokens per second** divides output tokens by the seconds from first content to finish. Both the lane and comparison chart require finite timestamps ordered start, first content, finish, a streaming window of at least 150 ms, a finite nonnegative output count, and a finite calculated rate. Shorter windows may be buffered flushes and are unavailable, as are missing or invalid data and stream-event counts: events are not output tokens. Total input-plus-output tokens never replace a missing output count. A valid zero output count gives 0 TPS; unavailable lanes have no throughput bar and sort last in either direction. Known estimates and demo rates are labeled. The initial wait is excluded, so this is a streaming rate, not an end to end rate; a model with a slow start can still post the highest tok/s.',
+          '**Tokens per second** divides output tokens by the seconds from first content to finish. Both the lane and comparison chart require finite timestamps ordered start, first content, finish, a streaming window of at least 150 ms, a finite nonnegative output count, and a finite calculated rate. Shorter windows may be buffered flushes and are unavailable, as are missing or invalid data and stream-event counts: events are not output tokens. Total input-plus-output tokens never replace a missing output count. A valid zero output count gives 0 TPS; unavailable lanes have no throughput bar and sort last in either direction. Estimated or mixed breakdowns and demo rates are labeled. The initial wait is excluded, so this is a streaming rate, not an end to end rate; a model with a slow start can still post the highest tok/s.',
       },
       {
         type: 'p',
         text:
-          '**Token counts** are where the honesty matters most. Google Gemini returns usage metadata in its stream and the app uses those numbers directly. Every other provider gets an estimate: characters divided by four, rounded up. That estimate is fine for rough comparison and wrong in the specifics, especially for code, non-English text, and anything that tokenizes unusually. For those providers, treat the ordering as more trustworthy than the value.',
+          '**Token counts** are where the honesty matters most. Google Gemini accepts nonnegative safe integer usage fields, including zero. Valid reported input, output and total counts are preserved independently; missing or invalid input/output counts use cumulative text length divided by four, rounded up, and a missing or invalid total uses their sum. A later missing field retains an earlier report; a present invalid field does not. Only a fully reported breakdown is labeled provider-reported; other breakdowns are conservatively labeled estimated or mixed because one source field cannot identify each field’s origin. Reported means origin, not verified accuracy, and totals may include other usage categories. Other raceable providers use the character-based estimate, which is rough, especially for code and non-English text. Legacy outputTokens values retain token units when count-source metadata is absent, with that origin explicitly unspecified; finite nonnegative fractional estimates remain valid, matching the throughput contract. Timing charts leave missing or invalid intervals unavailable instead of plotting zero; valid observed zero intervals remain zero. Count displays keep content chunks separate from tokens; token-count charts omit chunks, unknown units and unavailable values rather than replacing them with zero.',
       },
       {
         type: 'p',
@@ -191,12 +191,12 @@ export const SECTIONS: Section[] = [
   },
   {
     id: 'race-modes',
-    heading: 'Two race modes measure differently',
+    heading: 'Client limits change what is measured',
     blocks: [
       {
         type: 'p',
         text:
-          'Drag Race and Free Run read their metrics from the edge function, which is the path described above. Token Sprint and Time Trial cut the stream off at the client once the limit is hit, so the provider never sends its final metrics event and the app synthesizes one from the browser clock and its own chunk count instead. Different clock, different token source. Do not compare those runs directly against Drag Race numbers.',
+          'Drag Race and Free Run read metrics from the edge function. Chunk Sprint stops after the configured number of content chunks (stream events), not tokenizer tokens; chunk sizes vary by provider. The legacy internal mode ID remains token_limit. Time Trial stops at its browser deadline. A client-limited lane has browser-synthetic timing and a chunk count, not provider completion timing or output tokens. Its edge fields and token throughput are unavailable. A lane that completes naturally before its limit retains the provider-route metrics instead, so even one race can contain different measurement sources. Read the per-lane sources and do not compare unlike units or clocks as equivalent. The limit and ranking behavior are unchanged.',
       },
       {
         type: 'p',
@@ -228,7 +228,7 @@ export const SECTIONS: Section[] = [
       {
         type: 'p',
         text:
-          'Say what it is: a single live run, timed at a Cloudflare edge worker, with estimated token counts for every provider except Google, and no controlled hardware or region. Include the date, the exact model IDs, and the prompt. Without those three, the number stops meaning anything a month later.',
+          'Say what it is: a single live run with its recorded clock and count sources, and no controlled hardware or region. State whether timings are edge-measured or browser-synthetic and whether counts are provider-reported, estimated or mixed tokens, or streamed chunks. Include the date, the exact model IDs, and the prompt. Without those three, the number stops meaning anything a month later.',
       },
       {
         type: 'p',

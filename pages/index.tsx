@@ -459,7 +459,7 @@ export default function Home() {
               const buf = laneBuffersRef.current[resultId];
               if (buf) pushChunk(buf, result.content, tNow);
               pendingTextRef.current[resultId] = (pendingTextRef.current[resultId] || '') + result.content;
-              // Token Sprint retains its existing whole-event stopping rule.
+              // Chunk Sprint retains its existing whole-event stopping rule.
               if (mode === 'token_limit' && tokenLimit && tokenCount >= tokenLimit) break;
             } else if (result.type === 'meta') {
               edgeRegionRef.current = result.data.edgeRegion;

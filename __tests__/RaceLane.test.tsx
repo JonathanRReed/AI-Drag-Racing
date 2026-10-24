@@ -225,5 +225,5 @@ test('does not substitute total input plus output when output usage is missing',
   const explanation = [...view.container.querySelectorAll('p')].find(node => node.textContent?.includes('TTFT:'))!;
   expect(explanation.textContent).toContain('TPS: output tokens per second.');
   expect(explanation.parentElement!.textContent).toContain('TPSN/A');
-  expect(explanation.parentElement!.textContent).toContain('Not measured');
+  expect(explanation.parentElement!.textContent).toContain('Not available');
 });

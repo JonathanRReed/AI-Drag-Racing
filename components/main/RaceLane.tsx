@@ -5,6 +5,7 @@ import GlassCard from '../layout/GlassCard';
 import { CompletionMetrics } from '../../utils/providerService';
 import { getProviderById } from '../../utils/providers';
 import { getOutputThroughput } from '../../utils/outputThroughput';
+import { presentOutputCount, timingSourceDetail } from '../../utils/measurementPresentation';
 
 export type LaneStatus = 'staging' | 'green' | 'finish' | 'error';
 
@@ -163,6 +164,7 @@ const RaceLane: React.FC<RaceLaneProps> = ({
   }, [error, metrics, responseText]);
 
   const throughput = getOutputThroughput(metrics);
+  const outputCount = presentOutputCount(metrics?.outputTokens, metrics?.tokenCountSource, metrics?.timingSource);
   const ttft = metrics?.firstTokenTime ? metrics.firstTokenTime - metrics.startTime : undefined;
   const total = metrics?.finishTime ? metrics.finishTime - metrics.startTime : undefined;
 
@@ -389,13 +391,13 @@ const RaceLane: React.FC<RaceLaneProps> = ({
                 <span className="text-emerald-400 font-mono font-bold tracking-tight">{throughput.value === null ? 'N/A' : throughput.value.toFixed(2)}</span>
               </div>
               <div className="flex flex-col">
-                <span className="text-zinc-500 text-xs font-bold">Tokens</span>
+                <span className="text-zinc-500 text-xs font-bold">{outputCount.label}</span>
                 <span className="text-zinc-300 font-mono font-bold tracking-tight">
-                  {metrics && typeof metrics.outputTokens === 'number' ? metrics.outputTokens : 'Not measured'}
+                  {outputCount.text}
                 </span>
               </div>
               <p className="col-span-4 text-zinc-400 leading-relaxed">
-                TTFT: time to first token. TPS: output tokens per second. {throughput.detail}
+                TTFT: time to first token. TPS: output tokens per second. {throughput.detail} {outputCount.detail} {timingSourceDetail(metrics?.timingSource)}
               </p>
             </div>
           </div>
