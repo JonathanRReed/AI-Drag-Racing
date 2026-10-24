@@ -170,44 +170,39 @@ const RaceLane: React.FC<RaceLaneProps> = ({
 
   // Expanded state for the response area
   const [expanded, setExpanded] = useState(initialExpanded);
+  const [userControlled, setUserControlled] = useState(false);
   const scrollRef = useRef<HTMLDivElement | null>(null);
-  const autoCollapseTimer = useRef<number | null>(null);
+  const lastForceVersion = useRef(force?.version);
 
   const { feedback: copyFeedback, copy } = useCopyResponse(responseText);
   const copyMessage = copyFeedbackMessage(copyFeedback, displayName);
 
-  // Auto-expand when streaming starts, and auto-scroll on new chunks
+  // A fresh staged run retires the previous run's manual response choice.
   useEffect(() => {
-    if (responseText && !metrics) setExpanded(true);
+    if (status === 'staging') setUserControlled(false);
+  }, [status]);
+
+  // Auto-expand when streaming starts, and auto-scroll on new chunks.
+  useEffect(() => {
+    if (responseText && !metrics && !userControlled) setExpanded(true);
     if (scrollRef.current && expanded) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
-  }, [responseText, metrics, expanded]);
+  }, [responseText, metrics, expanded, userControlled]);
 
-  // Auto-collapse a few seconds after finishing, unless the user has manually collapsed/expanded.
+  // Auto-collapse only untouched responses; a manual choice cancels the pending timer.
   useEffect(() => {
-    // Clear any existing timer first
-    if (autoCollapseTimer.current) {
-      clearTimeout(autoCollapseTimer.current);
-      autoCollapseTimer.current = null;
-    }
-    if (status === 'finish' && expanded) {
-      autoCollapseTimer.current = window.setTimeout(() => {
-        setExpanded(false);
-      }, 6000); // 6s after finish
-    }
-    return () => {
-      if (autoCollapseTimer.current) {
-        clearTimeout(autoCollapseTimer.current);
-        autoCollapseTimer.current = null;
-      }
-    };
-  }, [status, expanded]);
+    if (status !== 'finish' || !expanded || userControlled) return;
+    const timer = window.setTimeout(() => setExpanded(false), 6000);
+    return () => window.clearTimeout(timer);
+  }, [status, expanded, userControlled]);
 
   // Respond to parent broadcast collapse/expand commands
   useEffect(() => {
     if (!force) return;
-    // On each version change, set according to requested state
+    // The initial broadcast is inherited state, not a new user command.
+    if (force.version !== lastForceVersion.current) setUserControlled(true);
+    lastForceVersion.current = force.version;
     setExpanded(!force.collapsed);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [force?.version]);
@@ -317,7 +312,7 @@ const RaceLane: React.FC<RaceLaneProps> = ({
                   )}
                   <button
                     type="button"
-                    onClick={() => setExpanded((v) => !v)}
+                    onClick={() => { setUserControlled(true); setExpanded((v) => !v); }}
                     className="inline-flex min-h-[var(--control-h)] min-w-[var(--control-h)] items-center justify-center rounded-sm bg-white/5 hover:bg-white/10 text-[var(--text-muted)] hover:text-white transition-colors focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-cyan-400"
                     aria-expanded={expanded}
                     aria-label={`${expanded ? 'Collapse' : 'Expand'} ${displayName} response`}
