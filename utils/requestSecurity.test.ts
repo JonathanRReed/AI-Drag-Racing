@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { boundedNumber, corsHeadersForRequest, isAllowedRequestOrigin, readJsonBodyWithLimit, redactCredentials, sanitizeApiKey, validateRaceRequestBody } from './requestSecurity';
+import { boundedNumber, corsHeadersForRequest, isAllowedRequestOrigin, readJsonBodyWithLimit, redactCredentials, sanitizeApiKey, sanitizeModelId, sanitizeModelIds, validateRaceRequestBody } from './requestSecurity';
 
 function request(url: string, origin?: string) {
   return new Request(url, { headers: origin ? { origin } : {} });
@@ -56,6 +56,42 @@ describe('request security', () => {
   });
 });
 
+describe('model ID sanitization', () => {
+  it.each([null, 123, {}, [], '', ' gpt-4o', 'gpt-4o ', 'model\x00-id',
+    'model\x1F', 'model\x7F', 'model\x85id', 'model\u2028id', 'model\u2029id', 'a'.repeat(513)].map(id => ({ id })))(
+    'rejects an invalid opaque identifier without rewriting it (%j)', ({ id }) => {
+      expect(sanitizeModelId(id)).toBe('');
+    },
+  );
+
+  it.each(['gpt-4o', 'org/model:revision-v1', 'Model-ID', '模型', 'a'.repeat(512)])(
+    'preserves a valid identifier exactly (%s)', (id) => {
+      expect(sanitizeModelId(id)).toBe(id);
+    },
+  );
+
+  it('does not create aliases by stripping characters or truncating identifiers', () => {
+    const prefix = 'x'.repeat(512);
+    expect(sanitizeModelIds(['model\x00-id', prefix + 'A', prefix + 'B']))
+      .toEqual([]);
+    expect(sanitizeModelIds([prefix, prefix + 'A', 'model-id', 'model\x00-id']))
+      .toEqual([prefix, 'model-id']);
+  });
+
+  it('deduplicates only exact valid IDs, preserving order and case', () => {
+    expect(sanitizeModelIds([' gpt-4o ', 'gpt-4o', 'claude-3-5-sonnet\x00', null, 42, '']))
+      .toEqual(['gpt-4o']);
+    expect(sanitizeModelIds(['model-A', 'model-a', 'model-A']))
+      .toEqual(['model-A', 'model-a']);
+    expect(sanitizeModelIds({ id: 'not-a-list' })).toEqual([]);
+  });
+
+  it.each([' model', 'model\r\n', 'model\x00id', 'model\u0085id'])('rejects invalid race IDs too (%j)', (model) => {
+    expect(validateRaceRequestBody({ prompt: 'hello', model, apiKey: 'synthetic-key' }))
+      .toEqual({ ok: false, error: 'Invalid model identifier' });
+  });
+});
+
 describe('pasted API key boundaries', () => {
   it('removes boundary controls before trimming and unquoting', () => {
     expect(sanitizeApiKey('\x00 "sk-test-only" \x7F')).toBe('sk-test-only');
@@ -65,6 +101,24 @@ describe('pasted API key boundaries', () => {
 });
 
 describe('credential redaction', () => {
+  it.each([429, {}, null, undefined, true, false].map(keys => ({ keys })))(
+    'ignores invalid outer key arguments while preserving normal redaction (%j)', ({ keys }) => {
+      expect(redactCredentials('HTTP 429: retry later', keys as unknown as readonly string[]))
+        .toBe('HTTP 429: retry later');
+      expect(redactCredentials('Bearer fake-token', keys as unknown as readonly string[]))
+        .toBe('Bearer [REDACTED]');
+    },
+  );
+
+  it.each([429, { unexpected: 'value' }, null, undefined, true, false].map(key => ({ key })))(
+    'ignores invalid key entries without corrupting diagnostics or skipping valid keys (%j)', ({ key }) => {
+      expect(redactCredentials(
+        'HTTP 429: true false [object Object]; rejected fake-key',
+        [key, 'fake-key'] as unknown as readonly string[],
+      )).toBe('HTTP 429: true false [object Object]; rejected [REDACTED]');
+    },
+  );
+
   it.each(['k', 'xy', 'abc', 'synthetic-key', 'a.*+$[x]'])('redacts every occurrence of an explicit key regardless of length (%s)', (key) => {
     expect(redactCredentials(`Rejected ${key}; repeated ${key}`, key))
       .toBe('Rejected [REDACTED]; repeated [REDACTED]');
@@ -230,13 +284,6 @@ describe('credential redaction', () => {
     expect(redactCredentials(null)).toBe('');
     expect(redactCredentials(undefined)).toBe('');
     expect(redactCredentials('', '')).toBe('');
-  });
-
-  it('safely ignores non-string key types passed in keysToRedact', () => {
-    expect(redactCredentials('HTTP 401 error', [123 as any, null as any, undefined as any, { key: 'val' } as any]))
-      .toBe('HTTP 401 error');
-    expect(redactCredentials('Rejected secret-key', [123 as any, 'secret-key']))
-      .toBe('Rejected [REDACTED]');
   });
 
   it('drops oversized diagnostics before collecting matches for short keys', () => {
