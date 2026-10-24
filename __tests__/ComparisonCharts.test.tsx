@@ -67,10 +67,10 @@ describe('comparison charts', () => {
     expect(next.options.plugins.tooltip.callbacks.title([{ dataIndex: 0 }])).toEqual(['Lane 1: Groq (long-model-name-that-needs-an-ellipsis)']);
   });
 
-  it('keeps the existing zero/missing-token metric fallbacks', () => {
+  it('keeps missing throughput distinct from the other legacy metric fallbacks', () => {
     view = mount(<ComparisonCharts results={[result('OpenAI', 0, 500)]} />);
     const [, tps, ttft, tokens] = charts();
-    expect(tps.data.datasets[0].data).toEqual([0]);
+    expect(tps.data.datasets[0].data).toEqual([null]);
     expect(ttft.data.datasets[0].data).toEqual([0]);
     expect(tokens.data.datasets[0].data).toEqual([0]);
   });

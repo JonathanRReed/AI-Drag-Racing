@@ -1,5 +1,5 @@
 // components/ComparisonCharts.tsx
-import React, { useMemo, useState } from 'react';
+import React, { useId, useMemo, useState } from 'react';
 import ModelIdentifier from './ModelIdentifier';
 import { formatModelIdentifier, modelIdentifierCanvasText } from '../utils/modelIdentifier';
 import { Bar } from 'react-chartjs-2';
@@ -14,6 +14,7 @@ import {
 import { ResultState } from './main/ResultsDisplay';
 import GlassCard from './layout/GlassCard';
 import { getProviderColor } from '../utils/providerColors';
+import { getOutputThroughput } from '../utils/outputThroughput';
 
 // Register only what we use (Legend is disabled)
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip);
@@ -53,7 +54,8 @@ const formatNumber = (v: number) => {
 function createChartOptions(
   theme: { text: string; muted: string; divider: string },
   titleText: string,
-  fullLabels: string[]
+  fullLabels: string[],
+  valueDetails?: string[]
 ) {
   return {
     responsive: true,
@@ -90,7 +92,10 @@ function createChartOptions(
         displayColors: false,
         callbacks: {
           title: (items: any[]) => items.map(i => fullLabels[i.dataIndex]),
-          label: (ctx: any) => `${formatNumber(Number(ctx.raw))}`
+          label: (ctx: any) => {
+            const value = ctx.raw === null ? 'N/A' : formatNumber(Number(ctx.raw));
+            return valueDetails ? `${value} — ${valueDetails[ctx.dataIndex]}` : value;
+          }
         }
       },
     },
@@ -101,6 +106,7 @@ function createChartOptions(
 
 const ComparisonCharts: React.FC<ComparisonChartsProps> = ({ results }) => {
   const theme = useThemeColors();
+  const throughputDescriptionId = useId();
   // Sort toggle: High → Low (default), can flip to Low → High
   const [descending, setDescending] = useState(true);
 
@@ -134,10 +140,17 @@ const ComparisonCharts: React.FC<ComparisonChartsProps> = ({ results }) => {
     tokensSorted,
     tokensData,
   } = useMemo(() => {
-    const sortForChart = (vals: number[]) => {
+    const sortForChart = (vals: (number | null)[]) => {
       const idx = vals.map((_, i) => i);
-      idx.sort((a, b) => (descending ? vals[b] - vals[a] : vals[a] - vals[b]));
+      idx.sort((a, b) => {
+        const av = vals[a], bv = vals[b];
+        // Unavailable rates stay last in either direction, distinct from zero.
+        if (av === null) return bv === null ? 0 : 1;
+        if (bv === null) return -1;
+        return descending ? bv - av : av - bv;
+      });
       return {
+        indices: idx,
         labels: idx.map(i => labels[i]),
         full: idx.map(i => fullLabels[i]),
         values: idx.map(i => vals[i]),
@@ -177,14 +190,9 @@ const ComparisonCharts: React.FC<ComparisonChartsProps> = ({ results }) => {
       }],
     };
 
-    const tpsVals = validResults.map(r => {
-      const { metrics } = r;
-      if (!metrics || !metrics.finishTime || !metrics.firstTokenTime) return 0;
-      const duration = (metrics.finishTime - metrics.firstTokenTime) / 1000;
-      const out = typeof metrics.outputTokens === 'number' ? metrics.outputTokens : metrics.tokenCount;
-      return duration > 0 ? out / duration : 0;
-    });
-    const tpSorted = sortForChart(tpsVals);
+    const throughputs = validResults.map(r => getOutputThroughput(r.metrics));
+    const tpOrder = sortForChart(throughputs.map(t => t.value));
+    const tpSorted = { ...tpOrder, details: tpOrder.indices.map(i => throughputs[i].detail) };
     const tpData = {
       labels: tpSorted.labels,
       datasets: [{
@@ -233,8 +241,8 @@ const ComparisonCharts: React.FC<ComparisonChartsProps> = ({ results }) => {
     [theme, latencySorted.full]
   );
   const tpsOptions = useMemo(
-    () => createChartOptions(theme, 'Output Tokens per Second (TPS)', tpsSorted.full),
-    [theme, tpsSorted.full]
+    () => createChartOptions(theme, 'Output Tokens per Second (TPS)', tpsSorted.full, tpsSorted.details),
+    [theme, tpsSorted.full, tpsSorted.details]
   );
   const ttftOptions = useMemo(
     () => createChartOptions(theme, 'Time To First Token (ms)', ttftSorted.full),
@@ -279,7 +287,7 @@ const ComparisonCharts: React.FC<ComparisonChartsProps> = ({ results }) => {
         <div style={{ height: chartHeight }} role="img" aria-label="Bar chart showing total response time in milliseconds for each AI model">
           <Bar options={latencyOptions} data={latencyData} />
         </div>
-        <div style={{ height: chartHeight }} role="img" aria-label="Bar chart showing output tokens per second for each AI model">
+        <div style={{ height: chartHeight }} role="img" aria-label="Bar chart showing output tokens per second for each AI model" aria-describedby={throughputDescriptionId}>
           <Bar options={tpsOptions} data={tpsData} />
         </div>
         <div style={{ height: chartHeight }} role="img" aria-label="Bar chart showing time to first token in milliseconds for each AI model">
@@ -288,6 +296,19 @@ const ComparisonCharts: React.FC<ComparisonChartsProps> = ({ results }) => {
         <div style={{ height: chartHeight }} role="img" aria-label="Bar chart showing total output tokens for each AI model">
           <Bar options={tokensOptions} data={tokensData} />
         </div>
+      </div>
+      <div id={throughputDescriptionId} className="mt-4 text-xs text-zinc-400 leading-relaxed">
+        <p>TPS uses output tokens over the streaming window, excluding initial waiting. Windows below 150 ms, missing or invalid data, and stream-event counts are unavailable, not zero. Unavailable lanes have no throughput bar and sort last.</p>
+        <ul aria-label="Throughput values and availability" className="mt-2 space-y-1">
+          {tpsSorted.indices.map((index, position) => {
+            const result = validResults[index];
+            const value = tpsSorted.values[position];
+            return <li key={result.id}>
+              {needsMapping ? `Lane ${index + 1}` : <><ModelIdentifier value={result.modelName} /> via <ModelIdentifier value={result.providerName} /></>}
+              {': '}{value === null ? 'N/A' : `${value.toFixed(2)} TPS`}. {tpsSorted.details[position]}
+            </li>;
+          })}
+        </ul>
       </div>
     </GlassCard>
   );

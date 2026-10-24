@@ -5,7 +5,7 @@
  *
  * Inline syntax inside text: **bold**, `code`, [label](href).
  */
-export const METHODOLOGY_UPDATED = '2026-09-05';
+export const METHODOLOGY_UPDATED = '2026-10-24';
 
 export type Definition = { term: string; short?: string; definition: string };
 export type Step = { name: string; text: string };
@@ -27,7 +27,7 @@ export const DEFINITIONS: Definition[] = [
     term: 'Tokens per second',
     short: 'tok/s',
     definition:
-      'Output tokens divided by the seconds between the first token and the finish. The wait for the first token is not in the denominator, so this is a streaming rate, not an end to end rate.',
+      'Output tokens divided by the seconds from first content to finish, excluding the initial wait. The streaming window must be at least 150 ms, with finite, ordered timestamps and a finite nonnegative output count. Missing or invalid data and stream-event counts produce unavailable TPS, not zero; total input-plus-output tokens are never substituted.',
   },
   {
     term: 'Browser clock and edge clock',
@@ -153,7 +153,7 @@ export const SECTIONS: Section[] = [
       {
         type: 'p',
         text:
-          '**Tokens per second** divides output tokens by the seconds between first token and finish. Read that one carefully. The wait for the first token is not in the denominator, so this is a streaming rate and not an end to end rate, and a model with a slow start can still post the highest tok/s in the race.',
+          '**Tokens per second** divides output tokens by the seconds from first content to finish. Both the lane and comparison chart require finite timestamps ordered start, first content, finish, a streaming window of at least 150 ms, a finite nonnegative output count, and a finite calculated rate. Shorter windows may be buffered flushes and are unavailable, as are missing or invalid data and stream-event counts: events are not output tokens. Total input-plus-output tokens never replace a missing output count. A valid zero output count gives 0 TPS; unavailable lanes have no throughput bar and sort last in either direction. Known estimates and demo rates are labeled. The initial wait is excluded, so this is a streaming rate, not an end to end rate; a model with a slow start can still post the highest tok/s.',
       },
       {
         type: 'p',
