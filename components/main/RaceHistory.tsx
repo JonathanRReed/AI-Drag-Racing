@@ -14,10 +14,6 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 
-// Bolt optimization: Cache Intl.DateTimeFormat instance at module scope.
-// Creating `new Intl.DateTimeFormat` inside render loops allocates ICU locale formatters repeatedly.
-const raceDateFormatter = new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', timeStyle: 'short' });
-
 function downloadReceipt(receipt: RaceReceipt) {
   const blob = new Blob([serializeSanitizedReceipt(receipt)], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
@@ -28,7 +24,7 @@ function downloadReceipt(receipt: RaceReceipt) {
   URL.revokeObjectURL(url);
 }
 
-// Bolt optimization: O(n) single pass to find the fastest completed lane without array allocations (.filter / .sort).
+// Keep the first completed lane on ties, including when all timings are unavailable.
 function fastestLane(receipt: RaceReceipt) {
   let bestLane: RaceReceipt['lanes'][number] | undefined;
   let minMs = Number.POSITIVE_INFINITY;
@@ -36,7 +32,7 @@ function fastestLane(receipt: RaceReceipt) {
     const lane = receipt.lanes[i];
     if (lane.status === 'completed') {
       const ms = lane.browser.totalMs ?? Number.POSITIVE_INFINITY;
-      if (ms < minMs) {
+      if (!bestLane || ms < minMs) {
         minMs = ms;
         bestLane = lane;
       }
@@ -45,7 +41,7 @@ function fastestLane(receipt: RaceReceipt) {
   return bestLane;
 }
 
-function RaceHistory({
+export default function RaceHistory({
   receipts,
   onDelete,
   onClear,
@@ -68,6 +64,9 @@ function RaceHistory({
   }, []);
 
   if (!receipts.length) return null;
+
+  // Share one formatter across rows without freezing locale/timezone defaults.
+  const raceDateFormatter = new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', timeStyle: 'short' });
 
   const handleExport = (receipt: RaceReceipt) => {
     downloadReceipt(receipt);
@@ -197,6 +196,3 @@ function RaceHistory({
     </section>
   );
 }
-
-// Bolt optimization: Wrap RaceHistory in React.memo to skip reconciliations when history props remain unchanged.
-export default React.memo(RaceHistory);

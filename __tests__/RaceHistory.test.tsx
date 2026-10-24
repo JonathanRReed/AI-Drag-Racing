@@ -171,4 +171,58 @@ describe('RaceHistory component', () => {
     await act(async () => { click(shareButton()); });
     expectActionName(shareButton(), 'Link copied');
   });
+
+  it.each([
+    { totals: [null], statuses: ['completed'], expected: 'model-0' },
+    { totals: [null, null], statuses: ['completed', 'completed'], expected: 'model-0' },
+    { totals: [null, 10], statuses: ['completed', 'completed'], expected: 'model-1' },
+    { totals: [10, null], statuses: ['completed', 'completed'], expected: 'model-0' },
+    { totals: [20, 10, 10], statuses: ['completed', 'completed', 'completed'], expected: 'model-1' },
+    { totals: [0, 10], statuses: ['completed', 'completed'], expected: 'model-0' },
+    { totals: [1, 20], statuses: ['failed', 'completed'], expected: 'model-1' },
+    { totals: [1, null], statuses: ['failed', 'completed'], expected: 'model-1' },
+    { totals: [1, 20], statuses: ['failed', 'failed'], expected: 'No completed lane' },
+    { totals: [], statuses: [], expected: 'No completed lane' },
+  ] as const)('selects the first fastest completed lane: $totals / $statuses', ({ totals, statuses, expected }) => {
+    const receipt = {
+      ...mockReceipt,
+      lanes: totals.map((totalMs, index) => ({
+        ...mockReceipt.lanes[0],
+        modelId: `model-${index}`,
+        browser: { ttftMs: null, totalMs },
+        status: statuses[index]!,
+      })),
+    };
+    const before = JSON.stringify(receipt);
+    setup([receipt]);
+    expect(view!.container.querySelector('.race-history-row strong')!.textContent).toBe(expected);
+    expect(JSON.stringify(receipt)).toBe(before);
+  });
+
+  it('refreshes the default date formatting on a later render', () => {
+    setup();
+    const firstDate = view!.container.querySelector('time')!.textContent;
+    const NativeDateTimeFormat = Intl.DateTimeFormat;
+    // Model changed browser locale/timezone defaults while retaining real ICU formatting.
+    const expected = new NativeDateTimeFormat('de-DE', {
+      dateStyle: 'medium', timeStyle: 'short', timeZone: 'Pacific/Honolulu',
+    }).format(new Date(mockReceipt.createdAt));
+    vi.spyOn(Intl, 'DateTimeFormat').mockImplementation(function (locales, options) {
+      return new NativeDateTimeFormat(locales ?? 'de-DE', { ...options, timeZone: 'Pacific/Honolulu' });
+    });
+    view!.rerender(<RaceHistory receipts={[mockReceipt]} onDelete={() => {}} onClear={() => {}} />);
+    expect(view!.container.querySelector('time')!.textContent).toBe(expected);
+    expect(expected).not.toBe(firstDate);
+  });
+
+  it('constructs one date formatter for multiple receipts in a render', () => {
+    const NativeDateTimeFormat = Intl.DateTimeFormat;
+    const formatter = vi.spyOn(Intl, 'DateTimeFormat').mockImplementation(function (locales, options) {
+      return new NativeDateTimeFormat(locales, options);
+    });
+    setup([mockReceipt, { ...mockReceipt, id: 'second' }, { ...mockReceipt, id: 'third' }]);
+    expect(view!.container.querySelectorAll('time')).toHaveLength(3);
+    expect(formatter).toHaveBeenCalledExactlyOnceWith(undefined, { dateStyle: 'medium', timeStyle: 'short' });
+  });
+
 });
