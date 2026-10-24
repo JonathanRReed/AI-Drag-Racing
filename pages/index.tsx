@@ -8,6 +8,7 @@ import ProviderList from '../components/sidebar/ProviderList';
 import PromptInput from '../components/main/PromptInput';
 import type { ResultState } from '../components/main/ResultsDisplay';
 import { streamCompletion } from '../utils/apiClient';
+import { createRaceDeadline, waitForRaceDelay } from '../utils/raceDeadline';
 import { CompletionMetrics } from '../utils/providerService';
 import GlassCard from '../components/layout/GlassCard';
 import CountdownOverlay from '../components/main/CountdownOverlay';
@@ -304,8 +305,10 @@ export default function Home() {
     const providersToTest = selected;
     // Cancel any prior in-flight streams and open a fresh abort scope for this race.
     abortRef.current?.abort();
-    abortRef.current = new AbortController();
-    const signal = abortRef.current.signal;
+    const raceController = new AbortController();
+    abortRef.current = raceController;
+    const signal = raceController.signal;
+    const isCurrentRace = () => abortRef.current === raceController && !signal.aborted;
     // Reset the live race engine, then stage lanes before the countdown.
     const initialBuffers: Record<string, LaneBuffer> = {};
     for (const p of providersToTest) {
@@ -346,7 +349,7 @@ export default function Home() {
 
     // Respect reduced motion
     const reduceMotion = typeof window !== 'undefined' && window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    const delay = (ms: number) => new Promise(res => setTimeout(res, ms));
+    const delay = (ms: number) => waitForRaceDelay(ms, signal);
     if (reduceMotion) {
       // Skip countdown for accessibility
       dispatch({ type: 'SET_RACE_STATE', payload: 'racing' });
@@ -356,17 +359,25 @@ export default function Home() {
       for (const val of [3, 2, 1] as const) {
         dispatch({ type: 'SET_COUNTDOWN', payload: val });
         await delay(700);
+        if (!isCurrentRace()) return;
       }
       dispatch({ type: 'SET_COUNTDOWN', payload: 'Go!' });
       await delay(300);
+      if (!isCurrentRace()) return;
       dispatch({ type: 'SET_RACE_STATE', payload: 'racing' });
       dispatch({ type: 'SET_COUNTDOWN', payload: null });
     }
+    if (!isCurrentRace()) return;
     // Get race config and prepare settings
     const { mode, tokenLimit, timeLimit, modelSettings } = state.raceConfig;
     const raceStartTime = Date.now();
     // Single shared "Go!" instant — the fair cross-model baseline for the pace chart.
-    goTimeRef.current = performance.now();
+    const goTime = performance.now();
+    goTimeRef.current = goTime;
+    const deadline = mode === 'time_limit' && timeLimit
+      ? createRaceDeadline(goTime, timeLimit * 1000, signal)
+      : null;
+    const streamSignal = deadline?.signal ?? signal;
     setAnnouncement(
       `Race started. ${providersToTest.length} ${providersToTest.length === 1 ? 'model' : 'models'} launching.`
     );
@@ -383,6 +394,47 @@ export default function Home() {
           setAnnouncement(`${getProviderById(p.providerId)?.displayName || p.providerId} failed: API key not set.`);
           return;
         }
+        let sawMetrics = false;
+        let tokenCount = 0;
+        const finishLimitedLane = () => {
+          // For limited races, synthesize metrics from what we collected — but use the
+          // REAL client-observed first-token time instead of a hardcoded +100ms.
+          const totalMs = Math.round(performance.now() - goTime);
+          const finishTime = raceStartTime + totalMs;
+          const buf = laneBuffersRef.current[resultId];
+          if (buf) buf.done = true;
+          flushLane(resultId);
+          const metrics: CompletionMetrics = {
+            startTime: raceStartTime,
+            firstTokenTime:
+              buf && buf.firstTokenT != null ? raceStartTime + Math.round(buf.firstTokenT) : undefined,
+            finishTime,
+            tokenCount,
+            outputTokens: tokenCount,
+            tokenCountSource: 'stream-events',
+            timingSource: 'browser-synthetic',
+          };
+          const browserTiming = {
+            ttftMs: buf?.firstTokenT != null ? Math.round(buf.firstTokenT) : null,
+            totalMs,
+          };
+          receiptLanesRef.current[resultId] = {
+            providerId: p.providerId,
+            modelId: p.modelId,
+            metrics,
+            browser: browserTiming,
+            error: null,
+          };
+          dispatch({
+            type: 'FINISH_STREAM',
+            payload: {
+              resultId,
+              metrics,
+              browserTiming,
+            },
+          });
+          setAnnouncement(`${getProviderById(p.providerId)?.displayName || p.providerId} finished.`);
+        };
         try {
           // Clone settings and remove reasoningEffort if this model was excluded (toggled off)
           const effectiveSettings = { ...modelSettings };
@@ -390,21 +442,22 @@ export default function Home() {
             effectiveSettings.reasoningEffort = undefined;
           }
 
-          const stream = streamCompletion(p.providerId, state.prompt, p.modelId, apiKey, effectiveSettings, signal);
-          let sawMetrics = false;
-          let tokenCount = 0;
+          const stream = streamCompletion(p.providerId, state.prompt, p.modelId, apiKey, effectiveSettings, streamSignal);
 
           for await (const result of stream) {
+            if (!isCurrentRace()) return;
+            // Enforce the logical cutoff even if the deadline callback is delayed.
+            // Events observed exactly at the deadline are outside the trial.
+            const observedAt = performance.now();
+            if (deadline?.reached(observedAt)) break;
             if (result.type === 'chunk') {
               tokenCount++;
-              const tNow = performance.now() - goTimeRef.current;
+              const tNow = observedAt - goTime;
               const buf = laneBuffersRef.current[resultId];
               if (buf) pushChunk(buf, result.content, tNow);
               pendingTextRef.current[resultId] = (pendingTextRef.current[resultId] || '') + result.content;
-              // Enforce race-mode limits AFTER recording the chunk, and only on chunks — so
-              // we never break before consuming the final metrics event.
+              // Token Sprint retains its existing whole-event stopping rule.
               if (mode === 'token_limit' && tokenLimit && tokenCount >= tokenLimit) break;
-              if (mode === 'time_limit' && timeLimit && (Date.now() - raceStartTime) / 1000 >= timeLimit) break;
             } else if (result.type === 'meta') {
               edgeRegionRef.current = result.data.edgeRegion;
               dispatch({ type: 'SET_META', payload: { resultId, edgeRegion: result.data.edgeRegion } });
@@ -419,7 +472,7 @@ export default function Home() {
               }
               const browserTiming = {
                 ttftMs: buf?.firstTokenT != null ? Math.round(buf.firstTokenT) : null,
-                totalMs: Math.round(performance.now() - goTimeRef.current),
+                totalMs: Math.round(observedAt - goTime),
               };
               receiptLanesRef.current[resultId] = {
                 providerId: p.providerId,
@@ -434,45 +487,11 @@ export default function Home() {
               sawMetrics = true;
             }
           }
+          if (!isCurrentRace()) return;
           // If the stream closed without emitting metrics (e.g., due to limits), create synthetic metrics
           if (!sawMetrics) {
             if (mode === 'token_limit' || mode === 'time_limit') {
-              // For limited races, synthesize metrics from what we collected — but use the
-              // REAL client-observed first-token time instead of a hardcoded +100ms.
-              const finishTime = Date.now();
-              const buf = laneBuffersRef.current[resultId];
-              if (buf) buf.done = true;
-              flushLane(resultId);
-              const metrics: CompletionMetrics = {
-                startTime: raceStartTime,
-                firstTokenTime:
-                  buf && buf.firstTokenT != null ? raceStartTime + Math.round(buf.firstTokenT) : undefined,
-                finishTime,
-                tokenCount,
-                outputTokens: tokenCount,
-                tokenCountSource: 'stream-events',
-                timingSource: 'browser-synthetic',
-              };
-              const browserTiming = {
-                ttftMs: buf?.firstTokenT != null ? Math.round(buf.firstTokenT) : null,
-                totalMs: Math.round(performance.now() - goTimeRef.current),
-              };
-              receiptLanesRef.current[resultId] = {
-                providerId: p.providerId,
-                modelId: p.modelId,
-                metrics,
-                browser: browserTiming,
-                error: null,
-              };
-              dispatch({
-                type: 'FINISH_STREAM',
-                payload: {
-                  resultId,
-                  metrics,
-                  browserTiming,
-                },
-              });
-              setAnnouncement(`${getProviderById(p.providerId)?.displayName || p.providerId} finished.`);
+              finishLimitedLane();
             } else {
               const buf = laneBuffersRef.current[resultId];
               if (buf) { buf.errored = true; buf.done = true; }
@@ -482,6 +501,11 @@ export default function Home() {
             }
           }
         } catch (e: any) {
+          if (!isCurrentRace()) return;
+          if (deadline?.isLimitError(e)) {
+            if (!sawMetrics) finishLimitedLane();
+            return;
+          }
           const buf = laneBuffersRef.current[resultId];
           if (buf) { buf.errored = true; buf.done = true; }
           flushLane(resultId);
@@ -491,7 +515,7 @@ export default function Home() {
             metrics: null,
             browser: {
               ttftMs: buf?.firstTokenT != null ? Math.round(buf.firstTokenT) : null,
-              totalMs: Math.round(performance.now() - goTimeRef.current),
+              totalMs: Math.round(performance.now() - goTime),
             },
             error: e instanceof Error ? e.message : 'Provider stream failed',
           };
@@ -499,7 +523,8 @@ export default function Home() {
           setAnnouncement(`${getProviderById(p.providerId)?.displayName || p.providerId} failed: ${e.message}`);
         }
       })
-    );
+    ).finally(() => deadline?.dispose());
+    if (!isCurrentRace()) return;
     // Final flush + stop the throttled committer so the transcripts are complete.
     stopFlush();
     const remaining = pendingTextRef.current;
@@ -536,6 +561,7 @@ export default function Home() {
         };
       }),
     });
+    if (!isCurrentRace()) return;
     setHistory(saveRaceReceipt(window.localStorage, receipt));
     dispatch({ type: 'FINISH_COMPARISON' });
   }, [experience, state.prompt, state.apiKeys, state.selectedPairs, state.enabledProviders, state.raceConfig]);
