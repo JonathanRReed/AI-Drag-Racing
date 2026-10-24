@@ -206,9 +206,10 @@ export function redactCredentials(input: unknown, keysToRedact?: string | readon
     }
   }
 
-  const keys = typeof keysToRedact === 'string' ? [keysToRedact] : keysToRedact ?? [];
+  const keys = typeof keysToRedact === 'string' ? [keysToRedact] : Array.isArray(keysToRedact) ? keysToRedact : [];
   const variants = new Set<string>();
   for (const key of keys) {
+    if (typeof key !== 'string') continue;
     // Every nonempty accepted key is sensitive, including one-character keys.
     for (const value of [key, sanitizeApiKey(key)]) {
       if (!value) continue;

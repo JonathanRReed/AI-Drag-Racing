@@ -101,6 +101,24 @@ describe('pasted API key boundaries', () => {
 });
 
 describe('credential redaction', () => {
+  it.each([429, {}, null, undefined, true, false].map(keys => ({ keys })))(
+    'ignores invalid outer key arguments while preserving normal redaction (%j)', ({ keys }) => {
+      expect(redactCredentials('HTTP 429: retry later', keys as unknown as readonly string[]))
+        .toBe('HTTP 429: retry later');
+      expect(redactCredentials('Bearer fake-token', keys as unknown as readonly string[]))
+        .toBe('Bearer [REDACTED]');
+    },
+  );
+
+  it.each([429, { unexpected: 'value' }, null, undefined, true, false].map(key => ({ key })))(
+    'ignores invalid key entries without corrupting diagnostics or skipping valid keys (%j)', ({ key }) => {
+      expect(redactCredentials(
+        'HTTP 429: true false [object Object]; rejected fake-key',
+        [key, 'fake-key'] as unknown as readonly string[],
+      )).toBe('HTTP 429: true false [object Object]; rejected [REDACTED]');
+    },
+  );
+
   it.each(['k', 'xy', 'abc', 'synthetic-key', 'a.*+$[x]'])('redacts every occurrence of an explicit key regardless of length (%s)', (key) => {
     expect(redactCredentials(`Rejected ${key}; repeated ${key}`, key))
       .toBe('Rejected [REDACTED]; repeated [REDACTED]');
