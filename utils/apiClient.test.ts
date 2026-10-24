@@ -83,6 +83,21 @@ describe('streamCompletion', () => {
     })()).rejects.toThrow('API Error (500): Failed to connect');
   });
 
+  it('should redact sensitive credentials in API error responses', async () => {
+    const sensitiveKey = 'sk-proj-1234567890abcdef1234567890abcdef';
+    (global.fetch as any).mockResolvedValueOnce({
+      ok: false,
+      status: 401,
+      text: vi.fn().mockResolvedValue(`Invalid authorization header: Bearer ${sensitiveKey}`),
+    });
+
+    const generator = streamCompletion('test-provider', 'test prompt', 'test-model', sensitiveKey);
+
+    await expect((async () => {
+      for await (const _ of generator) {}
+    })()).rejects.toThrow('API Error (401): Invalid authorization header: Bearer [REDACTED]');
+  });
+
   it('should handle JSON parse errors gracefully and continue', async () => {
       const validResponse1: CompletionResult = { type: 'chunk', content: 'Valid 1' };
       const validResponse2: CompletionResult = { type: 'chunk', content: 'Valid 2' };

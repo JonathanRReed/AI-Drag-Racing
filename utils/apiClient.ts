@@ -1,6 +1,7 @@
 // utils/apiClient.ts
 import { CompletionResult } from './providerService';
 import { parseSseJson } from './sse';
+import { redactCredentials } from './requestSecurity';
 
 export interface ModelSettings {
   temperature: number;
@@ -30,7 +31,8 @@ export async function* streamCompletion(
 
   if (!response.ok || !response.body) {
     const errorText = await response.text();
-    throw new Error(`API Error (${response.status}): ${errorText || 'Failed to connect'}`);
+    const safeError = redactCredentials(errorText, apiKey) || 'Failed to connect';
+    throw new Error(`API Error (${response.status}): ${safeError}`);
   }
 
   yield* parseSseJson<CompletionResult>(response, 'AI Drag Racing');
