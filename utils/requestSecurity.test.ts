@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { boundedNumber, corsHeadersForRequest, isAllowedRequestOrigin, readJsonBodyWithLimit, redactCredentials, sanitizeApiKey, sanitizeModelId, validateRaceRequestBody } from './requestSecurity';
+import { boundedNumber, corsHeadersForRequest, isAllowedRequestOrigin, readJsonBodyWithLimit, redactCredentials, sanitizeApiKey, sanitizeModelId, sanitizeModelIds, validateRaceRequestBody } from './requestSecurity';
 
 function request(url: string, origin?: string) {
   return new Request(url, { headers: origin ? { origin } : {} });
@@ -56,66 +56,47 @@ describe('request security', () => {
   });
 });
 
+describe('model ID sanitization', () => {
+  it.each([null, 123, {}, [], '', ' gpt-4o', 'gpt-4o ', 'model\x00-id',
+    'model\x1F', 'model\x7F', 'model\x85id', 'model\u2028id', 'model\u2029id', 'a'.repeat(513)].map(id => ({ id })))(
+    'rejects an invalid opaque identifier without rewriting it (%j)', ({ id }) => {
+      expect(sanitizeModelId(id)).toBe('');
+    },
+  );
+
+  it.each(['gpt-4o', 'org/model:revision-v1', 'Model-ID', '模型', 'a'.repeat(512)])(
+    'preserves a valid identifier exactly (%s)', (id) => {
+      expect(sanitizeModelId(id)).toBe(id);
+    },
+  );
+
+  it('does not create aliases by stripping characters or truncating identifiers', () => {
+    const prefix = 'x'.repeat(512);
+    expect(sanitizeModelIds(['model\x00-id', prefix + 'A', prefix + 'B']))
+      .toEqual([]);
+    expect(sanitizeModelIds([prefix, prefix + 'A', 'model-id', 'model\x00-id']))
+      .toEqual([prefix, 'model-id']);
+  });
+
+  it('deduplicates only exact valid IDs, preserving order and case', () => {
+    expect(sanitizeModelIds([' gpt-4o ', 'gpt-4o', 'claude-3-5-sonnet\x00', null, 42, '']))
+      .toEqual(['gpt-4o']);
+    expect(sanitizeModelIds(['model-A', 'model-a', 'model-A']))
+      .toEqual(['model-A', 'model-a']);
+    expect(sanitizeModelIds({ id: 'not-a-list' })).toEqual([]);
+  });
+
+  it.each([' model', 'model\r\n', 'model\x00id', 'model\u0085id'])('rejects invalid race IDs too (%j)', (model) => {
+    expect(validateRaceRequestBody({ prompt: 'hello', model, apiKey: 'synthetic-key' }))
+      .toEqual({ ok: false, error: 'Invalid model identifier' });
+  });
+});
+
 describe('pasted API key boundaries', () => {
   it('removes boundary controls before trimming and unquoting', () => {
     expect(sanitizeApiKey('\x00 "sk-test-only" \x7F')).toBe('sk-test-only');
     expect(sanitizeApiKey('"sk-test-only"\x00')).toBe('sk-test-only');
     expect(sanitizeApiKey('\x00   \x7F')).toBe('');
-  });
-});
-
-describe('model ID validation', () => {
-  const body = (model: unknown) => ({ prompt: 'hello', model, apiKey: 'synthetic-key' });
-
-  it('preserves accepted IDs exactly at both boundaries', () => {
-    for (const id of [
-      'a'.repeat(512), '🔐'.repeat(256), 'vendor/模型:α@q4_k-m+β.v1#tag',
-      'Model', 'model', 'café', 'cafe\u0301', 'model name', 'model\u00a0name',
-      'org/می\u200cروم', 'org/👩\u200d💻',
-      'org/بَ\u200cر', 'org/क्\u200dष', 'org/क्\u200cष',
-      'org/\u1bc0\u1bf2\u200d\u1bc0',
-      'org/👩🏽\u200d💻', 'org/👨\u200d👩\u200d👧\u200d👦', 'sun/☀\ufe0f', '葛\u{e0100}',
-      'a\u200db', 'a\u200cb', '1\u200d+',
-    ]) {
-      expect(sanitizeModelId(id)).toBe(id);
-      expect(validateRaceRequestBody(body(id))).toMatchObject({ ok: true, value: { model: id } });
-    }
-  });
-
-  it.each([
-    '\u200c', '\u200d', '\u2061', '\u200c\u200d', '\ufe0f', '\u034f', '\u115f', '\u3164', '\uffa0', '\u0301',
-    'model\u200c', 'model\u200d', '\u200dmodel', 'model\u2061suffix', 'model\u00adname',
-    'a\u200d\u200db', 'a\u200c\u200db', 'a\u200d\u0301\u200cb',
-    'a \u200db', 'a\u200d b', 'a\u200c\u00a0b', '\u0301\u200da', 'a\u200d\u0301',
-    'می\u200c', '👩\u200d💻\u200d', '\ud800', 'x\ud800y',
-  ])('rejects invisible-only IDs, controls and unanchored joiners (%j)', id => {
-    expect(sanitizeModelId(id)).toBe('');
-    expect(validateRaceRequestBody(body(id)).ok).toBe(false);
-  });
-
-  it('rejects invalid types, padding and oversized IDs instead of rewriting them', () => {
-    for (const id of [
-      null, undefined, 123, {}, '', ' ', ' model', 'model ', '\u00a0model',
-      'model\u2003', 'model\r\n', 'a'.repeat(513), 'a'.repeat(512) + 'b', '🔐'.repeat(257),
-    ]) {
-      expect(sanitizeModelId(id)).toBe('');
-      expect(validateRaceRequestBody(body(id)).ok).toBe(false);
-    }
-  });
-
-  it('rejects ASCII, C1 and invisible separator/directional controls at both boundaries', () => {
-    const controls = [
-      ...Array.from({ length: 32 }, (_, i) => i),
-      ...Array.from({ length: 33 }, (_, i) => i + 0x7f),
-      0x061c, 0x200b, 0x200e, 0x200f, 0x2028, 0x2029,
-      ...Array.from({ length: 5 }, (_, i) => i + 0x202a),
-      0x2060, ...Array.from({ length: 4 }, (_, i) => i + 0x2066), 0xfeff,
-    ];
-    for (const code of controls) {
-      const id = `model${String.fromCharCode(code)}-id`;
-      expect(sanitizeModelId(id), `U+${code.toString(16)}`).toBe('');
-      expect(validateRaceRequestBody(body(id)).ok, `U+${code.toString(16)}`).toBe(false);
-    }
   });
 });
 

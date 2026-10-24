@@ -19,6 +19,7 @@ let view: ReturnType<typeof mount>;
 beforeEach(() => {
   vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT', true);
   localStorage.clear(); sessionStorage.clear(); vi.clearAllMocks();
+  vi.mocked(fetchModels).mockReset().mockRejectedValue(new Error('Synthetic test failure'));
   localStorage.setItem('openai_models', JSON.stringify(['gpt-alpha', 'gpt-beta']));
   localStorage.setItem('anthropic_models', JSON.stringify(['gpt-alpha']));
 });
@@ -36,73 +37,97 @@ describe('provider picker', () => {
   const restored = (dispatch: ReturnType<typeof vi.fn>) => dispatch.mock.calls
     .map(([action]) => action).filter(action => action.type === 'TOGGLE_MODEL_SELECTION').map(action => action.payload.modelId);
 
-  it('restores exact valid cached models and selections once, removing stale blank entries', () => {
-    const models = ['gpt-alpha', 'Model', 'model', 'café', 'cafe\u0301', 'org/می\u200cروم', 'org/👩\u200d💻', 'a\u200db', 'vendor/model:β+q4#tag'];
-    const selected = [models[5], models[6], models[1], models[2], models[3], models[4]];
-    localStorage.setItem('openai_models', JSON.stringify(['\u200d', ...models, 123, '\u2061', ...models]));
-    localStorage.setItem('openai_selected_models', JSON.stringify(['\u200c', ...selected, ...selected, 123]));
+  it('filters and deduplicates cached models and restored selections without changing exact IDs or order', () => {
+    const models = ['gpt-alpha', 'Model', 'model', 'café', 'cafe\u0301', 'org/می\u200cروم', 'org/👩\u200d💻', 'vendor/模型:β+q4#tag', 'org/🏴\u{e0067}\u{e0062}\u{e0065}\u{e006e}\u{e0067}\u{e007f}', 'model\u0600id', 'x'.repeat(512)];
+    const selected = [models[5], models[1], models[2], models[3], models[4], 'valid-but-not-in-cache'];
+    const invalid = [null, 123, true, {}, [], '', ' model ', 'model\u0000', 'model\u0085', 'model\u2028id', 'x'.repeat(513)];
+    localStorage.setItem('openai_models', JSON.stringify([...invalid, ...models, ...models]));
+    localStorage.setItem('openai_selected_models', JSON.stringify([...invalid, ...selected, ...selected]));
     const dispatch = vi.fn();
     view = mount(<ProviderList apiKeys={{}} dispatch={dispatch} selectedPairs={[]} />);
+    expect(restored(dispatch)).toEqual(selected);
     view.rerender(<ProviderList apiKeys={{ openai: 'synthetic-key' }} dispatch={dispatch} selectedPairs={[]} />);
     expect(listed()).toEqual(models);
-    expect(restored(dispatch)).toEqual(selected);
     expect(JSON.parse(localStorage.getItem('openai_models')!)).toEqual(models);
     expect(JSON.parse(localStorage.getItem('openai_selected_models')!)).toEqual(selected);
     expect(fetchModels).not.toHaveBeenCalled();
   });
 
-  it('recovers an invalid-only cache and filters fresh fetched models before rendering and caching', async () => {
-    localStorage.setItem('openai_models', JSON.stringify(['\u200d', '\u2061']));
-    const models = ['gpt-fresh', 'org/می\u200cروم', 'org/👩\u200d💻', 'a\u200db'];
-    vi.mocked(fetchModels).mockResolvedValueOnce(['\u200c', ...models, 'model\u200d', ...models]);
-    view = mount(<ProviderList apiKeys={{ openai: 'synthetic-key' }} dispatch={vi.fn()} selectedPairs={[]} />);
-    await act(async () => { await Promise.resolve(); });
-    expect(fetchModels).toHaveBeenCalledExactlyOnceWith('openai', 'synthetic-key');
-    expect(listed()).toEqual(models);
-    expect(JSON.parse(localStorage.getItem('openai_models')!)).toEqual(models);
-  });
+  it.each(['not-json', 'null', JSON.stringify({ id: 'gpt-unknown' }), JSON.stringify([null, 123, '', ' padded ', 'bad\nmodel'])])(
+    'recovers an unusable cache (%s) and validates fresh model IDs before rendering or persistence', async cache => {
+      localStorage.setItem('openai_models', cache);
+      const models = ['gpt-fresh', 'Model', 'model', 'café', 'cafe\u0301', 'org/👩\u200d💻'];
+      const fresh = [123, null, ...models, ' padded ', 'bad\nmodel', 'x'.repeat(513), ...models];
+      vi.mocked(fetchModels).mockResolvedValueOnce(fresh as string[]);
+      const dispatch = vi.fn();
+      view = mount(<ProviderList apiKeys={{}} dispatch={dispatch} selectedPairs={[]} />);
+      await act(async () => {
+        view.rerender(<ProviderList apiKeys={{ openai: 'synthetic-key' }} dispatch={dispatch} selectedPairs={[]} />);
+        await Promise.resolve();
+      });
+      expect(fetchModels).toHaveBeenCalledExactlyOnceWith('openai', 'synthetic-key');
+      expect(listed()).toEqual(models);
+      expect(JSON.parse(localStorage.getItem('openai_models')!)).toEqual(models);
+    },
+  );
 
-  it('shows retry instead of blank model choices when a fetched list is entirely invalid', async () => {
+  it('shows retry rather than blank choices when every freshly fetched ID is invalid', async () => {
     localStorage.removeItem('openai_models');
-    vi.mocked(fetchModels).mockResolvedValueOnce(['\u200d', '\u2061', 'model\u200c']);
+    vi.mocked(fetchModels).mockResolvedValueOnce(['', ' padded ', 'bad\u0000model', 'x'.repeat(513)]);
     view = mount(<ProviderList apiKeys={{ openai: 'synthetic-key' }} dispatch={vi.fn()} selectedPairs={[]} />);
     await act(async () => { await Promise.resolve(); });
-    expect(view.container.querySelector('input[aria-label="Search models for OpenAI"]')).toBeNull();
+    expect(search()).toBeNull();
     expect(view.container.querySelector('button[aria-label="Retry model list for OpenAI"]')).not.toBeNull();
     expect(localStorage.getItem('openai_models')).toBeNull();
   });
 
-  it.each(['\u200c', '\u200d', '\u2061', 'model\u200d', 'a\u200c\u200db'])('drops an invalid legacy selection (%j)', legacy => {
+  it.each(['not-json', JSON.stringify({ id: 'gpt-unknown' }), JSON.stringify([123, null, ' padded ', 'bad\nmodel'])])(
+    'retains a valid legacy fallback after unusable saved selections (%s)', multi => {
+      const legacy = 'org/می\u200cروم';
+      localStorage.setItem('openai_selected_models', multi);
+      localStorage.setItem('openai_model', legacy);
+      const dispatch = vi.fn();
+      view = mount(<ProviderList apiKeys={{}} dispatch={dispatch} selectedPairs={[]} />);
+      expect(restored(dispatch)).toEqual([legacy]);
+      expect(JSON.parse(localStorage.getItem('openai_selected_models')!)).toEqual([legacy]);
+      expect(localStorage.getItem('openai_model')).toBe(legacy);
+    },
+  );
+
+  it.each([' padded ', 'bad\u0085model', 'x'.repeat(513)])('drops an invalid legacy selection (%j)', legacy => {
     localStorage.setItem('openai_model', legacy);
     const dispatch = vi.fn();
-    view = mount(<ProviderList apiKeys={{ openai: 'synthetic-key' }} dispatch={dispatch} selectedPairs={[]} />);
+    view = mount(<ProviderList apiKeys={{}} dispatch={dispatch} selectedPairs={[]} />);
     expect(restored(dispatch)).toEqual([]);
-    expect(localStorage.getItem('openai_model')).toBeNull();
     expect(JSON.parse(localStorage.getItem('openai_selected_models')!)).toEqual([]);
+    expect(localStorage.getItem('openai_model')).toBeNull();
   });
 
-  it.each(['not-json', JSON.stringify(['\u200d', 123]), JSON.stringify({ id: 'gpt-unsafe' })])('preserves the valid legacy fallback after unusable multi-selection data (%s)', multi => {
-    const legacy = 'org/می\u200cروم';
-    localStorage.setItem('openai_selected_models', multi);
-    localStorage.setItem('openai_model', legacy);
+  it('prefers valid multi-selections over the legacy value and leaves new-user selection defaults empty', () => {
     const dispatch = vi.fn();
-    view = mount(<ProviderList apiKeys={{ openai: 'synthetic-key' }} dispatch={dispatch} selectedPairs={[]} />);
-    expect(restored(dispatch)).toEqual([legacy]);
-    expect(JSON.parse(localStorage.getItem('openai_selected_models')!)).toEqual([legacy]);
-    expect(localStorage.getItem('openai_model')).toBe(legacy);
+    view = mount(<ProviderList apiKeys={{}} dispatch={dispatch} selectedPairs={[]} />);
+    expect(restored(dispatch)).toEqual([]);
+    expect(localStorage.getItem('openai_selected_models')).toBeNull();
+    view.unmount();
+    dispatch.mockClear();
+    localStorage.setItem('openai_selected_models', JSON.stringify(['gpt-beta', 'gpt-beta']));
+    localStorage.setItem('openai_model', 'gpt-alpha');
+    view = mount(<ProviderList apiKeys={{}} dispatch={dispatch} selectedPairs={[]} />);
+    expect(restored(dispatch)).toEqual(['gpt-beta']);
   });
 
-  it('still restores valid selections when cache cleanup cannot be persisted', () => {
-    localStorage.setItem('openai_selected_models', JSON.stringify(['\u200d', 'gpt-alpha']));
-    const originalSet = localStorage.setItem.bind(localStorage);
-    const write = vi.spyOn(localStorage, 'setItem').mockImplementation((key, value) => {
-      if (key === 'openai_selected_models') throw new DOMException('Full storage', 'QuotaExceededError');
-      originalSet(key, value);
+  it('uses validated cached state and selections even when cleanup cannot be saved', () => {
+    localStorage.setItem('openai_models', JSON.stringify(['gpt-alpha', ' padded ', 'gpt-alpha']));
+    localStorage.setItem('openai_selected_models', JSON.stringify(['bad\nmodel', 'gpt-alpha', 'gpt-alpha']));
+    const write = vi.spyOn(localStorage, 'setItem').mockImplementation(() => {
+      throw new DOMException('Full storage', 'QuotaExceededError');
     });
     const dispatch = vi.fn();
     try {
       view = mount(<ProviderList apiKeys={{}} dispatch={dispatch} selectedPairs={[]} />);
       expect(restored(dispatch)).toEqual(['gpt-alpha']);
+      view.rerender(<ProviderList apiKeys={{ openai: 'synthetic-key' }} dispatch={dispatch} selectedPairs={[]} />);
+      expect(listed()).toEqual(['gpt-alpha']);
     } finally { write.mockRestore(); }
   });
 

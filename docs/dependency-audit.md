@@ -1,6 +1,34 @@
-# Temporary braces audit exception
+# Dependency audit policy and history
 
-Expires **2026-10-18 at 05:00 UTC**. No automatic extension.
+## Native Pages build candidate
+
+The retired next-on-pages/Vercel/Wrangler/Miniflare toolchain is no longer installed.
+The existing expiration and exact historical consumer snapshot below are unchanged.
+Both full and production audits run unfiltered and must pass. A clean registry
+audit is not a claim about code bundled inside other packages. See
+[native Pages verification and limits](native-pages.md).
+
+## October 23, 2026 advisory withdrawal
+
+GitHub withdrew [GHSA-vfj7-8cjw-p6xm](https://github.com/advisories/GHSA-vfj7-8cjw-p6xm)
+on October 23 because it was not practically exploitable. A fresh unfiltered
+full audit of this branch returns an empty report; the production audit also
+reports no findings. No exception was extended and no findings were filtered.
+The existing fail-closed audit and packaging controls remain enforced. Release
+still requires the complete application and Cloudflare packaging gates.
+
+The sections below preserve the historical exception and its original expired
+deadline: **2026-10-18 at 05:00 UTC**. No automatic extension.
+
+## Historical October 22, 2026 maintenance status
+
+The original deadline remains expired. The unrelated extension to October 2027
+has been removed; there is no renewed exception. Next.js and its ESLint config
+are updated to 15.5.28, and ip-address is pinned to its patched 10.7.4 release.
+The fresh unfiltered audit now reports only the braces finding below, and the
+policy correctly blocks it. A successful ordinary Next build is not a passing
+Cloudflare packaging gate. Do not merge or deploy until the remaining dependency
+is remediated and the complete gate passes.
 
 The dependency audit still checks every installed dependency and every severity.
 It temporarily accepts only [GHSA-vfj7-8cjw-p6xm](https://github.com/advisories/GHSA-vfj7-8cjw-p6xm)
@@ -32,24 +60,27 @@ JavaScript and glob dependencies are not deployed by this application.
   environment values. Shadcn file inputs must be CSS/package metadata only.
   It is enabled only inside the prepared Cloudflare build process; ordinary
   Next builds/dev sessions do not use a leftover audit cache.
-- Packaging verification requires fresh matching compiler records, unchanged
-  source/lock identity, Edge API function maps with no execution-chain sources,
-  and actual esbuild metafiles for the adapter-generated worker and helpers.
-  Every deployed `.js`, `.mjs` and `.cjs` worker/helper must match recorded
-  build-output bytes and metadata, including external runtime imports.
-  A narrow Node preload adds only esbuild's documented `metafile` option to the
-  adapter's builds; it does not alter their generated code. Missing evidence,
-  unmatched bytes, unknown API functions or runtime inclusion block the build.
-  Audit and runtime evidence are retained as CI artifacts.
+- Packaging verification requires fresh matching browser, Edge and Node compiler
+  records and unchanged source/lock identity. Actual esbuild metafiles must contain
+  the application-owned router and exactly the three reviewed Fetch handler files,
+  with no package or external runtime imports. The exported route descriptors are
+  read from the real emitted bundle; missing/new handlers fail closed.
+- Exactly one `_worker.js` file is supported. Its bytes must match fresh build
+  metadata; helpers, external imports, Node shims and source maps are rejected.
+  `_routes.json` must invoke Functions only for `/api/*`. Both the lock graph and
+  fresh installed package tree must omit the retired adapter/deployment toolchain.
+  Audit and runtime evidence remain retained as CI artifacts.
 - Existing lint, typecheck, test and production-build gates remain required.
 
-Run `bun run audit:dependencies` for the policy-aware audit. Plain `bun audit`
-continues to report the known high finding and return a failing status.
+Run `bun run audit:dependencies` for the policy-aware audit. Before the
+October 23 withdrawal, plain `bun audit` reported the known high finding and
+returned a failing status; the current unfiltered result is recorded above.
 
 At expiry the residual fails again. A clean successful audit does not need an
 exception, including after expiry. Remove this policy when a patched package or
 verified toolchain replacement resolves the advisory; do not change its date or
 consumer snapshot to accommodate an unrelated dependency update.
 
-The current Pages adapter requires Vercel to produce its build artifact. Removing
-that dependency chain is a separate hosting migration, not unused-package cleanup.
+Historically the Pages adapter required Vercel to produce its build artifact.
+The native Pages candidate explicitly replaces that build/routing responsibility;
+it is not a declaration that the former dependency chain was unused.

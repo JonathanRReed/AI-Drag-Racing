@@ -196,7 +196,7 @@ const RaceSettings: React.FC<RaceSettingsProps> = ({ config, onChange, selectedP
                   value={config.tokenLimit || 500}
                   aria-valuetext={`${config.tokenLimit || 500} tokens`}
                   onChange={(e) => onChange({ ...config, tokenLimit: parseInt(e.target.value) })}
-                  className="flex-1 accent-emerald-500"
+                  className="flex-1 accent-emerald-500 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-emerald-400 rounded-lg"
                 />
                 <span className="text-sm text-white font-mono w-16 text-right">
                   {config.tokenLimit || 500}
@@ -220,7 +220,7 @@ const RaceSettings: React.FC<RaceSettingsProps> = ({ config, onChange, selectedP
                   value={config.timeLimit || 30}
                   aria-valuetext={`${config.timeLimit || 30} seconds`}
                   onChange={(e) => onChange({ ...config, timeLimit: parseInt(e.target.value) })}
-                  className="flex-1 accent-emerald-500"
+                  className="flex-1 accent-emerald-500 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-emerald-400 rounded-lg"
                 />
                 <span className="text-sm text-white font-mono w-12 text-right">
                   {config.timeLimit || 30}s
@@ -252,7 +252,7 @@ const RaceSettings: React.FC<RaceSettingsProps> = ({ config, onChange, selectedP
                 value={config.modelSettings.temperature}
                 aria-valuetext={`${config.modelSettings.temperature.toFixed(2)} of 2`}
                 onChange={(e) => updateModelSettings('temperature', parseFloat(e.target.value))}
-                className="w-full accent-emerald-500"
+                className="w-full accent-emerald-500 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-emerald-400 rounded-lg"
               />
               <div className="flex justify-between text-xs text-[var(--text-muted)]">
                 <span>Focused</span>
@@ -273,11 +273,11 @@ const RaceSettings: React.FC<RaceSettingsProps> = ({ config, onChange, selectedP
                 type="range"
                 min="100"
                 max="4096"
-                step="100"
+                step="1"
                 value={config.modelSettings.maxTokens}
                 aria-valuetext={`${config.modelSettings.maxTokens} tokens`}
                 onChange={(e) => updateModelSettings('maxTokens', parseInt(e.target.value))}
-                className="w-full accent-emerald-500"
+                className="w-full accent-emerald-500 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-emerald-400 rounded-lg"
               />
               <div className="flex justify-between text-xs text-[var(--text-muted)]">
                 <span>100</span>
@@ -302,7 +302,7 @@ const RaceSettings: React.FC<RaceSettingsProps> = ({ config, onChange, selectedP
                 value={config.modelSettings.topP}
                 aria-valuetext={`${config.modelSettings.topP.toFixed(2)} of 1`}
                 onChange={(e) => updateModelSettings('topP', parseFloat(e.target.value))}
-                className="w-full accent-emerald-500"
+                className="w-full accent-emerald-500 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-emerald-400 rounded-lg"
               />
               <div className="flex justify-between text-xs text-[var(--text-muted)]">
                 <span>Narrow</span>

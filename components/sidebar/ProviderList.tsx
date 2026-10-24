@@ -8,7 +8,7 @@ import {
   isRaceableProviderId,
 } from '../../utils/providers';
 import { fetchModels } from '../../utils/fetchModels';
-import { filterModelIds, isAcceptedModelId } from '../../utils/modelIds';
+import { sanitizeModelId, sanitizeModelIds } from '../../utils/requestSecurity';
 import { providerSlugs } from '../../utils/providerIcons';
 import ApiKeyModal from './ApiKeyModal';
 
@@ -209,7 +209,7 @@ const ProviderList: React.FC<ProviderListProps> = ({
     attemptedRef.current.add(providerId);
     setModelFetch(prev => ({ ...prev, [providerId]: { status: 'loading' } }));
     try {
-      const list = filterModelIds(await fetchModels(providerId, key));
+      const list = sanitizeModelIds(await fetchModels(providerId, key));
       if (list.length) {
         setModelsByProvider(prev => ({ ...prev, [providerId]: list }));
         localStorage.setItem(`${providerId}_models`, JSON.stringify(list));
@@ -290,7 +290,7 @@ const ProviderList: React.FC<ProviderListProps> = ({
       const cachedModels = localStorage.getItem(`${p.id}_models`);
       if (cachedModels) {
         try {
-          const models = filterModelIds(JSON.parse(cachedModels));
+          const models = sanitizeModelIds(JSON.parse(cachedModels));
           setModelsByProvider(prev => ({ ...prev, [p.id]: models }));
           localStorage.setItem(`${p.id}_models`, JSON.stringify(models));
         } catch { }
@@ -301,15 +301,16 @@ const ProviderList: React.FC<ProviderListProps> = ({
       let modelsToSelect: string[] = [];
       try {
         if (savedMulti) {
-          modelsToSelect = filterModelIds(JSON.parse(savedMulti));
+          modelsToSelect = sanitizeModelIds(JSON.parse(savedMulti));
         }
       } catch { }
-      if (!modelsToSelect.length && isAcceptedModelId(savedSingle)) modelsToSelect = [savedSingle];
+      const legacyModel = sanitizeModelId(savedSingle);
+      if (!modelsToSelect.length && legacyModel) modelsToSelect = [legacyModel];
       try {
         if (savedMulti || savedSingle) {
           localStorage.setItem(`${p.id}_selected_models`, JSON.stringify(modelsToSelect));
         }
-        if (savedSingle && !isAcceptedModelId(savedSingle)) localStorage.removeItem(`${p.id}_model`);
+        if (savedSingle && !legacyModel) localStorage.removeItem(`${p.id}_model`);
       } catch { }
       for (const m of modelsToSelect) {
         dispatch({ type: 'TOGGLE_MODEL_SELECTION', payload: { providerId: p.id, modelId: m } });
