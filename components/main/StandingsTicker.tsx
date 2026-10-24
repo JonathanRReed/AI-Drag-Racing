@@ -12,6 +12,7 @@ import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { LaneBuffer } from '../../utils/raceBuffers';
 import { PaceLane } from './LivePaceChart';
 import type { RaceMode } from '../sidebar/RaceSettings';
+import { compareRaceMeasurements } from '../../utils/raceRanking';
 
 interface StandingsTickerProps {
   lanes: PaceLane[];
@@ -63,9 +64,9 @@ function buildRows(
     if (a.errored !== b.errored) return a.errored ? 1 : -1; // errors sink
     if (!running && mode !== 'time_limit') {
       if (a.done !== b.done) return a.done ? -1 : 1;
-      if (a.done && b.done) return a.elapsedMs - b.elapsedMs;
+      if (a.done && b.done) return compareRaceMeasurements(mode, { totalMs: a.elapsedMs }, { totalMs: b.elapsedMs });
     }
-    return b.chars - a.chars;
+    return compareRaceMeasurements('time_limit', { outputCharacters: a.chars }, { outputCharacters: b.chars });
   });
   return rows;
 }
@@ -161,7 +162,7 @@ const StandingsTicker: React.FC<StandingsTickerProps> = ({
                     ? 'DNF'
                     : rankByFinish && r.done
                       ? `${(r.elapsedMs / 1000).toFixed(2)} s`
-                      : r.done && r.finalOutputTokens != null
+                      : mode !== 'time_limit' && r.done && r.finalOutputTokens != null
                       ? `${compact(r.finalOutputTokens)} tok`
                       : `${compact(r.chars)} ch`}
                 </span>
@@ -181,6 +182,7 @@ const StandingsTicker: React.FC<StandingsTickerProps> = ({
           );
         })}
       </ol>
+      {mode === 'time_limit' && <p className="text-xs text-[var(--text-muted)]">Output length: UTF-16 code units (JavaScript text.length), not tokens or visible characters. Ties keep lane order.</p>}
     </div>
   );
 };

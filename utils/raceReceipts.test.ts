@@ -8,6 +8,7 @@ import {
   deleteRaceReceipt,
   loadRaceHistory,
   saveRaceReceipt,
+  serializeSanitizedReceipt,
 } from './raceReceipts';
 
 function storage() {
@@ -90,4 +91,27 @@ describe('race receipts', () => {
     clearRaceHistory(store);
     expect(loadRaceHistory(store)).toEqual([]);
   });
+});
+
+it('preserves optional valid output length, including zero, without guessing missing or invalid values', async () => {
+  for (const count of [0, 5, Number.MAX_SAFE_INTEGER, undefined, null, -1, 1.5, Infinity, NaN, Number.MAX_SAFE_INTEGER + 1, '5']) {
+    const value = await createRaceReceipt({ experience: 'lab', mode: 'time_limit', prompt: 'private', settings: { temperature: 0.7, maxTokens: 512, topP: 1, repetitions: 1, concurrency: 1 },
+      lanes: [{ providerId: 'openai', modelId: 'org/👩\u200d💻', metrics: { startTime: 1, finishTime: 1001, tokenCount: 999, outputTokens: 999 }, browser: { ttftMs: null, totalMs: 1000 }, error: null, outputCharacters: count as number }],
+    });
+    const lane = value.lanes[0];
+    if (typeof count === 'number' && Number.isSafeInteger(count) && count >= 0) expect(lane.outputCharacters).toBe(count);
+    else expect(Object.hasOwn(lane, 'outputCharacters')).toBe(false);
+    expect(lane.modelId).toBe('org/👩\u200d💻'); expect(lane.outputTokens).toBe(999);
+    expect(JSON.parse(serializeSanitizedReceipt(value))).toEqual(value);
+  }
+});
+
+it('loads and exports old records without adding output length or changing their JSON values', async () => {
+  const now = Date.UTC(2026, 8, 1); const store = storage(); const value = await receipt(now); value.mode = 'time_limit';
+  const original = JSON.stringify([value]); store.setItem(RACE_HISTORY_STORAGE_KEY, original);
+  const loaded = loadRaceHistory(store, now);
+  expect(store.getItem(RACE_HISTORY_STORAGE_KEY)).toBe(original);
+  expect(JSON.stringify(loaded)).toBe(original);
+  expect(JSON.parse(serializeSanitizedReceipt(loaded[0]))).toEqual(value);
+  expect(Object.hasOwn(loaded[0].lanes[0], 'outputCharacters')).toBe(false);
 });

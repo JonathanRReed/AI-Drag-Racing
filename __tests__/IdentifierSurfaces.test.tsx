@@ -43,7 +43,7 @@ describe('identifier render surfaces', () => {
     ['result lane', () => <RaceLane {...result} />],
     ['drag strip', () => <DragStrip lanes={[lane]} buffersRef={buffersRef} goTimeRef={{ current: 0 }} running={false} reducedMotion />],
     ['standings', () => <StandingsTicker lanes={[lane]} buffersRef={buffersRef} running={false} mode="drag" reducedMotion />],
-    ['finish board', () => <FinishSummary results={[result]} />],
+    ['finish board', () => <FinishSummary mode="drag" results={[result]} />],
   ] as const)('isolates and safely identifies the %s without mutating inputs', (_, render) => {
     const before = JSON.stringify({ result, lane });
     view = mount(render()); expectSafe();
@@ -79,7 +79,7 @@ describe('identifier render surfaces', () => {
         expect(getComputedStyle(element).overflow).not.toBe('hidden');
       }
       const ordinary = { ...record, lanes: [{ ...record.lanes[0], modelId: 'gpt-4o' }] };
-      view.rerender(<><FinishSummary results={[{ ...result, modelName: 'gpt-4o' }]} /><RaceHistory receipts={[ordinary]} onDelete={() => {}} onClear={() => {}} /><SharedRaceView record={{ payload: buildRaceSharePayload(ordinary), expiresAt: '2030-01-01T00:00:00Z' }} /></>);
+      view.rerender(<><FinishSummary mode="drag" results={[{ ...result, modelName: 'gpt-4o' }]} /><RaceHistory receipts={[ordinary]} onDelete={() => {}} onClear={() => {}} /><SharedRaceView record={{ payload: buildRaceSharePayload(ordinary), expiresAt: '2030-01-01T00:00:00Z' }} /></>);
       const winner = view.container.querySelector('.finish-board-lead p > span:first-child')!;
       const pixels = (size: string) => parseFloat(size) * (size.endsWith('rem') ? parseFloat(getComputedStyle(document.documentElement).fontSize) : 1);
       expect(pixels(getComputedStyle(winner).fontSize)).toBe(pixels(getComputedStyle(winner.parentElement!).fontSize));
@@ -116,7 +116,7 @@ describe('identifier render surfaces', () => {
     expect(onChange.mock.calls[0][0].excludedReasoningModels).toEqual([raw]);
   });
   it('sends exact original IDs after safe rendering, never the escaped presentation', async () => {
-    view = mount(<FinishSummary results={[result]} />); expectSafe();
+    view = mount(<FinishSummary mode="drag" results={[result]} />); expectSafe();
     const fetch = vi.fn().mockResolvedValue({ ok: true, body: new ReadableStream({ start(controller) { controller.close(); } }) });
     vi.stubGlobal('fetch', fetch);
     for await (const _ of streamCompletion('openai', 'Synthetic', raw, 'synthetic-key')) { /* no provider calls */ }

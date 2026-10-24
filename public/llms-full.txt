@@ -67,6 +67,8 @@ Token counts are where the honesty matters most. Google Gemini returns usage met
 
 The live pace chart plots characters received, not tokens, against a browser clock that starts from one shared Go instant for every lane. It is the one view that includes your own network path, which is why its curve can disagree slightly with the timing table.
 
+Time Trial ranking uses the most received output, not the shortest finish time. The count is JavaScript text.length: UTF-16 code units, the same unit already used by the live pace buffers, not tokens or visible characters. Failed lanes cannot win, and equal output keeps the original lane order. New local receipts record this output length; older receipts with missing or invalid evidence cannot establish a Time Trial winner. Shared v1 receipts omit output length, so shared Time Trials show neutral original lane order rather than a ranking.
+
 ## Sample size
 
 One run per model per race. n = 1.
@@ -83,7 +85,7 @@ The test race button is a simulation. It replays hardcoded timings so the visual
 
 ## What the code does not do
 
-- No server-side race archive. Sanitized receipts are kept only in this browser for up to 30 days. They include model and provider IDs, settings, coarse edge colo, timing, token counts, prompt length, and a prompt fingerprint. They do not include the prompt text, response text, API keys, IP address, or precise location. You can export or delete them at any time.
+- No server-side race archive. Sanitized receipts are kept only in this browser for up to 30 days. They include model and provider IDs, settings, coarse edge colo, timing, token counts, output length for new records, prompt length, and a prompt fingerprint. They do not include the prompt text, response text, API keys, IP address, or precise location. You can export or delete them at any time.
 - No model version pinning. The model list comes from each provider’s live models endpoint at the moment you open the app. Many of those IDs are aliases, and providers move them onto new weights without changing the string. A race from today and a race from last month can carry the same label and not be the same model.
 - No quality scoring. Responses sit next to the timings so you can judge them yourself. Nothing in the app grades them.
 - No cost math in the race view. Speed only.

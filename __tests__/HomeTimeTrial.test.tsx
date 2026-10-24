@@ -81,6 +81,35 @@ afterEach(async () => {
 });
 
 describe('real Home Time Trial deadline', () => {
+  it('keeps current-run and stored output leaders aligned after settings change', async () => {
+    await setup(['short', 'org/👩\u200d💻']); const early = bodyFixture(); const late = bodyFixture(); installBodies(early, late); await start();
+    await advance(1000); await emit(early, { type: 'chunk', content: 'a' });
+    await emit(early, { type: 'metrics', data: providerMetrics });
+    await act(async () => { early.close(); }); await settle();
+    await advance(2000); await emit(late, { type: 'chunk', content: '😀abc' }); await advance(2000);
+    expect(history()[0].lanes.map(lane => lane.outputCharacters)).toEqual([1, 5]);
+    expect(history()[0].lanes[1].modelId).toBe('org/👩\u200d💻');
+    expect(JSON.parse(vi.mocked(fetch).mock.calls[1][1]!.body as string).model).toBe('org/👩\u200d💻');
+    expect(view!.container.querySelector('.finish-board-lead bdi')?.textContent).toBe('org/👩\u200d💻');
+    expect(view!.container.querySelector('.race-history-row strong bdi')?.textContent).toBe('org/👩\u200d💻');
+    click(button('Free Run')); await settle();
+    expect(view!.container.querySelector('#finish-heading')?.textContent).toBe('Most output, this Time Trial');
+    expect(view!.container.querySelector('.finish-board-lead bdi')?.textContent).toBe('org/👩\u200d💻');
+    expect(history()).toHaveLength(1);
+    reset(); await settle();
+    const nextEarly = bodyFixture(); const nextLate = bodyFixture(); installBodies(nextEarly, nextLate); await start();
+    await advance(1000); await emit(nextEarly, { type: 'chunk', content: 'a' });
+    await emit(nextEarly, { type: 'metrics', data: providerMetrics });
+    await act(async () => { nextEarly.close(); }); await settle();
+    await advance(1000); await emit(nextLate, { type: 'chunk', content: 'a'.repeat(100) });
+    await emit(nextLate, { type: 'metrics', data: providerMetrics });
+    await act(async () => { nextLate.close(); }); await settle();
+    expect(history()).toHaveLength(2); expect(history().map(value => value.mode)).toEqual(['free_for_all', 'time_limit']);
+    expect(view!.container.querySelector('#finish-heading')?.textContent).toBe('Fastest here, this run');
+    expect(view!.container.querySelector('.finish-board-lead bdi')?.textContent).toBe('short');
+    expect(history()[0].lanes.map(lane => lane.outputCharacters)).toEqual([1, 100]);
+  });
+
   it.each([false, true])('finishes and cancels a silent body at five seconds (has content=%s)', async hasContent => {
     await setup(); const fixture = bodyFixture(); installBodies(fixture); await start();
     await advance(1000);

@@ -2,6 +2,7 @@ import ModelIdentifier from '../ModelIdentifier';
 import React, { useEffect, useRef, useState } from 'react';
 import type { RaceReceipt } from '../../utils/raceReceipts';
 import { serializeSanitizedReceipt } from '../../utils/raceReceipts';
+import { selectRaceLeader } from '../../utils/raceRanking';
 import { createRaceShare, isRaceShareConfigured } from '../../utils/raceShares';
 import {
   AlertDialog,
@@ -23,23 +24,6 @@ function downloadReceipt(receipt: RaceReceipt) {
   anchor.download = `ai-drag-race-${receipt.createdAt.slice(0, 10)}-${receipt.id.slice(0, 8)}.json`;
   anchor.click();
   URL.revokeObjectURL(url);
-}
-
-// Keep the first completed lane on ties, including when all timings are unavailable.
-function fastestLane(receipt: RaceReceipt) {
-  let bestLane: RaceReceipt['lanes'][number] | undefined;
-  let minMs = Number.POSITIVE_INFINITY;
-  for (let i = 0; i < receipt.lanes.length; i++) {
-    const lane = receipt.lanes[i];
-    if (lane.status === 'completed') {
-      const ms = lane.browser.totalMs ?? Number.POSITIVE_INFINITY;
-      if (!bestLane || ms < minMs) {
-        minMs = ms;
-        bestLane = lane;
-      }
-    }
-  }
-  return bestLane;
 }
 
 export default function RaceHistory({
@@ -127,7 +111,9 @@ export default function RaceHistory({
       </div>
       <div className="race-history-list">
         {receipts.map((receipt) => {
-          const leader = fastestLane(receipt);
+          const ranking = selectRaceLeader(receipt.mode, receipt.lanes.filter(lane => lane.status === 'completed'),
+            lane => ({ outputCharacters: lane.outputCharacters, totalMs: lane.browser.totalMs }));
+          const leader = ranking.leader;
           const formattedDate = raceDateFormatter.format(new Date(receipt.createdAt));
           const exportLabel = exportedState[receipt.id] ? 'Exported ✓' : 'Export JSON';
           const shareLabel = shareState[receipt.id] === 'sharing'
@@ -143,10 +129,17 @@ export default function RaceHistory({
                 {formattedDate}
               </time>
               <div>
-                <strong>{leader ? <ModelIdentifier value={leader.modelId} /> : 'No completed lane'}</strong>
+                <strong>{leader ? <ModelIdentifier value={leader.modelId} /> : ranking.unavailable ? 'Time Trial ranking unavailable' : 'No completed lane'}</strong>
                 <span>
                   {receipt.lanes.length} lanes · {receipt.experience === 'lab' ? 'Experiment Lab' : 'Quick Race'}
                 </span>
+                {receipt.mode === 'time_limit' && (ranking.unavailable || leader) && (
+                  <p className="mt-1 max-w-full whitespace-normal break-words text-zinc-500">
+                    {ranking.unavailable
+                      ? 'Output length was not recorded for every completed lane.'
+                      : `Most output: ${leader!.outputCharacters} UTF-16 code units. Ties keep lane order.`}
+                  </p>
+                )}
               </div>
               <div className="race-history-actions">
                 <button

@@ -91,3 +91,12 @@ describe('race share payload', () => {
     await expect(createRaceShare({ ...receipt, lanes: [] })).rejects.toThrow('Invalid race receipt');
   });
 });
+
+it('does not transmit local output-length metadata or change strict v1 share validation', () => {
+  const local = structuredClone(receipt);
+  Object.assign(local.lanes[0], { outputCharacters: 123 });
+  const payload = buildRaceSharePayload(local);
+  expect(payload).toEqual(buildRaceSharePayload(receipt));
+  expect(isRaceSharePayload(payload)).toBe(true);
+  expect(isRaceSharePayload({ ...payload, lanes: [{ ...payload.lanes[0], outputCharacters: 123 }] })).toBe(false);
+});
