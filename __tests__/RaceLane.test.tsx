@@ -203,7 +203,7 @@ describe('expanded race telemetry', () => {
     const explanation = [...view.container.querySelectorAll('p')].find(node => node.textContent?.includes('TTFT:'));
     expect(explanation).toBeDefined();
     expect(explanation!.textContent).toContain('TTFT: time to first token.');
-    expect(explanation!.textContent).toContain('TPS: tokens per second.');
+    expect(explanation!.textContent).toContain('TPS: output tokens per second.');
     expect(explanation!.classList.contains('sr-only')).toBe(false);
     expect(explanation!.hidden).toBe(false);
     const telemetry = explanation!.parentElement!;
@@ -220,12 +220,10 @@ describe('expanded race telemetry', () => {
   });
 });
 
-// The legacy fallback is retained here, not redefined by the help copy.
-test('keeps TPS fallback values without describing missing output usage as measured output', () => {
-  view = mount(lane({ metrics: { ...METRICS, outputTokens: undefined, tokenCount: 30 } }));
+test('does not substitute total input plus output when output usage is missing', () => {
+  view = mount(lane({ metrics: { ...METRICS, outputTokens: undefined, inputTokens: 999970, tokenCount: 1000000 } }));
   const explanation = [...view.container.querySelectorAll('p')].find(node => node.textContent?.includes('TTFT:'))!;
-  expect(explanation.textContent).toContain('TPS: tokens per second.');
-  expect(explanation.textContent).not.toContain('output tokens');
-  expect(explanation.parentElement!.textContent).toContain('37.50');
+  expect(explanation.textContent).toContain('TPS: output tokens per second.');
+  expect(explanation.parentElement!.textContent).toContain('TPSN/A');
   expect(explanation.parentElement!.textContent).toContain('Not measured');
 });

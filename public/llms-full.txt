@@ -6,7 +6,7 @@ Site: https://ai-dragrace.jonathanrreed.com/
 Short guide: https://ai-dragrace.jonathanrreed.com/llms.txt
 Methodology page: https://ai-dragrace.jonathanrreed.com/methodology
 Privacy: https://ai-dragrace.jonathanrreed.com/privacy
-Content as of: 2026-09-05
+Content as of: 2026-10-24
 
 Usage policy: search indexing and AI answers with attribution are allowed. Google-Extended may use the site for Gemini grounding and training; other AI training is not allowed. See /robots.txt.
 
@@ -18,7 +18,7 @@ Linking in: /?model=<openrouter id>&provider=openrouter prefills model search. A
 
 - Time to first token (TTFT): The first content chunk timestamp minus the start timestamp. An empty keepalive frame does not count as a start.
 - Total time: The finish timestamp minus the start timestamp. Finish is stamped when the provider closes its stream.
-- Tokens per second (tok/s): Output tokens divided by the seconds between the first token and the finish. The wait for the first token is not in the denominator, so this is a streaming rate, not an end to end rate.
+- Tokens per second (tok/s): Output tokens divided by the seconds from first content to finish, excluding the initial wait. The streaming window must be at least 150 ms, with finite, ordered timestamps and a finite nonnegative output count. Missing or invalid data and stream-event counts produce unavailable TPS, not zero; total input-plus-output tokens are never substituted.
 - Browser clock and edge clock: Browser timings include your connection to Cloudflare. Edge timings describe the leg from the Cloudflare worker to the provider. The two are never blended.
 - Token count: Google Gemini reports usage in its stream and those numbers are used directly. Every other provider gets an estimate: characters divided by four, rounded up.
 - Colo: The coarse Cloudflare data center code where the edge function ran. It describes the edge hop, not the provider data center, which is unknown.
@@ -61,7 +61,7 @@ Time to first token is the first-chunk timestamp minus the start timestamp. The 
 
 Total time is the finish timestamp minus the start timestamp, where finish is stamped as the provider’s stream closes.
 
-Tokens per second divides output tokens by the seconds between first token and finish. Read that one carefully. The wait for the first token is not in the denominator, so this is a streaming rate and not an end to end rate, and a model with a slow start can still post the highest tok/s in the race.
+Tokens per second divides output tokens by the seconds from first content to finish. Both the lane and comparison chart require finite timestamps ordered start, first content, finish, a streaming window of at least 150 ms, a finite nonnegative output count, and a finite calculated rate. Shorter windows may be buffered flushes and are unavailable, as are missing or invalid data and stream-event counts: events are not output tokens. Total input-plus-output tokens never replace a missing output count. A valid zero output count gives 0 TPS; unavailable lanes have no throughput bar and sort last in either direction. Known estimates and demo rates are labeled. The initial wait is excluded, so this is a streaming rate, not an end to end rate; a model with a slow start can still post the highest tok/s.
 
 Token counts are where the honesty matters most. Google Gemini returns usage metadata in its stream and the app uses those numbers directly. Every other provider gets an estimate: characters divided by four, rounded up. That estimate is fine for rough comparison and wrong in the specifics, especially for code, non-English text, and anything that tokenizes unusually. For those providers, treat the ordering as more trustworthy than the value.
 

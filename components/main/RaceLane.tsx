@@ -4,6 +4,7 @@ import React, { useMemo, useEffect, useRef, useState } from 'react';
 import GlassCard from '../layout/GlassCard';
 import { CompletionMetrics } from '../../utils/providerService';
 import { getProviderById } from '../../utils/providers';
+import { getOutputThroughput } from '../../utils/outputThroughput';
 
 export type LaneStatus = 'staging' | 'green' | 'finish' | 'error';
 
@@ -23,14 +24,6 @@ export interface RaceLaneProps {
 
 function formatMs(ms?: number) {
   return typeof ms === 'number' && !Number.isNaN(ms) ? `${ms.toFixed(0)} ms` : 'N/A';
-}
-
-function calcTps(metrics: CompletionMetrics | null): string {
-  if (!metrics || !metrics.finishTime || !metrics.firstTokenTime) return 'N/A';
-  const duration = (metrics.finishTime - metrics.firstTokenTime) / 1000;
-  if (duration < 0.15) return 'N/A'; // sub-150ms window = buffered flush, not real throughput
-  const out = typeof metrics.outputTokens === 'number' ? metrics.outputTokens : metrics.tokenCount;
-  return (out / duration).toFixed(2);
 }
 
 const STATUS_CONFIG: Record<LaneStatus, { bg: string; border: string; text: string; dot: string; label: string }> = {
@@ -169,6 +162,7 @@ const RaceLane: React.FC<RaceLaneProps> = ({
     return 'staging';
   }, [error, metrics, responseText]);
 
+  const throughput = getOutputThroughput(metrics);
   const ttft = metrics?.firstTokenTime ? metrics.firstTokenTime - metrics.startTime : undefined;
   const total = metrics?.finishTime ? metrics.finishTime - metrics.startTime : undefined;
 
@@ -392,7 +386,7 @@ const RaceLane: React.FC<RaceLaneProps> = ({
               </div>
               <div className="flex flex-col">
                 <span className="text-zinc-500 text-xs font-bold">TPS</span>
-                <span className="text-emerald-400 font-mono font-bold tracking-tight">{calcTps(metrics)}</span>
+                <span className="text-emerald-400 font-mono font-bold tracking-tight">{throughput.value === null ? 'N/A' : throughput.value.toFixed(2)}</span>
               </div>
               <div className="flex flex-col">
                 <span className="text-zinc-500 text-xs font-bold">Tokens</span>
@@ -401,7 +395,7 @@ const RaceLane: React.FC<RaceLaneProps> = ({
                 </span>
               </div>
               <p className="col-span-4 text-zinc-400 leading-relaxed">
-                TTFT: time to first token. TPS: tokens per second.
+                TTFT: time to first token. TPS: output tokens per second. {throughput.detail}
               </p>
             </div>
           </div>
