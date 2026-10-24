@@ -17,6 +17,8 @@ import { getProviderColor } from '../utils/providerColors';
 import { getProviderById, RACEABLE_PROVIDERS } from '../utils/providers';
 import type { PaceLane } from '../components/main/LivePaceChart';
 import FinishSummary from '../components/main/FinishSummary';
+import PaceLegend from '../components/main/PaceLegend';
+import ModelIdentifier from '../components/ModelIdentifier';
 import RaceHistory from '../components/main/RaceHistory';
 import {
   clearRaceHistory,
@@ -792,7 +794,7 @@ export default function Home() {
             {suggestedModel && (
               <div className="race-model-handoff" role="status">
                 <span>From AI Stats</span>
-                <strong>{suggestedModel}</strong>
+                <strong><ModelIdentifier value={suggestedModel} /></strong>
                 <p>
                   Add the matching provider key. The model search is prefilled when the provider route is known.
                 </p>
@@ -1068,16 +1070,7 @@ export default function Home() {
                           reducedMotion={reducedMotion}
                           normalize={normalize}
                         />
-                        <div className="mt-2 flex max-h-[68px] flex-wrap gap-x-4 gap-y-1 overflow-y-auto scrollbar-none">
-                          {paceLanes.map((l) => (
-                            <span key={l.id} className="inline-flex items-center gap-1.5 text-xs text-[var(--text-muted)]">
-                              <span className="h-2 w-2 rounded-full" style={{ background: l.color }} />
-                              <span className="max-w-[160px] truncate" title={`${l.label} · ${l.sublabel}`}>
-                                {l.label}
-                              </span>
-                            </span>
-                          ))}
-                        </div>
+                        <PaceLegend lanes={paceLanes} />
                       </>
                     )}
                   </GlassCard>

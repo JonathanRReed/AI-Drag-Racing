@@ -1,3 +1,4 @@
+import ModelIdentifier from '../ModelIdentifier';
 // components/main/DragStrip.tsx
 //
 // The arcade spectacle: a literal drag strip. Each model is a dragster on its own asphalt
@@ -194,9 +195,7 @@ const DragStrip: React.FC<DragStripProps> = ({ lanes, buffersRef, running, reduc
               <span className="truncate text-sm font-semibold text-white" title={lane.label}>
                 {lane.label}
               </span>
-              <span className="truncate text-xs text-[var(--text-muted)]" title={lane.sublabel}>
-                {lane.sublabel}
-              </span>
+              <ModelIdentifier className="truncate text-xs text-[var(--text-muted)]" value={lane.sublabel} />
             </span>
           </div>
 

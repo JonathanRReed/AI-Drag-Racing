@@ -789,7 +789,7 @@
     @apply mt-1 break-all text-lg font-semibold;
   }
 
-  & p span {
+  & p > span:not(.model-identifier) {
     @apply text-sm font-normal opacity-70;
   }
 }
@@ -950,7 +950,7 @@
     @apply text-zinc-500;
   }
 
-  & span {
+  & > div > span {
     @apply text-zinc-500;
   }
 
@@ -958,7 +958,7 @@
     @apply block truncate;
   }
 
-  & span {
+  & > div > span {
     @apply block truncate;
   }
 
@@ -1388,7 +1388,7 @@
   @apply my-1 text-base font-semibold text-zinc-100;
 }
 
-.shared-race .finish-table tbody th span,
+.shared-race .finish-table tbody th > span,
 .shared-race .finish-table tbody th small {
   @apply font-mono text-xs text-zinc-400;
 }

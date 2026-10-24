@@ -1,3 +1,4 @@
+import ModelIdentifier from '../ModelIdentifier';
 // components/main/RaceLane.tsx
 import React, { useMemo, useEffect, useRef, useState } from 'react';
 import GlassCard from '../layout/GlassCard';
@@ -282,9 +283,7 @@ const RaceLane: React.FC<RaceLaneProps> = ({
                   <h3 className="font-bold text-base text-white truncate drop-shadow-md" title={displayName}>
                     {displayName}
                   </h3>
-                  <span className="text-xs text-[var(--text-muted)] truncate block max-w-[180px] font-medium" title={modelName}>
-                    {modelName}
-                  </span>
+                  <ModelIdentifier className="text-xs text-[var(--text-muted)] truncate block max-w-[180px] font-medium" value={modelName} />
                 </div>
               </div>
               <div className="flex flex-col items-end gap-1.5 shrink-0">

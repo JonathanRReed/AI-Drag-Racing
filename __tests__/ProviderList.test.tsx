@@ -33,7 +33,7 @@ const modelCheckbox = (provider: string, model: string) => {
 };
 
 describe('provider picker', () => {
-  const listed = () => Array.from(search().closest('li')!.querySelectorAll('label span[title]'), span => span.getAttribute('title'));
+  const listed = () => Array.from(search().closest('li')!.querySelectorAll('label span[title] > bdi:first-child'), span => span.textContent);
   const restored = (dispatch: ReturnType<typeof vi.fn>) => dispatch.mock.calls
     .map(([action]) => action).filter(action => action.type === 'TOGGLE_MODEL_SELECTION').map(action => action.payload.modelId);
 
@@ -188,5 +188,39 @@ describe('provider picker', () => {
     expect(modelIcon).not.toBeNull();
     expect(modelIcon!.getAttribute('alt')).toBe('');
     expect(modelIcon!.getAttribute('aria-hidden')).toBe('true');
+  });
+});
+
+describe('escaped model picker presentation', () => {
+  it('keeps confusing identifiers independently selectable and stores exact originals', () => {
+    const models = ['gpt-4o', 'gpt\u200b-4o', 'gpt\\u{200B}-4o', 'gpt\u202e-4o'];
+    localStorage.setItem('openai_models', JSON.stringify(models));
+    const dispatch = vi.fn();
+    view = mount(<ProviderList apiKeys={{ openai: 'synthetic-key' }} dispatch={dispatch} selectedPairs={[]} />);
+    const card = search().closest('li')!;
+    const checks = [...card.querySelectorAll<HTMLInputElement>('label input[type="checkbox"]')].slice(0, 4);
+    expect(checks.map(check => check.getAttribute('aria-label'))).toEqual(['gpt-4o', '\u2068gpt\u200b-4o\u2069 · Escaped representation: gpt\\u{200B}-4o', '\u2068gpt\\u{200B}-4o\u2069 · Escaped representation: gpt\\\\u{200B}-4o', 'Escaped representation: gpt\\u{202E}-4o']);
+    const selected: { providerId: string; modelId: string }[] = [];
+    checks.forEach((check, index) => {
+      click(check);
+      expect(dispatch.mock.calls.at(-1)?.[0]).toEqual({ type: 'TOGGLE_MODEL_SELECTION', payload: { providerId: 'openai', modelId: models[index] } });
+      selected.push({ providerId: 'openai', modelId: models[index] });
+      view.rerender(<ProviderList apiKeys={{ openai: 'synthetic-key' }} dispatch={dispatch} selectedPairs={[...selected]} />);
+    });
+    expect(checks.every(check => check.checked)).toBe(true);
+    expect(JSON.parse(localStorage.getItem('openai_selected_models')!)).toEqual(models);
+    expect(JSON.parse(localStorage.getItem('openai_models')!)).toEqual(models);
+    expect(card.querySelector('label button, label details')).toBeNull();
+    expect(card.textContent).not.toContain('\u202e');
+  });
+  it('searches both raw and escaped displayed text without decoding typed escapes', () => {
+    localStorage.setItem('openai_models', JSON.stringify(['gpt\u200b-4o', 'gpt\\u{200B}-4o']));
+    view = mount(<ProviderList apiKeys={{ openai: 'synthetic-key' }} dispatch={vi.fn()} selectedPairs={[]} />);
+    inputValue(search(), 'gpt\\u{200b}-4o');
+    expect(search().closest('li')?.textContent).toContain('Escaped representation: gpt\\u{200B}-4o');
+    inputValue(search(), '\u200b');
+    expect(search().closest('li')?.querySelectorAll('label span[title]')).toHaveLength(1);
+    inputValue(search(), '\\u200b');
+    expect(search().closest('li')?.textContent).toContain('No models match');
   });
 });

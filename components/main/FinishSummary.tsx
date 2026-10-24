@@ -1,3 +1,4 @@
+import ModelIdentifier from '../ModelIdentifier';
 import React, { useMemo } from 'react';
 import type { ResultState } from './ResultsDisplay';
 
@@ -43,7 +44,7 @@ export default function FinishSummary({ results }: { results: ResultState[] }) {
           <p>
             {leader ? (
               <>
-                {leader.modelName}
+                <ModelIdentifier value={leader.modelName} />
                 <span> via {leader.providerName}</span>
               </>
             ) : (
@@ -81,7 +82,7 @@ export default function FinishSummary({ results }: { results: ResultState[] }) {
                     <div>
                       <span>{index + 1}</span>
                       <div>
-                        <strong>{result.modelName}</strong>
+                        <strong><ModelIdentifier value={result.modelName} /></strong>
                         <small>{result.providerName}</small>
                       </div>
                     </div>
@@ -99,7 +100,7 @@ export default function FinishSummary({ results }: { results: ResultState[] }) {
                   <div>
                     <span aria-hidden="true">·</span>
                     <div>
-                      <strong>{result.modelName}</strong>
+                      <strong><ModelIdentifier value={result.modelName} /></strong>
                       <small>{result.providerName}</small>
                     </div>
                   </div>
