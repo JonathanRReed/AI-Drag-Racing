@@ -1,3 +1,4 @@
+import ModelIdentifier from '../ModelIdentifier';
 // components/main/StandingsTicker.tsx
 //
 // The always-visible, colorblind-safe, screen-reader-friendly "who leads now" list.
@@ -152,9 +153,7 @@ const StandingsTicker: React.FC<StandingsTickerProps> = ({
                     </svg>
                   )}
                 </span>
-                <span className="break-all text-xs text-[var(--text-muted)]" title={r.sublabel}>
-                  {r.sublabel}
-                </span>
+                <ModelIdentifier className="break-all text-xs text-[var(--text-muted)]" value={r.sublabel} />
               </span>
               <span className="shrink-0 text-right">
                 <span className="font-speed block text-base text-[var(--text)]">

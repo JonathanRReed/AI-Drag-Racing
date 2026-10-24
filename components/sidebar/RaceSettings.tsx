@@ -1,3 +1,5 @@
+import ModelIdentifier from '../ModelIdentifier';
+import { modelIdentifierText } from '../../utils/modelIdentifier';
 // components/sidebar/RaceSettings.tsx
 import React, { useState } from 'react';
 import GlassCard from '../layout/GlassCard';
@@ -394,9 +396,7 @@ const RaceSettings: React.FC<RaceSettingsProps> = ({ config, onChange, selectedP
                               <span className={`w-1.5 h-1.5 rounded-full ${
                                 !isExcluded ? 'bg-cyan-400' : 'bg-white/20'
                               }`} />
-                              <span className="text-xs text-[var(--text)] truncate max-w-[130px]" title={p.modelId}>
-                                {p.modelId}
-                              </span>
+                              <ModelIdentifier className="text-xs text-[var(--text)] truncate max-w-[130px]" value={p.modelId} />
                             </div>
                             <button
                               type="button"
@@ -410,7 +410,7 @@ const RaceSettings: React.FC<RaceSettingsProps> = ({ config, onChange, selectedP
                                 onChange({ ...config, excludedReasoningModels: newExcluded });
                               }}
                               className="flex shrink-0 items-center justify-center min-h-[var(--control-h)] min-w-[var(--control-h)] focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-cyan-400 rounded-md"
-                              aria-label={`Reasoning effort for ${p.modelId}`}
+                              aria-label={`Reasoning effort for ${modelIdentifierText(p.modelId)}`}
                             >
                               <span
                                 className={`block w-9 h-5 rounded-full transition-all duration-200 relative ${

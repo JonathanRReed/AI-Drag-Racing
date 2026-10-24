@@ -1,3 +1,5 @@
+import ModelIdentifier from '../ModelIdentifier';
+import { matchesModelIdentifier, modelIdentifierText } from '../../utils/modelIdentifier';
 // components/sidebar/ProviderList.tsx
 import React, { useState, useMemo } from 'react';
 import {
@@ -393,7 +395,7 @@ const ProviderList: React.FC<ProviderListProps> = ({
                   {(() => {
                     const list = modelsByProvider[provider.id] || [];
                     const q = (modelQuery[provider.id] || '').toLowerCase().trim();
-                    const filtered = q ? list.filter(m => m.toLowerCase().includes(q)) : list;
+                    const filtered = q ? list.filter(m => matchesModelIdentifier(m, q)) : list;
                     if (!filtered.length) {
                       return (
                         <div className="px-2 py-1 text-xs text-gray-400">No models match</div>
@@ -409,10 +411,11 @@ const ProviderList: React.FC<ProviderListProps> = ({
                             type="checkbox"
                             className="accent-cyan-400 rounded-xs focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-cyan-400"
                             checked={checked}
+                            aria-label={modelIdentifierText(m)}
                             onChange={(e) => handleToggleModel(provider.id, m, e.target.checked)}
                           />
                           <IconImg slugs={slugs} alt="" aria-hidden="true" width={14} height={14} className="w-3.5 h-3.5 rounded-xs opacity-80" />
-                          <span className="min-w-0 break-all leading-5" title={m}>{m}</span>
+                          <ModelIdentifier className="min-w-0 break-all leading-5" value={m} />
                         </label>
                       );
                     });

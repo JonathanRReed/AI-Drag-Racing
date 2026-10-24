@@ -35,16 +35,17 @@ describe('comparison charts', () => {
     expect(ttft.data.datasets[0].data).toEqual([300, 100]);
     expect(tokens.data.datasets[0].data).toEqual([200, 100]);
     expect(tps.data.datasets[0].data).toEqual([200 / .7, 100 / .4]);
+    expect(view.container.querySelector('[aria-label="Chart model identifiers"]')?.textContent).toContain('long-model-name-that-needs-an-ellipsis');
     for (const chart of charts()) {
       expect(chart.data.labels).toHaveLength(2);
-      expect(chart.data.labels[0].endsWith('…')).toBe(true);
-      expect(chart.options.plugins.tooltip.callbacks.title([{ dataIndex: 0 }])).toEqual(['Anthropic (long-model-name-that-needs-an-ellipsis)']);
+      expect(chart.data.labels[0]).toBe('Lane 2');
+      expect(chart.options.plugins.tooltip.callbacks.title([{ dataIndex: 0 }])).toEqual(['Lane 2: Anthropic (long-model-name-that-needs-an-ellipsis)']);
       expect(chart.data.datasets[0].backgroundColor[0]).toBe(getProviderColor('Anthropic').soft);
     }
     click(view.container.querySelector('button')!);
     expect(view.container.textContent).toContain('Sort: Low → High');
     expect(charts()[0].data.datasets[0].data).toEqual([500, 1000]);
-    expect(charts()[0].options.plugins.tooltip.callbacks.title([{ dataIndex: 0 }])).toEqual(['OpenAI (long-model-name-that-needs-an-ellipsis)']);
+    expect(charts()[0].options.plugins.tooltip.callbacks.title([{ dataIndex: 0 }])).toEqual(['Lane 1: OpenAI (long-model-name-that-needs-an-ellipsis)']);
   });
 
   it('skips chart preparation and renders when results identity is unchanged', () => {
@@ -63,7 +64,7 @@ describe('comparison charts', () => {
     const next = charts()[0];
     expect(next.data).not.toBe(previous.data);
     expect(next.data.datasets[0].data).toEqual([200]);
-    expect(next.options.plugins.tooltip.callbacks.title([{ dataIndex: 0 }])).toEqual(['Groq (long-model-name-that-needs-an-ellipsis)']);
+    expect(next.options.plugins.tooltip.callbacks.title([{ dataIndex: 0 }])).toEqual(['Lane 1: Groq (long-model-name-that-needs-an-ellipsis)']);
   });
 
   it('keeps the existing zero/missing-token metric fallbacks', () => {
@@ -72,5 +73,46 @@ describe('comparison charts', () => {
     expect(tps.data.datasets[0].data).toEqual([0]);
     expect(ttft.data.datasets[0].data).toEqual([0]);
     expect(tokens.data.datasets[0].data).toEqual([0]);
+  });
+});
+
+describe('technical chart identifiers', () => {
+  it('keeps escaped labels, numeric values and full HTML mappings aligned through sorting', () => {
+    const inputs = [{ ...result('OpenAI', 200, 600, 100), modelName: 'x\u200by' }, { ...result('OpenAI', 400, 1100, 200), id: 'other', modelName: 'x\\u{200B}y' }];
+    view = mount(<ComparisonCharts results={inputs} />);
+    expect(charts()[0].options.plugins.tooltip.callbacks.title([{ dataIndex: 0 }])).toEqual(['Lane 2: OpenAI (x\\\\u{200B}y)']);
+    expect(charts()[0].data.labels[0]).toBe('Lane 2');
+    expect(charts()[0].data.datasets[0].data).toEqual([1000, 500]);
+    const mapping = view.container.querySelector('[aria-label="Chart model identifiers"]')!;
+    expect(mapping.textContent).toContain('Lane 1:');
+    expect(mapping.textContent).toContain('Escaped representation: x\\u{200B}y');
+    expect(mapping.textContent).toContain('Lane 2:');
+    expect(mapping.textContent).toContain('Escaped representation: x\\\\u{200B}y');
+    click(view.container.querySelector('button')!);
+    expect(charts()[0].options.plugins.tooltip.callbacks.title([{ dataIndex: 0 }])).toEqual(['Lane 1: OpenAI (x\\u{200B}y)']);
+    expect(charts()[0].data.datasets[0].data).toEqual([500, 1000]);
+    expect(inputs.map(input => input.modelName)).toEqual(['x\u200by', 'x\\u{200B}y']);
+  });
+  it('preserves short ordinary Unicode charts with authored isolation only', () => {
+    view = mount(<ComparisonCharts results={[{ ...result('OpenAI', 200, 600), modelName: 'مدل' }]} />);
+    expect(charts()[0].options.plugins.tooltip.callbacks.title([{ dataIndex: 0 }])).toEqual(['OpenAI (\u2068مدل\u2069)']);
+    expect(view.container.querySelector('[aria-label="Chart model identifiers"]')).toBeNull();
+  });
+});
+
+
+describe('canvas isolation boundaries', () => {
+  it.each([18, 19])('keeps all %i Unicode characters and both authored isolation marks for an unmapped short label', count => {
+    const modelName = '模'.repeat(count);
+    view = mount(<ComparisonCharts results={[{ ...result('OpenAI', 200, 600), modelName }]} />);
+    expect(charts()[0].data.labels).toEqual([`OpenAI (\u2068${modelName}\u2069)`]);
+    expect(view.container.querySelector('[aria-label="Chart model identifiers"]')).toBeNull();
+  });
+  it('uses stable lane ticks rather than slicing escapes, surrogate pairs or isolates', () => {
+    const modelName = 'a'.repeat(18) + '👩' + 'suffix';
+    view = mount(<ComparisonCharts results={[{ ...result('提供者', 200, 600), modelName }]} />);
+    expect(charts()[0].data.labels).toEqual(['Lane 1']);
+    expect(charts()[0].options.plugins.tooltip.callbacks.title([{ dataIndex: 0 }])).toEqual([`Lane 1: \u2068提供者\u2069 (\u2068${modelName}\u2069)`]);
+    expect(view.container.querySelector('[aria-label="Chart model identifiers"]')?.textContent).toContain(modelName);
   });
 });

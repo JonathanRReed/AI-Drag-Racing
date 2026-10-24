@@ -1,3 +1,4 @@
+import ModelIdentifier from '../ModelIdentifier';
 import type { RaceShareRecord } from '../../utils/raceShares';
 
 const ms = (value: number | null): string => {
@@ -31,7 +32,7 @@ export default function SharedRaceView({ record }: { record: RaceShareRecord }) 
           <tbody>
             {lanes.map((lane, index) => (
               <tr key={`${lane.providerId}:${lane.modelId}:${index}`}>
-                <th scope="row"><span>{lane.status === 'failed' ? 'Failed' : `Lane ${index + 1}`}</span><strong>{lane.modelId}</strong><small>{lane.providerId}</small></th>
+                <th scope="row"><span>{lane.status === 'failed' ? 'Failed' : `Lane ${index + 1}`}</span><strong><ModelIdentifier value={lane.modelId} /></strong><small>{lane.providerId}</small></th>
                 <td>{ms(lane.browser.ttftMs)}</td>
                 <td>{ms(lane.edge.ttftMs)}</td>
                 <td>{ms(lane.browser.totalMs)}</td>

@@ -1,5 +1,7 @@
 // components/ComparisonCharts.tsx
 import React, { useMemo, useState } from 'react';
+import ModelIdentifier from './ModelIdentifier';
+import { formatModelIdentifier, modelIdentifierCanvasText } from '../utils/modelIdentifier';
 import { Bar } from 'react-chartjs-2';
 import {
   Chart as ChartJS,
@@ -103,15 +105,17 @@ const ComparisonCharts: React.FC<ComparisonChartsProps> = ({ results }) => {
   const [descending, setDescending] = useState(true);
 
   // Reuse label and color arrays while the results reference is unchanged.
-  const { validResults, labels, fullLabels, baseBgColors, baseBorderColors } = useMemo(() => {
+  const { validResults, labels, fullLabels, baseBgColors, baseBorderColors, needsMapping } = useMemo(() => {
     const valid = results.filter(r => r.metrics && !r.isLoading && !r.error);
-    const full = valid.map(r => `${r.providerName} (${r.modelName})`);
-    const ellipsize = (s: string, max = 28) => (s.length > max ? s.slice(0, max - 1) + '…' : s);
-    const shortLabels = full.map(l => ellipsize(l));
+    const needsMapping = valid.some(r => formatModelIdentifier(r.modelName).needsDetail || formatModelIdentifier(r.providerName).needsDetail || (r.providerName.length + r.modelName.length + 3) > 28);
+    const full = valid.map((r, index) => `${needsMapping ? `Lane ${index + 1}: ` : ''}${modelIdentifierCanvasText(r.providerName)} (${modelIdentifierCanvasText(r.modelName)})`);
+    // Never slice an escape, surrogate pair or authored bidi-isolation boundary.
+    const shortLabels = needsMapping ? valid.map((_, index) => `Lane ${index + 1}`) : full;
     const bg = valid.map(r => getProviderColor(r.providerName).soft);
     const border = valid.map(r => getProviderColor(r.providerName).solid);
     return {
       validResults: valid,
+      needsMapping,
       labels: shortLabels,
       fullLabels: full,
       baseBgColors: bg,
@@ -261,6 +265,16 @@ const ComparisonCharts: React.FC<ComparisonChartsProps> = ({ results }) => {
           Sort: {descending ? 'High → Low' : 'Low → High'}
         </button>
       </div>
+      {needsMapping && (
+        <div className="mb-4 text-xs" role="region" aria-label="Chart model identifiers">
+          <p>Chart labels use escaped representations where needed. Requests keep the original IDs.</p>
+          <ol className="space-y-2">
+            {validResults.map((result, index) => (
+              <li key={result.id}>Lane {index + 1}: <ModelIdentifier value={result.modelName} /> via <ModelIdentifier value={result.providerName} /></li>
+            ))}
+          </ol>
+        </div>
+      )}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4" role="region" aria-label="Performance comparison charts">
         <div style={{ height: chartHeight }} role="img" aria-label="Bar chart showing total response time in milliseconds for each AI model">
           <Bar options={latencyOptions} data={latencyData} />

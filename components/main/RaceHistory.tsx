@@ -1,3 +1,4 @@
+import ModelIdentifier from '../ModelIdentifier';
 import React, { useEffect, useRef, useState } from 'react';
 import type { RaceReceipt } from '../../utils/raceReceipts';
 import { serializeSanitizedReceipt } from '../../utils/raceReceipts';
@@ -142,7 +143,7 @@ export default function RaceHistory({
                 {formattedDate}
               </time>
               <div>
-                <strong>{leader ? leader.modelId : 'No completed lane'}</strong>
+                <strong>{leader ? <ModelIdentifier value={leader.modelId} /> : 'No completed lane'}</strong>
                 <span>
                   {receipt.lanes.length} lanes · {receipt.experience === 'lab' ? 'Experiment Lab' : 'Quick Race'}
                 </span>
