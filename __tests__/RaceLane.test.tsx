@@ -4,6 +4,7 @@ import { describe, expect, test, vi, beforeEach, afterEach } from 'vitest';
 import { mount, click } from './reactDom';
 import RaceLane, { type RaceLaneProps } from '../components/main/RaceLane';
 import type { CompletionMetrics } from '../utils/providerService';
+import ResultsDisplay, { type ResultState } from '../components/main/ResultsDisplay';
 
 let view: ReturnType<typeof mount> | undefined;
 
@@ -226,4 +227,173 @@ test('does not substitute total input plus output when output usage is missing',
   expect(explanation.textContent).toContain('TPS: output tokens per second.');
   expect(explanation.parentElement!.textContent).toContain('TPSN/A');
   expect(explanation.parentElement!.textContent).toContain('Not available');
+});
+
+describe('RaceLane response expansion', () => {
+  const toggle = () => view!.container.querySelector<HTMLButtonElement>('button[aria-expanded]')!;
+  const expectExpanded = (expanded: boolean) => {
+    expect(toggle().getAttribute('aria-expanded')).toBe(String(expanded));
+    const response = view!.container.querySelector('.overflow-y-auto')!;
+    expect(response.classList.contains('max-h-0')).toBe(!expanded);
+  };
+  const advance = (ms: number) => act(() => { vi.advanceTimersByTime(ms); });
+  const initialForce = { version: 0, collapsed: false };
+
+  test('automatically collapses an untouched response six seconds after finishing', () => {
+    view = mount(lane({ metrics: null, isLoading: true, force: initialForce }));
+    advance(9000);
+    expectExpanded(true);
+    view.rerender(lane({ force: initialForce }));
+    advance(5999);
+    expectExpanded(true);
+    advance(1);
+    expectExpanded(false);
+  });
+
+  test('keeps a manually reopened finished response expanded', () => {
+    view = mount(lane());
+    advance(6000);
+    expectExpanded(false);
+    click(toggle());
+    advance(12000);
+    expectExpanded(true);
+    expect(vi.getTimerCount()).toBe(0);
+  });
+
+  test('manual collapse and re-expansion cancel the pending finish collapse', () => {
+    view = mount(lane());
+    advance(3000);
+    click(toggle());
+    expectExpanded(false);
+    click(toggle());
+    advance(3000);
+    expectExpanded(true);
+    advance(9000);
+    expectExpanded(true);
+  });
+
+  test.each([3000, 7000])('Expand All keeps finished responses open when issued after %i ms', elapsed => {
+    view = mount(lane({ force: initialForce }));
+    advance(elapsed);
+    view.rerender(lane({ force: { version: 1, collapsed: false } }));
+    expectExpanded(true);
+    advance(12000);
+    expectExpanded(true);
+    expect(vi.getTimerCount()).toBe(0);
+  });
+
+  test('manual collapse survives more streamed chunks and completion', () => {
+    view = mount(lane({ metrics: null, isLoading: true }));
+    click(toggle());
+    expectExpanded(false);
+    view.rerender(lane({ responseText: 'More streamed text', metrics: null, isLoading: true }));
+    expectExpanded(false);
+    view.rerender(lane({ responseText: 'More streamed text' }));
+    advance(12000);
+    expectExpanded(false);
+  });
+
+  test('Collapse All survives streaming, and a later Expand All remains open after finish', () => {
+    view = mount(lane({ metrics: null, isLoading: true, force: initialForce }));
+    const collapse = { version: 1, collapsed: true };
+    view.rerender(lane({ metrics: null, isLoading: true, force: collapse }));
+    expectExpanded(false);
+    view.rerender(lane({ responseText: 'More streamed text', metrics: null, isLoading: true, force: collapse }));
+    expectExpanded(false);
+    const expand = { version: 2, collapsed: false };
+    view.rerender(lane({ metrics: null, isLoading: true, force: expand }));
+    expectExpanded(true);
+    view.rerender(lane({ force: expand }));
+    advance(12000);
+    expectExpanded(true);
+  });
+
+  test('a manual choice while waiting for the first chunk is respected', () => {
+    view = mount(lane({ responseText: '', metrics: null, isLoading: true }));
+    click(toggle());
+    view.rerender(lane({ metrics: null, isLoading: true }));
+    expectExpanded(false);
+    view.rerender(lane());
+    advance(12000);
+    expectExpanded(false);
+  });
+
+  test('a new run clears the manual choice and gets its own finish timer', () => {
+    view = mount(lane());
+    click(toggle());
+    view.rerender(lane({ responseText: '', metrics: null, isLoading: true }));
+    view.rerender(lane({ responseText: 'Second response', metrics: null, isLoading: true }));
+    expectExpanded(true);
+    view.rerender(lane({ responseText: 'Second response', metrics: { ...METRICS, startTime: 5000, finishTime: 6000 } }));
+    advance(5999);
+    expectExpanded(true);
+    advance(1);
+    expectExpanded(false);
+  });
+
+  test('a new run cancels the previous finish timer before it can hide streaming text', () => {
+    view = mount(lane());
+    advance(3000);
+    view.rerender(lane({ responseText: '', metrics: null, isLoading: true }));
+    view.rerender(lane({ responseText: 'Second response', metrics: null, isLoading: true }));
+    advance(12000);
+    expectExpanded(true);
+    expect(vi.getTimerCount()).toBe(0);
+  });
+
+  test('an unchanged broadcast version does not override a later per-lane choice', () => {
+    view = mount(lane({ force: initialForce }));
+    view.rerender(lane({ force: { version: 1, collapsed: false } }));
+    click(toggle());
+    view.rerender(lane({ force: { version: 1, collapsed: false } }));
+    advance(12000);
+    expectExpanded(false);
+  });
+
+  test('unmount clears the finish timer', () => {
+    view = mount(lane());
+    expect(vi.getTimerCount()).toBe(1);
+    view.unmount();
+    view = undefined;
+    expect(vi.getTimerCount()).toBe(0);
+  });
+
+  test('an interrupted completion cancels the timer and leaves error details open', () => {
+    view = mount(lane());
+    advance(3000);
+    view.rerender(lane({ error: 'Stream interrupted' }));
+    advance(12000);
+    expectExpanded(true);
+    expect(vi.getTimerCount()).toBe(0);
+  });
+});
+
+
+test('ResultsDisplay Reset retires lane choices and old timers before the next run', () => {
+  const results: ResultState[] = ['openai', 'groq'].map(providerName => ({
+    id: `${providerName}-model`, providerName, modelName: 'model', responseText: 'Completed response',
+    metrics: METRICS, isLoading: false, error: null, browserTiming: null, edgeRegion: null,
+  }));
+  const force = { version: 0, collapsed: false };
+  const toggles = () => [...view!.container.querySelectorAll('button[aria-expanded]')];
+  const expanded = () => toggles().map(button => button.getAttribute('aria-expanded'));
+  view = mount(<ResultsDisplay results={results} force={force} />);
+  act(() => { vi.advanceTimersByTime(3000); });
+  click(toggles()[0] as HTMLButtonElement);
+  const expandAll = { version: 1, collapsed: false };
+  view.rerender(<ResultsDisplay results={results} force={expandAll} />);
+  act(() => { vi.advanceTimersByTime(12000); });
+  expect(expanded()).toEqual(['true', 'true']);
+
+  // Home Reset clears results, but intentionally retains the toolbar's version.
+  view.rerender(<ResultsDisplay results={[]} force={expandAll} />);
+  expect(toggles()).toHaveLength(0);
+  expect(vi.getTimerCount()).toBe(0);
+  const staged = results.map(result => ({ ...result, responseText: '', metrics: null, isLoading: true }));
+  view.rerender(<ResultsDisplay results={staged} force={expandAll} />);
+  view.rerender(<ResultsDisplay results={results} force={expandAll} />);
+  act(() => { vi.advanceTimersByTime(5999); });
+  expect(expanded()).toEqual(['true', 'true']);
+  act(() => { vi.advanceTimersByTime(1); });
+  expect(expanded()).toEqual(['false', 'false']);
 });
