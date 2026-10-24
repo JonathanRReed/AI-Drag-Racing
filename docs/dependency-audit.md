@@ -1,5 +1,13 @@
 # Dependency audit policy and history
 
+## Native Pages build candidate
+
+The retired next-on-pages/Vercel/Wrangler/Miniflare toolchain is no longer installed.
+The existing expiration and exact historical consumer snapshot below are unchanged.
+Both full and production audits run unfiltered and must pass. A clean registry
+audit is not a claim about code bundled inside other packages. See
+[native Pages verification and limits](native-pages.md).
+
 ## October 23, 2026 advisory withdrawal
 
 GitHub withdrew [GHSA-vfj7-8cjw-p6xm](https://github.com/advisories/GHSA-vfj7-8cjw-p6xm)
@@ -52,15 +60,16 @@ JavaScript and glob dependencies are not deployed by this application.
   environment values. Shadcn file inputs must be CSS/package metadata only.
   It is enabled only inside the prepared Cloudflare build process; ordinary
   Next builds/dev sessions do not use a leftover audit cache.
-- Packaging verification requires fresh matching compiler records, unchanged
-  source/lock identity, Edge API function maps with no execution-chain sources,
-  and actual esbuild metafiles for the adapter-generated worker and helpers.
-  Every deployed `.js`, `.mjs` and `.cjs` worker/helper must match recorded
-  build-output bytes and metadata, including external runtime imports.
-  A narrow Node preload adds only esbuild's documented `metafile` option to the
-  adapter's builds; it does not alter their generated code. Missing evidence,
-  unmatched bytes, unknown API functions or runtime inclusion block the build.
-  Audit and runtime evidence are retained as CI artifacts.
+- Packaging verification requires fresh matching browser, Edge and Node compiler
+  records and unchanged source/lock identity. Actual esbuild metafiles must contain
+  the application-owned router and exactly the three reviewed Fetch handler files,
+  with no package or external runtime imports. The exported route descriptors are
+  read from the real emitted bundle; missing/new handlers fail closed.
+- Exactly one `_worker.js` file is supported. Its bytes must match fresh build
+  metadata; helpers, external imports, Node shims and source maps are rejected.
+  `_routes.json` must invoke Functions only for `/api/*`. Both the lock graph and
+  fresh installed package tree must omit the retired adapter/deployment toolchain.
+  Audit and runtime evidence remain retained as CI artifacts.
 - Existing lint, typecheck, test and production-build gates remain required.
 
 Run `bun run audit:dependencies` for the policy-aware audit. Before the
@@ -72,5 +81,6 @@ exception, including after expiry. Remove this policy when a patched package or
 verified toolchain replacement resolves the advisory; do not change its date or
 consumer snapshot to accommodate an unrelated dependency update.
 
-The current Pages adapter requires Vercel to produce its build artifact. Removing
-that dependency chain is a separate hosting migration, not unused-package cleanup.
+Historically the Pages adapter required Vercel to produce its build artifact.
+The native Pages candidate explicitly replaces that build/routing responsibility;
+it is not a declaration that the former dependency chain was unused.

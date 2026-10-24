@@ -6,21 +6,21 @@ Send the same prompt to several language models and compare time to first token,
 
 ## Run locally
 
-Requires Node.js 18.18.0 or newer and your own provider API keys. See [package.json](package.json) for dependencies and versions.
+Requires Node.js 22.12.0 or newer and Bun 1.4.4 and your own provider API keys. See [package.json](package.json) for dependencies and versions.
 
 ```bash
-npm install
-npm run dev
+bun install --frozen-lockfile
+bun run dev
 ```
 
 Open `http://localhost:3000`. To test a production build:
 
 ```bash
-npm run build
-npm start
+bun run build
+bun run start
 ```
 
-The app uses Next.js, React, TypeScript, Tailwind CSS, and Chart.js. Deployment uses Cloudflare Pages through `@cloudflare/next-on-pages`.
+The app uses Next.js, React, TypeScript, Tailwind CSS, and Chart.js. The Pages build statically exports the existing UI and bundles the three existing Fetch API handlers into an application-owned native `_worker.js`. See [the Pages build contract](docs/native-pages.md).
 
 ## Run a race
 
