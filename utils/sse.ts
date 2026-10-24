@@ -1,3 +1,5 @@
+import { redactCredentials } from './requestSecurity';
+
 export async function* parseSseJson<T = unknown>(
   response: Response,
   sourceLabel = 'SSE',
@@ -25,43 +27,56 @@ export async function* parseSseJson<T = unknown>(
     try {
       return { done: false, value: JSON.parse(data) as T };
     } catch (error) {
-      console.error(`Error parsing ${sourceLabel} stream data:`, error);
+      // Log only the sanitized message. Mutating Error.message leaves cached
+      // stacks and other exception properties available to console inspectors.
+      console.error(`Error parsing ${sourceLabel} stream data:`, redactCredentials(error));
       return { done: false };
     }
   };
 
-  while (true) {
-    let done: boolean;
-    let value: Uint8Array | undefined;
-    try {
-      ({ done, value } = await reader.read());
-    } catch (error) {
-      const message = String(error instanceof Error ? error.message : error);
-      const code = error && typeof error === 'object' && 'code' in error
-        ? String((error as { code?: unknown }).code ?? '')
-        : '';
-      if ((error instanceof Error && error.name === 'AbortError') || code === 'ECONNRESET' || message.includes('aborted')) return;
-      throw error;
-    }
-    buffer += decoder.decode(value, { stream: !done });
-    // Performance optimization: avoid regex scan across whole buffer unless CRLF is present
-    if (buffer.includes('\r')) {
-      buffer = buffer.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+  let reachedEof = false;
+  try {
+    while (true) {
+      let done: boolean;
+      let value: Uint8Array | undefined;
+      try {
+        ({ done, value } = await reader.read());
+      } catch (error) {
+        const message = String(error instanceof Error ? error.message : error);
+        const code = error && typeof error === 'object' && 'code' in error
+          ? String((error as { code?: unknown }).code ?? '')
+          : '';
+        if ((error instanceof Error && error.name === 'AbortError') || code === 'ECONNRESET' || message.includes('aborted')) return;
+        throw error;
+      }
+      buffer += decoder.decode(value, { stream: !done });
+      // Performance optimization: avoid regex scan across whole buffer unless CRLF is present
+      if (buffer.includes('\r')) {
+        buffer = buffer.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+      }
+
+      let boundary = buffer.indexOf('\n\n');
+      while (boundary !== -1) {
+        const event = buffer.slice(0, boundary);
+        buffer = buffer.slice(boundary + 2);
+        const parsed = parseEvent(event);
+        if (parsed.done) return;
+        if (parsed.value !== undefined) yield parsed.value;
+        boundary = buffer.indexOf('\n\n');
+      }
+
+      if (done) { reachedEof = true; break; }
     }
 
-    let boundary = buffer.indexOf('\n\n');
-    while (boundary !== -1) {
-      const event = buffer.slice(0, boundary);
-      buffer = buffer.slice(boundary + 2);
-      const parsed = parseEvent(event);
-      if (parsed.done) return;
-      if (parsed.value !== undefined) yield parsed.value;
-      boundary = buffer.indexOf('\n\n');
+    const finalEvent = parseEvent(buffer);
+    if (!finalEvent.done && finalEvent.value !== undefined) yield finalEvent.value;
+  } finally {
+    // A consumer break, DONE sentinel or read error must release upstream work.
+    // Cleanup failure must never replace the parser's original result/error.
+    if (!reachedEof) {
+      try { await reader.cancel(); } catch {}
     }
-
-    if (done) break;
+    reader.releaseLock();
   }
 
-  const finalEvent = parseEvent(buffer);
-  if (!finalEvent.done && finalEvent.value !== undefined) yield finalEvent.value;
 }

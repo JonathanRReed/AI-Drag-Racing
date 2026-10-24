@@ -91,15 +91,31 @@ export default async function handler(req: Request): Promise<Response> {
     });
   }
 
-  const { readable, writable } = new TransformStream();
+  let streamController!: TransformStreamDefaultController<Uint8Array>;
+  const { readable, writable } = new TransformStream<Uint8Array, Uint8Array>({
+    start(controller) { streamController = controller; },
+  });
   const writer = writable.getWriter();
   const encoder = new TextEncoder();
-  const signal = (req as any).signal as AbortSignal | undefined;
+  const requestSignal = req.signal;
+  const providerController = new AbortController();
+  const signal = providerController.signal;
   let aborted = false;
-  signal?.addEventListener('abort', () => {
+  const cleanup = () => requestSignal?.removeEventListener('abort', stop);
+  const stop = () => {
+    if (aborted) return;
     aborted = true;
-    try { writer.abort(); } catch {}
-  });
+    cleanup();
+    providerController.abort();
+    // writer.abort() alone can wait behind a backpressured write. Error both
+    // stream sides immediately so Request abort cannot strand that write.
+    streamController.error(new DOMException('Completion stream cancelled', 'AbortError'));
+  };
+  if (requestSignal?.aborted) stop();
+  else requestSignal?.addEventListener('abort', stop, { once: true });
+  // Reader cancellation rejects writer.closed even while the provider is
+  // waiting for its next chunk. Do not wait for another write to notice it.
+  void writer.closed.catch(stop);
 
   const writeEvent = async (data: any) => {
     if (aborted) return;
@@ -107,17 +123,19 @@ export default async function handler(req: Request): Promise<Response> {
     try {
       await writer.write(encoder.encode(chunk));
     } catch {
-      // Ignore writes after stream has been closed/aborted
+      stop();
     }
   };
 
   (async () => {
     try {
+      if (aborted) return;
       const edgeRegion = (req as Request & { cf?: { colo?: string } }).cf?.colo ?? null;
       await writeEvent({
         type: 'meta',
         data: { edgeRegion, requestStartedAt: new Date().toISOString() },
       });
+      if (aborted) return;
       const generator = providerService.generate(prompt, model, apiKey, signal, modelSettings);
       for await (const result of generator) {
         if (aborted) break;
@@ -135,6 +153,9 @@ export default async function handler(req: Request): Promise<Response> {
         } else {
           await writeEvent(result);
         }
+        // A pending write may have rejected on cancellation. Close this
+        // iterator now instead of requesting one more provider result.
+        if (aborted) break;
       }
     } catch (error) {
       // Emit error to client unless already aborted
@@ -143,6 +164,7 @@ export default async function handler(req: Request): Promise<Response> {
         try { await writeEvent({ type: 'error', message }); } catch {}
       }
     } finally {
+      cleanup();
       try { await writer.close(); } catch {}
       try { writer.releaseLock(); } catch {}
     }

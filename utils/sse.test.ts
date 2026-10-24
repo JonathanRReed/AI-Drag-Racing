@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { parseSseJson } from './sse';
 
 function responseFromChunks(chunks: string[]): Response {
@@ -12,6 +12,10 @@ function responseFromChunks(chunks: string[]): Response {
 }
 
 describe('parseSseJson', () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
   it('preserves JSON split across network chunks and CRLF event boundaries', async () => {
     const response = responseFromChunks([
       'data: {"type":"chunk","cont',
@@ -36,5 +40,36 @@ describe('parseSseJson', () => {
     const events = [];
     for await (const event of parseSseJson(response, 'test')) events.push(event);
     expect(events).toEqual([{ value: 1 }]);
+  });
+
+  it('does not log exception objects with cached credential-bearing stacks', async () => {
+    const log = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const error = new SyntaxError('Invalid sk-synthetic-credential');
+    const originalStack = 'SyntaxError: Invalid sk-synthetic-credential\n    at synthetic-test';
+    Object.defineProperty(error, 'stack', { value: originalStack, writable: false });
+    vi.spyOn(JSON, 'parse').mockImplementationOnce(() => { throw error; });
+    const response = responseFromChunks(['data: invalid\n\n']);
+    for await (const event of parseSseJson(response, 'test')) void event;
+    expect(log.mock.calls[0][1]).toBe('Invalid [REDACTED]');
+    expect(error.stack).toBe(originalStack);
+    expect(error.message).toBe('Invalid sk-synthetic-credential');
+  });
+
+  it('redacts sensitive credentials when logging JSON parse errors', async () => {
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const response = responseFromChunks([
+      'data: sk-secret123\n\n',
+    ]);
+    const events = [];
+    for await (const event of parseSseJson(response, 'test-stream')) events.push(event);
+
+    expect(events).toEqual([]);
+    expect(consoleSpy).toHaveBeenCalledWith(
+      'Error parsing test-stream stream data:',
+      expect.any(String),
+    );
+    const loggedMessage = consoleSpy.mock.calls[0][1] as string;
+    expect(loggedMessage).toContain('[REDACTED]');
+    expect(loggedMessage).not.toContain('sk-secret123');
   });
 });

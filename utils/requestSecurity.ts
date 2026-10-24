@@ -82,6 +82,25 @@ export function sanitizeApiKey(key: string): string {
     .trim();
 }
 
+export function sanitizeModelId(id: unknown): string {
+  // Provider identifiers are opaque. Rewriting or truncating one can silently
+  // select another model, so reject invalid values rather than repair them.
+  if (typeof id !== 'string' || !id || id.length > 512 || id.trim() !== id) return '';
+  // eslint-disable-next-line no-control-regex
+  if (/[\x00-\x1F\x7F-\x9F\u2028\u2029]/u.test(id)) return '';
+  return id;
+}
+
+export function sanitizeModelIds(items: unknown): string[] {
+  if (!Array.isArray(items)) return [];
+  const set = new Set<string>();
+  for (const item of items) {
+    const clean = sanitizeModelId(item);
+    if (clean) set.add(clean);
+  }
+  return Array.from(set);
+}
+
 export function validateRaceRequestBody(body: unknown):
   | { ok: true; value: { prompt: string; model: string; apiKey: string; settings: Record<string, unknown> } }
   | { ok: false; error: string } {
@@ -98,6 +117,7 @@ export function validateRaceRequestBody(body: unknown):
   if (!prompt || !model || !apiKey) return { ok: false, error: 'Missing prompt, model, or API key' };
   if (prompt.length > 100_000) return { ok: false, error: 'Prompt exceeds the 100,000 character limit' };
   if (model.length > 512) return { ok: false, error: 'Model identifier is too long' };
+  if (sanitizeModelId(model) !== model) return { ok: false, error: 'Invalid model identifier' };
   if (apiKey.length > 4096) return { ok: false, error: 'API key is too long' };
 
   return { ok: true, value: { prompt, model, apiKey, settings } };
