@@ -154,6 +154,21 @@ describe('provider picker', () => {
     expect(providerSlugs).not.toHaveBeenCalled();
   });
 
+  it('renders a clear search button when searching and resets the search query on click', () => {
+    view = mount(<ProviderList apiKeys={{ openai: 'synthetic-key' }} dispatch={vi.fn()} selectedPairs={[]} />);
+    expect(view.container.querySelector('button[aria-label="Clear model search for OpenAI"]')).toBeNull();
+
+    inputValue(search(), 'alpha');
+    const clearBtn = view.container.querySelector<HTMLButtonElement>('button[aria-label="Clear model search for OpenAI"]');
+    expect(clearBtn).not.toBeNull();
+    expect(clearBtn!.title).toBe('Clear search');
+
+    click(clearBtn!);
+    expect(search().value).toBe('');
+    expect(search().closest('li')!.textContent).toContain('gpt-beta');
+    expect(view.container.querySelector('button[aria-label="Clear model search for OpenAI"]')).toBeNull();
+  });
+
   it('labels and clears the targeted provider key and selections', () => {
     const dispatch = vi.fn();
     view = mount(<ProviderList apiKeys={{ openai: 'synthetic-key' }} dispatch={dispatch} selectedPairs={[]} />);
