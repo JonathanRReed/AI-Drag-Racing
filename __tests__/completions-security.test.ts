@@ -44,6 +44,8 @@ describe('completion stream credential boundaries', () => {
     { name: 'invalid request fields', status: 400, path: 'openai', body: '{}', headers: {}, error: 'Missing prompt, model, or API key' },
     { name: 'declared oversized body', status: 413, path: 'openai', body: '{}', headers: { 'content-length': '131073' }, error: 'Request body exceeds the 131,072 byte limit' },
     { name: 'streamed oversized body', status: 413, path: 'openai', body: 'x'.repeat(131073), headers: {}, error: 'Request body exceeds the 131,072 byte limit' },
+    { name: 'oversized provider ID', status: 400, path: 'a'.repeat(81), body: '{}', headers: {}, error: 'Invalid provider ID' },
+    { name: 'control characters in provider ID', status: 400, path: 'openai%0A', body: '{}', headers: {}, error: 'Invalid provider ID' },
     { name: 'unsupported provider', status: 404, path: 'unsupported-provider', body: JSON.stringify({ prompt: 'hello', model: 'synthetic-model', apiKey: 'synthetic-key' }), headers: {}, error: "Provider 'unsupported-provider' not found" },
   ])('keeps nosniff and response semantics for $name ($status)', async ({ status, path, body, headers, error }) => {
     const upstream = vi.fn(() => { throw new Error('Unexpected provider call'); });
