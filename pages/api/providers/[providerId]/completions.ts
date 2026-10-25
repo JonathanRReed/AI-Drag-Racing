@@ -48,7 +48,12 @@ export default async function handler(req: Request): Promise<Response> {
   const match = url.pathname.match(/\/api\/providers\/([^/]+)\/completions/);
   const providerId = match?.[1];
 
-  if (!providerId) {
+  let decodedProviderId = providerId ?? '';
+  try { decodedProviderId = decodeURIComponent(decodedProviderId); } catch {}
+
+  // Enforce length limits and sanitize against control/unicode whitespace characters to prevent header injection and DoS.
+  // eslint-disable-next-line no-control-regex
+  if (!providerId || providerId.length > 80 || /[\x00-\x1F\x7F-\x9F\u2028\u2029]/u.test(decodedProviderId)) {
     return new Response(JSON.stringify({ error: 'Invalid provider ID' }), {
       status: 400,
       headers: { ...corsHeaders, 'Content-Type': 'application/json', 'X-Content-Type-Options': 'nosniff' },
