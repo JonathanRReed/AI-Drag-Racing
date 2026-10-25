@@ -187,4 +187,7 @@ const StandingsTicker: React.FC<StandingsTickerProps> = ({
   );
 };
 
-export default StandingsTicker;
+// Memoized to prevent full component reconciliations on every parent high-frequency
+// streaming state update (COMMIT_TEXT at ~11x/sec) when props (lanes, running, mode) haven't changed.
+// StandingsTicker internally samples laneBuffersRef on a 150ms interval while running.
+export default React.memo(StandingsTicker);
