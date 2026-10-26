@@ -8,7 +8,7 @@ import ModelIdentifier from '../ModelIdentifier';
 // Ranking is by cumulative characters streamed — the honest "furthest along right now".
 // Finished lanes keep their final value and gain a finish flag.
 
-import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import React, { memo, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { LaneBuffer } from '../../utils/raceBuffers';
 import { PaceLane } from './LivePaceChart';
 import type { RaceMode } from '../sidebar/RaceSettings';
@@ -187,4 +187,7 @@ const StandingsTicker: React.FC<StandingsTickerProps> = ({
   );
 };
 
-export default StandingsTicker;
+// Bolt optimization: Wrap StandingsTicker in memo to prevent unnecessary component
+// reconciliations during high-frequency parent state dispatches (e.g. COMMIT_TEXT token streaming)
+// when input props remain shallowly equal. StandingsTicker manages its own 150ms sampling interval.
+export default memo(StandingsTicker);

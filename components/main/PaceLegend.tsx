@@ -1,9 +1,9 @@
-import React from 'react';
+import React, { memo } from 'react';
 import type { PaceLane } from './LivePaceChart';
 import ModelIdentifier from '../ModelIdentifier';
 import { formatModelIdentifier, modelIdentifierText } from '../../utils/modelIdentifier';
 
-export default function PaceLegend({ lanes }: { lanes: PaceLane[] }) {
+function PaceLegend({ lanes }: { lanes: PaceLane[] }) {
   return (
     <div className="mt-2 flex max-h-[68px] flex-wrap gap-x-4 gap-y-1 overflow-y-auto scrollbar-none">
       {lanes.map(lane => (
@@ -20,3 +20,8 @@ export default function PaceLegend({ lanes }: { lanes: PaceLane[] }) {
     </div>
   );
 }
+
+// Bolt optimization: Wrap PaceLegend in memo to prevent unnecessary component
+// reconciliations during high-frequency parent state dispatches (e.g. COMMIT_TEXT token streaming)
+// when lanes remain shallowly equal.
+export default memo(PaceLegend);
