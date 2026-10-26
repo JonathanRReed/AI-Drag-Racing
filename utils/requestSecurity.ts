@@ -82,7 +82,7 @@ export function sanitizeApiKey(key: string): string {
     .trim();
 }
 
-export function isValidProviderId(id: unknown): boolean {
+export function isValidProviderId(id: unknown): id is string {
   if (typeof id !== 'string' || !id || id.length > 80 || id.trim() !== id) return false;
   // eslint-disable-next-line no-control-regex
   if (/[\x00-\x1F\x7F-\x9F\u2028\u2029]/u.test(id)) return false;
