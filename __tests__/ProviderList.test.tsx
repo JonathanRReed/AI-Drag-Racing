@@ -5,7 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import ProviderList from '../components/sidebar/ProviderList';
 import { providerSlugs } from '../utils/providerIcons';
 import { fetchModels } from '../utils/fetchModels';
-import { click, inputValue, mount } from './reactDom';
+import { click, inputValue, key, mount } from './reactDom';
 
 vi.mock('../utils/providerIcons', async importOriginal => {
   const actual = await importOriginal<typeof import('../utils/providerIcons')>();
@@ -188,6 +188,30 @@ describe('provider picker', () => {
     expect(modelIcon).not.toBeNull();
     expect(modelIcon!.getAttribute('alt')).toBe('');
     expect(modelIcon!.getAttribute('aria-hidden')).toBe('true');
+  });
+
+  it('clears model search query when clicking the clear button or pressing Escape', () => {
+    view = mount(<ProviderList apiKeys={{ openai: 'synthetic-key' }} dispatch={vi.fn()} selectedPairs={[]} />);
+    const searchInput = search();
+
+    expect(view.container.querySelector('button[aria-label="Clear model search for OpenAI"]')).toBeNull();
+
+    inputValue(searchInput, 'alpha');
+    expect(searchInput.value).toBe('alpha');
+
+    const clearButton = view.container.querySelector<HTMLButtonElement>('button[aria-label="Clear model search for OpenAI"]');
+    expect(clearButton).not.toBeNull();
+    expect(clearButton!.title).toBe('Clear search (Esc)');
+
+    click(clearButton!);
+    expect(searchInput.value).toBe('');
+    expect(view.container.querySelector('button[aria-label="Clear model search for OpenAI"]')).toBeNull();
+
+    inputValue(searchInput, 'beta');
+    expect(searchInput.value).toBe('beta');
+
+    key(searchInput, 'Escape');
+    expect(searchInput.value).toBe('');
   });
 });
 

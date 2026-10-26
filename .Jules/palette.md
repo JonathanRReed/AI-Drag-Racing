@@ -5,3 +5,7 @@
 ## 2026-10-14 - Keyboard Focus Ring States on Custom Card and Toggle Buttons
 **Learning:** Custom styled card buttons (such as mode selectors) and toggle switches often override or lack default browser outline styles. Adding `focus-visible:ring-2` with `focus-visible:outline-hidden` ensures keyboard users have distinct, visible focus indicators without affecting pointer/click visual states.
 **Action:** Always ensure custom button cards and switches include explicit `focus-visible:ring-2` focus states matching the component color theme.
+
+## 2026-10-15 - Instant Clear Control and Keyboard Escape for Search Inputs
+**Learning:** Dense inline search filters (such as provider model list search) can leave keyboard and screen reader users trapped in a filtered state if no explicit clear control or `Escape` key handler exists. Adding an inline clear button with explicit ARIA label and handling `Escape` on `KeyDown` allows users to quickly reset search criteria.
+**Action:** Always pair text search inputs with an `Escape` key reset handler and a visible clear button when query text is non-empty.

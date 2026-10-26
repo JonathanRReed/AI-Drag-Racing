@@ -385,15 +385,34 @@ const ProviderList: React.FC<ProviderListProps> = ({
             {apiKeys[provider.id] && SUPPORTED_FOR_STREAM.has(provider.id) && (modelsByProvider[provider.id]?.length ? (
               <div className="px-2">
                 <p className="eco-label mb-1">Models</p>
-                <div className="mb-1">
+                <div className="mb-1 relative">
                   <input
                     type="text"
                     value={modelQuery[provider.id] || ''}
                     onChange={(e) => setModelQuery(prev => ({ ...prev, [provider.id]: e.target.value }))}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Escape' && modelQuery[provider.id]) {
+                        e.stopPropagation();
+                        setModelQuery(prev => ({ ...prev, [provider.id]: '' }));
+                      }
+                    }}
                     placeholder="Search models"
                     aria-label={`Search models for ${provider.displayName}`}
-                    className="w-full px-2 py-1 text-xs rounded-md bg-zinc-900/60 border border-white/10 focus:border-white/20 outline-hidden text-gray-200 placeholder:text-gray-500 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-cyan-400"
+                    className="w-full px-2 py-1 pr-6 text-xs rounded-md bg-zinc-900/60 border border-white/10 focus:border-white/20 outline-hidden text-gray-200 placeholder:text-gray-500 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-cyan-400"
                   />
+                  {modelQuery[provider.id] && (
+                    <button
+                      type="button"
+                      onClick={() => setModelQuery(prev => ({ ...prev, [provider.id]: '' }))}
+                      aria-label={`Clear model search for ${provider.displayName}`}
+                      title="Clear search (Esc)"
+                      className="absolute right-1.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white p-0.5 rounded focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-cyan-400"
+                    >
+                      <svg viewBox="0 0 20 20" className="w-3 h-3" fill="currentColor" aria-hidden="true" focusable="false">
+                        <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                      </svg>
+                    </button>
+                  )}
                 </div>
                 <div className="max-h-60 overflow-auto rounded-md border border-white/10 divide-y divide-white/5 bg-zinc-900/40">
                   {(() => {
