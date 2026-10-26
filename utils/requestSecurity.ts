@@ -82,6 +82,20 @@ export function sanitizeApiKey(key: string): string {
     .trim();
 }
 
+export function isValidProviderId(id: unknown): boolean {
+  if (typeof id !== 'string' || !id || id.length > 80 || id.trim() !== id) return false;
+  // eslint-disable-next-line no-control-regex
+  if (/[\x00-\x1F\x7F-\x9F\u2028\u2029]/u.test(id)) return false;
+  try {
+    const decoded = decodeURIComponent(id);
+    // eslint-disable-next-line no-control-regex
+    if (/[\x00-\x1F\x7F-\x9F\u2028\u2029]/u.test(decoded)) return false;
+  } catch {
+    return false;
+  }
+  return true;
+}
+
 export function sanitizeModelId(id: unknown): string {
   // Provider identifiers are opaque. Rewriting or truncating one can silently
   // select another model, so reject invalid values rather than repair them.
