@@ -39,6 +39,9 @@ describe('completion stream credential boundaries', () => {
   it.each([
     { name: 'disallowed origin', status: 403, path: 'openai', body: '{}', headers: { origin: 'https://untrusted.example' }, error: 'Origin not allowed' },
     { name: 'invalid provider path', status: 400, path: '', body: '{}', headers: {}, error: 'Invalid provider ID' },
+    { name: 'oversized provider path', status: 400, path: 'a'.repeat(81), body: '{}', headers: {}, error: 'Invalid provider ID' },
+    { name: 'control character in provider path', status: 400, path: 'openai%00', body: '{}', headers: {}, error: 'Invalid provider ID' },
+    { name: 'malformed percent encoding in provider path', status: 400, path: 'openai%E0%A0', body: '{}', headers: {}, error: 'Invalid provider ID' },
     { name: 'missing body', status: 400, path: 'openai', body: undefined, headers: {}, error: 'Request body is required' },
     { name: 'malformed JSON', status: 400, path: 'openai', body: '{', headers: {}, error: 'Invalid JSON body' },
     { name: 'invalid request fields', status: 400, path: 'openai', body: '{}', headers: {}, error: 'Missing prompt, model, or API key' },
