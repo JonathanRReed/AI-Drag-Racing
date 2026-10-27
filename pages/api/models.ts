@@ -175,7 +175,7 @@ export default async function handler(req: Request): Promise<Response> {
     }
 
     const { providerId, apiKey: rawApiKey } = parsedBody.value as Record<string, unknown>;
-    if (typeof providerId !== 'string' || !providerId || providerId.length > 80) {
+    if (typeof providerId !== 'string' || !providerId || providerId.length > 80 || !/^[a-zA-Z0-9_-]+$/.test(providerId)) {
         return jsonResponse({ data: [], error: 'Valid provider ID required' }, corsHeaders, 400);
     }
     if (typeof rawApiKey !== 'string' || rawApiKey.length > 4096) {
