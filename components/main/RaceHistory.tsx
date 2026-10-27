@@ -93,7 +93,7 @@ export default function RaceHistory({
         </div>
         {/* Clearing wipes every local receipt, so it asks first. */}
         <AlertDialog>
-          <AlertDialogTrigger className="race-tool-button">Clear history</AlertDialogTrigger>
+          <AlertDialogTrigger className="race-tool-button focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-cyan-400">Clear history</AlertDialogTrigger>
           <AlertDialogContent>
             <AlertDialogHeader>
               <AlertDialogTitle>Clear every local race record?</AlertDialogTitle>
@@ -146,6 +146,7 @@ export default function RaceHistory({
                   type="button"
                   onClick={() => handleExport(receipt)}
                   aria-label={`${exportLabel} receipt for race on ${formattedDate}`}
+                  className="focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-cyan-400"
                 >
                   {exportLabel}
                 </button>
@@ -158,6 +159,7 @@ export default function RaceHistory({
                     disabled={shareState[receipt.id] === 'sharing'}
                     onClick={() => void shareReceipt(receipt)}
                     aria-label={`${shareLabel} for race on ${formattedDate}`}
+                    className="focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-cyan-400"
                   >
                     {shareLabel}
                   </button>
@@ -166,6 +168,7 @@ export default function RaceHistory({
                   type="button"
                   onClick={() => onDelete(receipt.id)}
                   aria-label={`Delete local record for race on ${formattedDate}`}
+                  className="focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-cyan-400"
                 >
                   Delete local record
                 </button>
