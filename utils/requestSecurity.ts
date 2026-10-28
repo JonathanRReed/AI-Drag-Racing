@@ -72,6 +72,21 @@ export async function readJsonBodyWithLimit(
   }
 }
 
+export function isValidProviderId(id: unknown): id is string {
+  if (typeof id !== 'string' || !id || id.length > 80 || id.trim() !== id) return false;
+  // eslint-disable-next-line no-control-regex
+  if (/[\x00-\x1F\x7F-\x9F\s]/u.test(id)) return false;
+  try {
+    const decoded = decodeURIComponent(id);
+    if (decoded.length > 80 || decoded.trim() !== decoded) return false;
+    // eslint-disable-next-line no-control-regex
+    if (/[\x00-\x1F\x7F-\x9F\s]/u.test(decoded)) return false;
+  } catch {
+    return false;
+  }
+  return true;
+}
+
 export function sanitizeApiKey(key: string): string {
   if (typeof key !== 'string' || !key) return '';
   return key
