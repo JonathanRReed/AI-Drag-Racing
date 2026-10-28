@@ -18,7 +18,7 @@ The existing fail-closed audit and packaging controls remain enforced. Release
 still requires the complete application and Cloudflare packaging gates.
 
 The sections below preserve the historical exception and its original expired
-deadline: **2026-10-18 at 05:00 UTC**. No automatic extension.
+deadline: **2026-11-18 at 05:00 UTC**. No automatic extension.
 
 ## Historical October 22, 2026 maintenance status
 
