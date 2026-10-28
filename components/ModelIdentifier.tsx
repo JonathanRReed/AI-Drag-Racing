@@ -29,7 +29,13 @@ function IdentifierPages({ value, className }: { value: string; className?: stri
   );
 }
 
-export default function ModelIdentifier(props: { value: string; className?: string }) {
+function ModelIdentifier(props: { value: string; className?: string }) {
   // A new identifier starts at its first page, without an effect or stale render.
   return <IdentifierPages key={props.value} {...props} />;
 }
+
+// Memoize ModelIdentifier to skip re-rendering when props (value, className) are unchanged.
+// ModelIdentifier is rendered frequently across model lists, race lanes, chart summaries, and ticker elements.
+// During high-frequency streaming updates, parent components re-render rapidly, so memoizing ModelIdentifier
+// avoids unnecessary DOM reconciliations and identifier format calculations.
+export default React.memo(ModelIdentifier);
