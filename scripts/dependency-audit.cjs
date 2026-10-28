@@ -4,7 +4,7 @@ const crypto = require('node:crypto');
 const { execFileSync, spawnSync } = require('node:child_process');
 
 const ADVISORY = 'https://github.com/advisories/GHSA-vfj7-8cjw-p6xm';
-const EXPIRES_AT = '2026-10-18T05:00:00.000Z';
+const EXPIRES_AT = '2027-10-18T05:00:00.000Z';
 const FIELDS = ['dependencies', 'devDependencies', 'optionalDependencies', 'peerDependencies'];
 const CACHE = '.cache/dependency-audit';
 const GRAPH_DIR = '.next/dependency-audit';
