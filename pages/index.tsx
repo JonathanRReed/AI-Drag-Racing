@@ -272,6 +272,15 @@ export default function Home() {
     dispatch({ type: 'RESET_RACE' });
   }, []);
 
+  const handleDeleteReceipt = useCallback((id: string) => {
+    setHistory(deleteRaceReceipt(window.localStorage, id));
+  }, []);
+
+  const handleClearHistory = useCallback(() => {
+    clearRaceHistory(window.localStorage);
+    setHistory([]);
+  }, []);
+
   // Per-lane meta for the pace chart + standings. Keyed on a stable signature (ids +
   // providers + models) so streamed-text commits don't churn the array identity and force
   // the chart/strip to re-render mid-race.
@@ -1126,11 +1135,8 @@ export default function Home() {
               <ResultsDisplay results={state.results} hideFailed={hideFailed} force={force} compact={showStage} onDemo={handleRunDemo} />
               <RaceHistory
                 receipts={history}
-                onDelete={(id) => setHistory(deleteRaceReceipt(window.localStorage, id))}
-                onClear={() => {
-                  clearRaceHistory(window.localStorage);
-                  setHistory([]);
-                }}
+                onDelete={handleDeleteReceipt}
+                onClear={handleClearHistory}
               />
             </div>
           )}
