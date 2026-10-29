@@ -162,13 +162,28 @@ export default function RaceHistory({
                     {shareLabel}
                   </button>
                 )}
-                <button
-                  type="button"
-                  onClick={() => onDelete(receipt.id)}
-                  aria-label={`Delete local record for race on ${formattedDate}`}
-                >
-                  Delete local record
-                </button>
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <button
+                      type="button"
+                      aria-label={`Delete local record for race on ${formattedDate}`}
+                    >
+                      Delete local record
+                    </button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Delete local race record?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        This removes the race record from {formattedDate} stored in this browser. This action cannot be undone.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Keep record</AlertDialogCancel>
+                      <AlertDialogAction onClick={() => onDelete(receipt.id)}>Delete record</AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
               </div>
               {shareLinks[receipt.id] && (
                 <div className="race-share-result">
