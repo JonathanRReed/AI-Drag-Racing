@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { boundedNumber, corsHeadersForRequest, isAllowedRequestOrigin, readJsonBodyWithLimit, redactCredentials, sanitizeApiKey, sanitizeModelId, sanitizeModelIds, validateRaceRequestBody } from './requestSecurity';
+import { boundedNumber, corsHeadersForRequest, isAllowedRequestOrigin, isValidProviderId, readJsonBodyWithLimit, redactCredentials, sanitizeApiKey, sanitizeModelId, sanitizeModelIds, validateRaceRequestBody } from './requestSecurity';
 
 function request(url: string, origin?: string) {
   return new Request(url, { headers: origin ? { origin } : {} });
@@ -89,6 +89,30 @@ describe('model ID sanitization', () => {
   it.each([' model', 'model\r\n', 'model\x00id', 'model\u0085id'])('rejects invalid race IDs too (%j)', (model) => {
     expect(validateRaceRequestBody({ prompt: 'hello', model, apiKey: 'synthetic-key' }))
       .toEqual({ ok: false, error: 'Invalid model identifier' });
+  });
+});
+
+describe('isValidProviderId validation', () => {
+  it.each(['openai', 'anthropic', 'google', 'openrouter', 'custom_provider-1', 'a'.repeat(80)])('accepts valid provider IDs (%s)', (id) => {
+    expect(isValidProviderId(id)).toBe(true);
+  });
+
+  it.each([
+    null,
+    undefined,
+    123,
+    {},
+    '',
+    '   ',
+    ' openai ',
+    'openai\r\n',
+    'openai\x00',
+    'openai\u2028',
+    'provider%00',
+    'provider%0d%0a',
+    'a'.repeat(81),
+  ])('rejects invalid or unsafe provider IDs (%j)', (id) => {
+    expect(isValidProviderId(id)).toBe(false);
   });
 });
 
