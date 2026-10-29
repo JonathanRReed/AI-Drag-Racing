@@ -81,6 +81,8 @@ describe('RaceHistory component', () => {
     const deleteButton = view!.container.querySelector<HTMLButtonElement>('button[aria-label^="Delete local record for race on"]')!;
     expectActionName(deleteButton, 'Delete local record');
     click(deleteButton);
+    const confirmButton = document.querySelector<HTMLButtonElement>('[data-slot="alert-dialog-action"]')!;
+    click(confirmButton);
     expect(onDelete).toHaveBeenCalledExactlyOnceWith(mockReceipt.id);
   });
 
