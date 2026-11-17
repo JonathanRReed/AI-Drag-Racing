@@ -130,6 +130,7 @@ const ApiKeyModal: React.FC<ApiKeyModalProps> = ({
             value={apiKey}
             onChange={(e) => setApiKey(e.target.value)}
             onKeyDown={(e) => { if (e.key === 'Enter') handleSave(); }}
+            aria-describedby="api-key-modal-description"
             className="w-full px-3 py-2 pr-10 font-mono text-sm rounded-md bg-zinc-800 border border-white/20 text-white placeholder-gray-400 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-cyan-400"
             placeholder="sk-..."
           />
