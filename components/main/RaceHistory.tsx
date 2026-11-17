@@ -26,7 +26,7 @@ function downloadReceipt(receipt: RaceReceipt) {
   URL.revokeObjectURL(url);
 }
 
-export default function RaceHistory({
+function RaceHistory({
   receipts,
   onDelete,
   onClear,
@@ -190,3 +190,7 @@ export default function RaceHistory({
     </section>
   );
 }
+
+// Bolt optimization: Memoize RaceHistory to skip re-rendering during high-frequency
+// parent stream updates (~11x/sec via COMMIT_TEXT) when local history props are unchanged.
+export default React.memo(RaceHistory);
