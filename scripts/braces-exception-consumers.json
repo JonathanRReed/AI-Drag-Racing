@@ -1,5 +1,5 @@
 {
-  "expiresAt": "2027-10-18T05:00:00.000Z",
+  "expiresAt": "2026-10-18T05:00:00.000Z",
   "consumerGraph": {
     "nodes": [
       ["@cloudflare/next-on-pages","@cloudflare/next-on-pages@1.13.16"],
