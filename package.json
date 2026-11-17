@@ -80,8 +80,7 @@
     "ip-address": "10.7.4",
     "@hono/node-server": "^2.1.5",
     "qs": "^6.17.1",
-    "systeminformation": "^5.33.18",
-    "deepmerge": "npm:@fastify/deepmerge@^2.0.0"
+    "systeminformation": "^5.33.18"
   },
   "engines": {
     "node": ">=22.12.0"
