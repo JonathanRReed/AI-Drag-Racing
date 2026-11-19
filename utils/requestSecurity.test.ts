@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { boundedNumber, corsHeadersForRequest, isAllowedRequestOrigin, readJsonBodyWithLimit, redactCredentials, sanitizeApiKey, sanitizeModelId, sanitizeModelIds, validateRaceRequestBody } from './requestSecurity';
+import { boundedNumber, corsHeadersForRequest, isAllowedRequestOrigin, isValidProviderId, readJsonBodyWithLimit, redactCredentials, sanitizeApiKey, sanitizeModelId, sanitizeModelIds, validateRaceRequestBody } from './requestSecurity';
 
 function request(url: string, origin?: string) {
   return new Request(url, { headers: origin ? { origin } : {} });
@@ -54,6 +54,20 @@ describe('request security', () => {
     });
     expect(await readJsonBodyWithLimit(streamed, 16_384)).toMatchObject({ ok: false, status: 413 });
   });
+});
+
+describe('provider ID validation', () => {
+  it.each(['openai', 'anthropic', 'google-cloud', 'provider_123', 'a'.repeat(80)])(
+    'accepts valid provider IDs (%s)', (id) => {
+      expect(isValidProviderId(id)).toBe(true);
+    },
+  );
+
+  it.each([null, undefined, 123, {}, [], '', ' openai', 'openai ', 'provider\x00id', 'provider\r\nn', 'a'.repeat(81)])(
+    'rejects invalid provider IDs (%j)', (id) => {
+      expect(isValidProviderId(id)).toBe(false);
+    },
+  );
 });
 
 describe('model ID sanitization', () => {
