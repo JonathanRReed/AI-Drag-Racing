@@ -9,12 +9,9 @@ const nextConfig = {
   images: {
     unoptimized: true,
   },
-  eslint: {
-    ignoreDuringBuilds: true,
-  },
-  experimental: {
-    reactCompiler: true,
-  },
+  reactCompiler: true,
+  // Keep `next dev` from writing an AGENTS.md block into the repository.
+  agentRules: false,
   async headers() {
     return [
       {
@@ -23,6 +20,9 @@ const nextConfig = {
       },
     ];
   },
+  // Next 16 defaults to Turbopack, which has no compilation hooks. The dev and
+  // build scripts pass --webpack so the Pages compiler provenance observer runs;
+  // a Turbopack Pages build records no evidence and fails verification.
   webpack(config, { isServer, nextRuntime }) {
     if (!process.env.DEPENDENCY_AUDIT_RUN_ID) return config;
     const { createRuntimeModulePlugin } = require('./scripts/dependency-audit.cjs');

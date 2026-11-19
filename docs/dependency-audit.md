@@ -8,6 +8,36 @@ Both full and production audits run unfiltered and must pass. A clean registry
 audit is not a claim about code bundled inside other packages. See
 [native Pages verification and limits](native-pages.md).
 
+## November 18, 2026 toolchain update
+
+Every dependency was moved to its newest release that the rest of the toolchain
+supports (Next 16.4.6, React 19.3.1, ESLint 10, Vitest 5, TypeScript 6.0.3)
+and `bun.lock` was regenerated from scratch. TypeScript stays on 6.0 because
+typescript-eslint 8.73.0 declares `typescript >=4.8.4 <6.1.0`.
+
+All 18 previous `overrides` entries were removed. A fresh unfiltered audit of
+the regenerated lockfile is clean without them. Several targets (the express,
+hono and MCP SDK chain) are no longer in the graph since shadcn 4.23.0. The
+others now resolve at or above the former floors: ip-address resolves to
+10.7.6, above the patched 10.7.4 noted below. Next keeps its own exact postcss
+8.5.23, which includes every published postcss fix (the newest,
+GHSA-fxqj-rqcc-2cmp, was fixed in 8.5.23).
+
+One nested override was added: `@ts-morph/common` gets `minimatch ^11.0.1`.
+[GHSA-g3hv-75wg-m249](https://github.com/advisories/GHSA-g3hv-75wg-m249)
+(moderate, published 2026-10-30) affects minimatch `>=7.0.0 <11.0.1`. shadcn
+4.23.0 requires ts-morph `^26.0.0`, whose `@ts-morph/common` 0.27.0 requires
+minimatch `^10.0.1`, and no fixed 10.x exists. That module only calls the named
+`minimatch` export, which 11.x keeps. This advisory also affected the previous
+lockfile (minimatch 10.2.6 through `@ts-morph/common` and typescript-estree).
+Remove the override once shadcn accepts a ts-morph whose common package needs
+minimatch 11.
+
+braces 3.0.3 is still locked, now through `@next/eslint-plugin-next` 16.4.6 and
+shadcn's registry/fast-glob graph. The advisory remains withdrawn, so the audit
+reports nothing and the historical consumer snapshot below is not evaluated. It
+was deliberately left unchanged.
+
 ## October 23, 2026 advisory withdrawal
 
 GitHub withdrew [GHSA-vfj7-8cjw-p6xm](https://github.com/advisories/GHSA-vfj7-8cjw-p6xm)

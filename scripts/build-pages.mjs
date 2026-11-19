@@ -44,7 +44,7 @@ export async function buildPages(cwd = process.cwd()) {
   run('bun', ['scripts/dependency-audit.cjs', 'prepare']);
   const preparation = JSON.parse(fs.readFileSync(path.join(cwd, '.cache/dependency-audit/build-run.json'), 'utf8'));
   run('bun', ['scripts/verify-react-runtime.mjs']);
-  run(process.execPath, [path.join(cwd, 'node_modules/next/dist/bin/next'), 'build'], {
+  run(process.execPath, [path.join(cwd, 'node_modules/next/dist/bin/next'), 'build', '--webpack'], {
     ...process.env, PAGES_BUILD: '1', DEPENDENCY_AUDIT_RUN_ID: preparation.id,
   });
   const exported = path.join(cwd, 'out');

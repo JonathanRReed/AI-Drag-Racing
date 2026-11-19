@@ -62,7 +62,7 @@ export async function* streamCompletion(
   });
 
   if (!response.ok || !response.body) {
-    let errorText = '';
+    let errorText: string;
     try {
       errorText = await readErrorText(response, signal);
     } catch {

@@ -1,8 +1,9 @@
 # Native Cloudflare Pages build contract
 
-This is an application-owned build simplification, not a Next/React framework
-upgrade. Next remains 15.5.28, and the UI, original API handlers and share page
-remain in place. No Cloudflare settings, credentials, DNS or plan are changed.
+This began as an application-owned build simplification, not a Next/React
+framework upgrade. The later dependency update moved Next to 16.4.6 without
+changing this contract; the UI, original API handlers and share page remain in
+place. No Cloudflare settings, credentials, DNS or plan are changed.
 Live Git integration and Free-plan settings still require independent review.
 
 ## Build and supported deployment
@@ -14,7 +15,12 @@ output directory and public Supabase URL are retained. The production main-branc
 Supabase build guard still rejects absent or inappropriate anonymous credentials.
 
 The build runs both unfiltered audits, prepares source-bound evidence, verifies
-one React runtime and invokes Next's Pages Router static exporter. Next generates
+one React runtime and invokes Next's Pages Router static exporter with
+`next build --webpack`. Next 16 defaults to Turbopack, which exposes no
+compilation hooks, so the compiler provenance observer requires webpack. A
+Turbopack Pages build writes no compiler evidence and fails verification, and
+`next build` without a bundler flag refuses to start because a `webpack` hook
+is configured. Next generates
 HTML, CSS and browser JavaScript, including the existing `/share/[id]` shell.
 It does not export API handlers. Official esbuild 0.28.2 bundles the three existing
 Fetch handlers separately into `_worker.js`, with no Next/server/Node runtime.
@@ -77,10 +83,12 @@ No standalone browser executable is part of this verification.
 
 ## Vendor-bundled dependency limit
 
-Next 15.5.28 retains its vendor-compiled Zod. The official release source pins
-Zod 3.25.76 and `ncc_zod` bundles it into `next/dist/compiled/zod/index.cjs`.
+Next 16.4.6 still retains its vendor-compiled Zod. The official release source
+pins Zod 3.25.76 and `ncc_zod` bundles it into `next/dist/compiled/zod/index.cjs`.
 The installed file SHA-256 is
-`9b5ddc6cc0aa15c059069c452e4311d4732565d4c28173868c8d661723e52ab4`.
+`af7deaaff50a14c7d8b52f518e10dac800a350bf8eef43f8454006fa7a44e4da`.
+(Under Next 15.5.28 the same Zod version produced SHA-256
+`9b5ddc6cc0aa15c059069c452e4311d4732565d4c28173868c8d661723e52ab4`.)
 That version falls below the fixed 4.6.6 range in GHSA-mrhx-c7xc-m3w5 and is not
 visible to a dependency-graph-only audit. No override or source patch is applied.
 
@@ -95,8 +103,8 @@ A supplementary exported-JavaScript scan is not treated as absence proof alone.
 Removal of obsolete adapter packages is therefore not a claim that every
 vendor-bundled vulnerability in the development installation has been remediated.
 
-Source: [Next 15.5.28 package manifest](https://github.com/vercel/next.js/blob/v15.5.28/packages/next/package.json)
-and [vendor bundling task](https://github.com/vercel/next.js/blob/v15.5.28/packages/next/taskfile.js).
+Source: [Next 16.4.6 package manifest](https://github.com/vercel/next.js/blob/v16.4.6/packages/next/package.json)
+and [vendor bundling task](https://github.com/vercel/next.js/blob/v16.4.6/packages/next/taskfile.js).
 
 ## Separate stream-lifetime follow-up
 

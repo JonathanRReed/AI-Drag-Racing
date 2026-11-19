@@ -6,7 +6,7 @@ Send the same prompt to several language models and compare time to first token,
 
 ## Run locally
 
-Requires Node.js 22.12.0 or newer and Bun 1.4.4 and your own provider API keys. See [package.json](package.json) for dependencies and versions.
+Requires Node.js 24 LTS (`.node-version` pins 24.22.3; 24.11.0+ and Node 26 also work) and Bun 1.4.4 and your own provider API keys. See [package.json](package.json) for dependencies and versions.
 
 ```bash
 bun install --frozen-lockfile

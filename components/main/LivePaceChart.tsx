@@ -171,7 +171,7 @@ function updateLaneSVG(
       if (flag.getAttribute('y') !== fyStr) flag.setAttribute('y', fyStr);
       if (flag.getAttribute('opacity') !== flagOpacity) flag.setAttribute('opacity', flagOpacity);
 
-      let textContent = '';
+      let textContent: string;
       if (b.errored) {
         textContent = 'error';
       } else if (b.done) {

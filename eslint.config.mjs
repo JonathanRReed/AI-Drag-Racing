@@ -1,8 +1,6 @@
-// ESLint Flat Config for Next.js 15 + React 19 + TypeScript
-// Uses eslint v9 flat config format
+// ESLint flat config for Next.js 16 + React 19 + TypeScript (ESLint 10)
 import js from '@eslint/js';
 import tseslint from 'typescript-eslint';
-import react from 'eslint-plugin-react';
 import reactHooks from 'eslint-plugin-react-hooks';
 import nextPlugin from '@next/eslint-plugin-next';
 import unusedImports from 'eslint-plugin-unused-imports';
@@ -41,18 +39,12 @@ export default [
     },
     plugins: {
       '@typescript-eslint': tseslint.plugin,
-      react,
       'react-hooks': reactHooks,
       '@next/next': nextPlugin,
       'unused-imports': unusedImports,
     },
-    settings: {
-      react: { version: 'detect' },
-    },
     rules: {
-      // React & Hooks
-      'react/react-in-jsx-scope': 'off',
-      'react/jsx-uses-react': 'off',
+      // React Hooks
       'react-hooks/rules-of-hooks': 'error',
       'react-hooks/exhaustive-deps': 'warn',
 
