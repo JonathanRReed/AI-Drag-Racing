@@ -60,6 +60,23 @@ describe('models proxy error handling', () => {
   });
 
   it.each([
+    'openai\r\nLogInjection',
+    'provider<script>',
+    'provider id with spaces',
+    'provider/with/slashes',
+    'provider\x00null',
+  ])('rejects invalid provider IDs (%j) with 400 status', async (invalidProviderId) => {
+    const req = new Request(ORIGIN + '/api/models', {
+      method: 'POST',
+      headers: { origin: ORIGIN },
+      body: JSON.stringify({ providerId: invalidProviderId, apiKey: 'synthetic-key' }),
+    });
+    const response = await handler(req);
+    expect(response.status).toBe(400);
+    expect(await response.json()).toEqual({ data: [], error: 'Valid provider ID required' });
+  });
+
+  it.each([
     [new Error(PRIVATE_DETAIL), 'Failed to fetch models'],
     [new Error('401 ' + PRIVATE_DETAIL), 'Invalid API Key'],
     [new Error('403 ' + PRIVATE_DETAIL), 'Invalid API Key'],
