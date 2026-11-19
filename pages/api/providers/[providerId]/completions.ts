@@ -6,6 +6,7 @@ import { getProviderService } from '../../../../utils/providerService';
 import {
   boundedNumber,
   corsHeadersForRequest,
+  isValidProviderId,
   readJsonBodyWithLimit,
   redactCredentials,
   validateRaceRequestBody,
@@ -48,7 +49,7 @@ export default async function handler(req: Request): Promise<Response> {
   const match = url.pathname.match(/\/api\/providers\/([^/]+)\/completions/);
   const providerId = match?.[1];
 
-  if (!providerId) {
+  if (!isValidProviderId(providerId)) {
     return new Response(JSON.stringify({ error: 'Invalid provider ID' }), {
       status: 400,
       headers: { ...corsHeaders, 'Content-Type': 'application/json', 'X-Content-Type-Options': 'nosniff' },
