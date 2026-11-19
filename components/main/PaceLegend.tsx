@@ -5,7 +5,7 @@ import { formatModelIdentifier, modelIdentifierText } from '../../utils/modelIde
 
 export default function PaceLegend({ lanes }: { lanes: PaceLane[] }) {
   return (
-    <div className="mt-2 flex max-h-[68px] flex-wrap gap-x-4 gap-y-1 overflow-y-auto scrollbar-none">
+    <div className="pace-legend scrollbar-none">
       {lanes.map(lane => (
         <span key={lane.id} className="inline-flex items-center gap-1.5 text-xs text-[var(--text-muted)]">
           <span className="h-2 w-2 shrink-0 rounded-full" style={{ background: lane.color }} />

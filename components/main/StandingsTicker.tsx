@@ -120,7 +120,7 @@ const StandingsTicker: React.FC<StandingsTickerProps> = ({
 
   return (
     <div aria-live="off">
-      <ol className="space-y-1.5" reversed={false}>
+      <ol className="standings" reversed={false}>
         {rows.map((r, idx) => {
           const pos = idx + 1;
           const gap = leaderChars - r.chars;
@@ -131,33 +131,27 @@ const StandingsTicker: React.FC<StandingsTickerProps> = ({
                 if (el) rowRefs.current.set(r.id, el);
                 else rowRefs.current.delete(r.id);
               }}
-              className="flex items-center gap-3 rounded-lg border border-white/5 bg-black/30 px-3 py-2"
-              style={{ willChange: reducedMotion ? 'auto' : 'transform' }}
+              className="standings-row"
+              data-errored={r.errored ? 'true' : 'false'}
+              data-first={pos === 1 && !r.errored ? 'true' : 'false'}
+              style={{ willChange: reducedMotion ? 'auto' : 'transform', '--lane': r.color } as React.CSSProperties}
             >
-              <span
-                className="font-speed min-w-5 shrink-0 text-center text-base"
-                style={{ color: r.errored ? 'var(--text-subtle)' : r.color }}
-              >
+              <span className="standings-pos">
                 {r.errored ? <abbr title="Did not finish">DNF</abbr> : pos}
               </span>
-              <span
-                className="h-2.5 w-2.5 shrink-0 rounded-full"
-                style={{ background: r.color, boxShadow: r.errored ? 'none' : `0 0 8px ${r.color}88` }}
-                aria-hidden
-              />
-              <span className="flex min-w-0 flex-1 flex-col leading-tight">
-                <span className="flex items-start gap-1.5 break-words text-sm text-[var(--text)]">
+              <span className="standings-who">
+                <span className="standings-name">
                   {r.label}
                   {r.done && !r.errored && (
-                    <svg viewBox="0 0 24 24" className="h-3 w-3 shrink-0 text-[var(--text-muted)]" fill="currentColor" role="img" aria-label="finished">
+                    <svg viewBox="0 0 24 24" fill="currentColor" role="img" aria-label="finished">
                       <path d="M5 3v18h2v-7h12V3H5zm2 2h8v3H7V5zm0 5h10v2H7v-2z" />
                     </svg>
                   )}
                 </span>
-                <ModelIdentifier className="break-all text-xs text-[var(--text-muted)]" value={r.sublabel} />
+                <ModelIdentifier className="standings-model" value={r.sublabel} />
               </span>
-              <span className="shrink-0 text-right">
-                <span className="font-speed block text-base text-[var(--text)]">
+              <span className="standings-value">
+                <span>
                   {r.errored
                     ? 'DNF'
                     : rankByFinish && r.done
@@ -166,7 +160,7 @@ const StandingsTicker: React.FC<StandingsTickerProps> = ({
                       ? `${compact(r.finalOutputTokens)} tok`
                       : `${compact(r.chars)} ch`}
                 </span>
-                <span className="block font-mono text-xs tabular-nums text-[var(--text-muted)]">
+                <span>
                   {r.errored
                     ? ''
                     : rankByFinish && r.done
@@ -175,14 +169,16 @@ const StandingsTicker: React.FC<StandingsTickerProps> = ({
                         : `+${((r.elapsedMs - leaderElapsed) / 1000).toFixed(2)} s`
                       : pos === 1
                         ? 'most output'
-                        : `-${compact(gap)} ch`}
+                        : gap > 0
+                          ? `-${compact(gap)} ch`
+                          : 'level'}
                 </span>
               </span>
             </li>
           );
         })}
       </ol>
-      {mode === 'time_limit' && <p className="text-xs text-[var(--text-muted)]">Output length: UTF-16 code units (JavaScript text.length), not tokens or visible characters. Ties keep lane order.</p>}
+      {mode === 'time_limit' && <p className="standings-note">Output length: UTF-16 code units (JavaScript text.length), not tokens or visible characters. Ties keep lane order.</p>}
     </div>
   );
 };

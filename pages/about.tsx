@@ -44,33 +44,30 @@ export default function About() {
         />
       </Head>
       <SiteHeader />
-      <main id="main-content" className="eco-container py-12 text-[var(--text)]">
-        <article className="mx-auto max-w-3xl border border-white/10 bg-zinc-950 p-6 md:p-8">
-          <a href="/" className="text-xs font-medium text-red-400 hover:text-red-300">
-            AI Drag Racing
-          </a>
-          <h1 className="mt-5 text-4xl font-semibold tracking-tight text-white md:text-5xl">
+      <main id="main-content" className="eco-container doc">
+        <article className="doc-article">
+          <h1>
             A live timing lane for AI models.
           </h1>
-          <p className="mt-5 text-base leading-8 text-zinc-300">
+          <p className="doc-lead">
             AI Drag Racing lets you run model responses side by side and compare time to first token, total response
             time, throughput, and response behavior in one browser view. It is built by Jonathan R. Reed for quick
             hands-on checks when model speed matters as much as answer quality.
           </p>
-          <p className="mt-4 text-base leading-8 text-zinc-300">
+          <p>
             Nothing here is a global ranking. Your prompt, provider keys, network, selected model, and provider load
             all move the result, so read each run as one live observation.
           </p>
-          <p className="mt-4 text-base leading-8 text-zinc-300">
+          <p>
             Use it when you need to choose between models for a concrete workflow: support drafts, coding help,
             summarization, structured extraction, writing, or agent steps where slow starts are noticeable. Running the
             same prompt across several providers makes timing differences easier to see before you commit to deeper evals.
           </p>
-          <p className="mt-4 text-base leading-8 text-zinc-300">
+          <p>
             Speed metrics sit next to the response itself, because a fast model is useless if the answer comes back
             incomplete, terse, or badly formatted. Compare the time, then read what each model actually wrote.
           </p>
-          <p className="mt-6 text-sm text-zinc-500">
+          <p className="doc-meta">
             Last updated <time dateTime="2026-06-19">June 19, 2026</time>.
           </p>
         </article>

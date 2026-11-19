@@ -1,23 +1,29 @@
 {
-  "name": "AI Drag Racing - Model Performance Showdown",
+  "name": "AI Drag Racing",
   "short_name": "AI Drag Racing",
-  "description": "Race AI models head-to-head. Compare TTFT, throughput, and total time across providers.",
+  "description": "See how fast a model responds from here. Time to first token, total time, and tokens per second from your own browser and route.",
   "start_url": "/",
   "icons": [
     {
       "src": "/Favicon/icon-192.png",
       "sizes": "192x192",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
     },
     {
       "src": "/Favicon/icon-512.png",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
+    },
+    {
+      "src": "/Favicon/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
     }
   ],
-  "theme_color": "#07090D",
-  "background_color": "#07090D",
+  "theme_color": "#090b0a",
+  "background_color": "#090b0a",
   "display": "standalone"
 }

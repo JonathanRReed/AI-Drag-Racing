@@ -1,7 +1,6 @@
 import ModelIdentifier from '../ModelIdentifier';
 // components/main/RaceLane.tsx
 import React, { useMemo, useEffect, useRef, useState } from 'react';
-import GlassCard from '../layout/GlassCard';
 import { CompletionMetrics } from '../../utils/providerService';
 import { getProviderById } from '../../utils/providers';
 import { getOutputThroughput } from '../../utils/outputThroughput';
@@ -27,48 +26,20 @@ function formatMs(ms?: number | null) {
   return typeof ms === 'number' && !Number.isNaN(ms) ? `${ms.toFixed(0)} ms` : 'N/A';
 }
 
-const STATUS_CONFIG: Record<LaneStatus, { bg: string; border: string; text: string; dot: string; label: string }> = {
-  staging: {
-    bg: 'bg-amber-500/20',
-    border: 'border-amber-500/40',
-    text: 'text-amber-400',
-    dot: 'bg-amber-400',
-    label: 'Staging'
-  },
-  green: {
-    bg: 'bg-emerald-500/20',
-    border: 'border-emerald-500/40',
-    text: 'text-emerald-400',
-    dot: 'bg-emerald-400 animate-pulse',
-    label: 'Racing'
-  },
-  finish: {
-    bg: 'bg-white/10',
-    border: 'border-white/20',
-    text: 'text-zinc-200',
-    dot: 'bg-zinc-200',
-    label: 'Finished'
-  },
-  error: {
-    bg: 'bg-red-500/20',
-    border: 'border-red-500/40',
-    text: 'text-red-400',
-    dot: 'bg-red-400',
-    label: 'Error'
-  },
+const STATUS_LABEL: Record<LaneStatus, string> = {
+  staging: 'Staging',
+  green: 'Racing',
+  finish: 'Finished',
+  error: 'Error',
 };
 
-// Status badge component with better visuals
-const StatusBadge: React.FC<{ status: LaneStatus }> = ({ status }) => {
-  const c = STATUS_CONFIG[status];
-
-  return (
-    <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-medium ${c.bg} ${c.border} ${c.text} border`}>
-      <span className={`w-1.5 h-1.5 rounded-full ${c.dot}`} />
-      {c.label}
-    </span>
-  );
-};
+// Status is carried by the word; the dot only repeats it.
+const StatusBadge: React.FC<{ status: LaneStatus }> = ({ status }) => (
+  <span className="lane-status" data-status={status}>
+    <i aria-hidden="true" />
+    {STATUS_LABEL[status]}
+  </span>
+);
 
 type CopyFeedback =
   | { kind: 'idle' }
@@ -208,213 +179,136 @@ const RaceLane: React.FC<RaceLaneProps> = ({
   }, [force?.version]);
 
   return (
-    <div className="relative group">
-      {/* Racing lane track card */}
-      <GlassCard className={`relative overflow-hidden transition-all duration-300 ${expanded ? "p-4" : "p-3"} bg-zinc-950/80`}>
-        {/* Track markings: Start Line & Finish Line */}
-        <div className="absolute top-0 bottom-0 left-12 w-1 border-l-2 border-dashed border-white/20 pointer-events-none" />
-        <div className="absolute top-0 bottom-0 right-4 w-4 bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI4IiBoZWlnaHQ9IjgiPgo8cmVjdCB3aWR0aD0iNCIgaGVpZ2h0PSI0IiBmaWxsPSIjZmZmIi8+CjxyZWN0IHg9IjQiIHk9IjQiIHdpZHRoPSI0IiBoZWlnaHQ9IjQiIGZpbGw9IiNmZmYiLz4KPC9zdmc+')] opacity-20 pointer-events-none" />
-
-        {/* Lane color marker */}
-        <div
-          className="absolute left-3 top-3 h-2 w-2 rounded-full"
-          style={{ backgroundColor: laneColor }}
-        />
-
-        <div className="flex items-start gap-4 pt-1 relative z-10">
-          {/* Mini Christmas tree / Stage lights */}
-          <div className="flex flex-col items-center gap-1.5 pt-1 w-6 shrink-0 bg-zinc-900/50 p-1.5 rounded-full border border-white/5 shadow-inner">
-            <div
-              className={`w-2.5 h-2.5 rounded-full transition-all duration-200 border border-zinc-800 ${status === 'staging' ? 'bg-amber-400 shadow-[0_0_8px_rgba(251,191,36,0.8)]' : 'bg-black/50'
-                }`}
-            />
-            <div
-              className={`w-2.5 h-2.5 rounded-full transition-all duration-200 border border-zinc-800 ${status === 'green' ? 'bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.8)] animate-pulse' : 'bg-black/50'
-                }`}
-            />
-            <div
-              className={`w-2.5 h-2.5 rounded-full transition-all duration-200 border border-zinc-800 ${status === 'finish' ? 'bg-zinc-200 shadow-[0_0_8px_rgba(255,255,255,0.7)]' : 'bg-black/50'
-                }`}
-            />
-          </div>
-
-          {/* Main lane content */}
-          <div className="flex-1 min-w-0 flex flex-col">
-            {/* Header row */}
-            <div className="flex items-start justify-between gap-2 mb-2 bg-black/40 p-2 rounded-lg border border-white/5 backdrop-blur-xs">
-              <div className="flex items-center gap-3 min-w-0 flex-1">
-                <div className="relative">
-                  {/* Car / Provider Indicator */}
-                  {logoUrl ? (
-                    <img
-                      src={logoUrl}
-                      alt={`${displayName} logo`}
-                      width={32}
-                      height={32}
-                      className="w-8 h-8 rounded-md bg-white p-0.5 relative z-10"
-                      style={{ boxShadow: `0 0 0 2px ${laneColor}44, 0 0 12px ${laneColor}44` }}
-                      loading="lazy"
-                    />
-                  ) : (
-                    <span
-                      className="w-8 h-8 inline-flex items-center justify-center rounded-md text-xs font-bold text-white relative z-10"
-                      style={{ background: `linear-gradient(135deg, ${laneColor}, ${laneColor}88)`, boxShadow: `0 0 12px ${laneColor}55` }}
-                      aria-hidden
-                    >
-                      {displayName.slice(0, 2).toUpperCase()}
-                    </span>
-                  )}
-                  {/* Progress Indicator Effects */}
-                  {status === 'green' && (
-                    <div className="absolute top-1/2 -translate-y-1/2 -right-8 w-12 h-1 bg-gradient-to-r from-transparent to-white/50 animate-pulse"
-                      style={{ filter: `drop-shadow(0 0 4px ${laneColor})` }} />
-                  )}
-                </div>
-                <div className="min-w-0">
-                  <h3 className="font-bold text-base text-white truncate drop-shadow-md" title={displayName}>
-                    {displayName}
-                  </h3>
-                  <ModelIdentifier className="text-xs text-[var(--text-muted)] truncate block max-w-[180px] font-medium" value={modelName} />
-                </div>
-              </div>
-              <div className="flex flex-col items-end gap-1.5 shrink-0">
-                <StatusBadge status={status} />
-                <div className="flex items-center gap-1">
-                  {responseText && (
-                    <button
-                      type="button"
-                      onClick={() => void copy()}
-                      className="inline-flex min-h-[var(--control-h)] min-w-[var(--control-h)] items-center justify-center rounded-sm bg-white/5 hover:bg-white/10 text-[var(--text-muted)] hover:text-white transition-colors focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-cyan-400 p-1"
-                      aria-label={
-                        copyFeedback.kind === 'copied'
-                          ? `Copied ${displayName} response`
-                          : copyFeedback.kind === 'failed'
-                            ? `Copy failed. Retry copying ${displayName} response`
-                            : `Copy ${displayName} response`
-                      }
-                      title={copyFeedback.kind === 'copied' ? 'Copied ✓' : copyFeedback.kind === 'failed' ? 'Copy failed' : 'Copy response'}
-                    >
-                      {copyFeedback.kind === 'failed' ? (
-                        <svg viewBox="0 0 24 24" className="w-3.5 h-3.5 text-rose-400" fill="none" stroke="currentColor" strokeWidth="2.5" aria-hidden="true">
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v5m0 3h.01M10.3 3.9L2.4 18a2 2 0 0 0 1.7 3h15.8a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z" />
-                        </svg>
-                      ) : copyFeedback.kind === 'copied' ? (
-                        <svg viewBox="0 0 24 24" className="w-3.5 h-3.5 text-emerald-400" fill="none" stroke="currentColor" strokeWidth="2.5" aria-hidden="true">
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                        </svg>
-                      ) : (
-                        <svg viewBox="0 0 24 24" className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
-                          <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
-                          <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
-                        </svg>
-                      )}
-                    </button>
-                  )}
-                  <button
-                    type="button"
-                    onClick={() => { setUserControlled(true); setExpanded((v) => !v); }}
-                    className="inline-flex min-h-[var(--control-h)] min-w-[var(--control-h)] items-center justify-center rounded-sm bg-white/5 hover:bg-white/10 text-[var(--text-muted)] hover:text-white transition-colors focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-cyan-400"
-                    aria-expanded={expanded}
-                    aria-label={`${expanded ? 'Collapse' : 'Expand'} ${displayName} response`}
-                    title={expanded ? 'Collapse' : 'Expand'}
-                  >
-                    <svg
-                      viewBox="0 0 24 24"
-                      className={`w-3.5 h-3.5 transition-transform duration-200 ${expanded ? 'rotate-180' : ''}`}
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2.5"
-                    >
-                      <path d="M6 9l6 6 6-6" strokeLinecap="round" strokeLinejoin="round" />
-                    </svg>
-                  </button>
-                </div>
-              </div>
-            </div>
-            <p role="status" aria-live="polite" className={copyFeedback.kind === 'failed' ? 'mb-2 text-right text-xs text-rose-300' : 'sr-only'}>
-              {copyMessage}
-            </p>
-
-            {/* Response streaming area */}
-            <div
-              ref={scrollRef}
-              className={`overflow-y-auto overflow-x-hidden pr-1 transition-all duration-300 ${expanded ? 'max-h-64 opacity-100' : 'max-h-0 opacity-0'
-                }`}
-            >
-              {isLoading && !responseText && !error && (
-                <div className="space-y-3 py-2">
-                  <div className="flex items-center gap-2 text-[var(--text-muted)] text-sm">
-                    <div className="w-4 h-4 border-2 border-white/20 border-t-[var(--accent)] rounded-full animate-spin" />
-                    <span className="animate-pulse">Waiting for first token...</span>
-                  </div>
-                  {/* Shimmer skeleton lines */}
-                  <div className="space-y-2">
-                    <div className="skeleton h-3 w-full rounded-sm" />
-                    <div className="skeleton h-3 w-4/5 rounded-sm" />
-                    <div className="skeleton h-3 w-3/5 rounded-sm" />
-                  </div>
-                </div>
-              )}
-              {error && (
-                <div className="flex items-start gap-2 text-red-400 text-sm py-2 px-3 rounded-lg bg-red-500/10 border border-red-500/20">
-                  <svg viewBox="0 0 24 24" className="w-4 h-4 mt-0.5 shrink-0" fill="none" stroke="currentColor" strokeWidth="2">
-                    <circle cx="12" cy="12" r="10" />
-                    <path d="M12 8v4M12 16h.01" strokeLinecap="round" />
-                  </svg>
-                  <span>{error}</span>
-                </div>
-              )}
-              {responseText && (
-                <div className="text-sm text-white/85 whitespace-pre-wrap break-words leading-relaxed py-1">
-                  {responseText}
-                </div>
-              )}
-            </div>
-
-            {/* Metrics bar (Telemetry) */}
-            <div className={`grid grid-cols-4 gap-2 text-xs pt-2 mt-2 border-t border-zinc-800 bg-black/40 rounded-b-lg px-2 pb-2 ${expanded ? '' : 'border-t-0 pt-0 hidden'}`}>
-              <div className="flex flex-col">
-                <span className="text-zinc-500 text-xs font-bold">TTFT</span>
-                <span className="text-zinc-300 font-mono font-bold tracking-tight">{formatMs(ttft)}</span>
-              </div>
-              <div className="flex flex-col">
-                <span className="text-zinc-500 text-xs font-bold">Total</span>
-                <span className="text-zinc-300 font-mono font-bold tracking-tight">{formatMs(total)}</span>
-              </div>
-              <div className="flex flex-col">
-                <span className="text-zinc-500 text-xs font-bold">TPS</span>
-                <span className="text-emerald-400 font-mono font-bold tracking-tight">{throughput.value === null ? 'N/A' : throughput.value.toFixed(2)}</span>
-              </div>
-              <div className="flex flex-col">
-                <span className="text-zinc-500 text-xs font-bold">{outputCount.label}</span>
-                <span className="text-zinc-300 font-mono font-bold tracking-tight">
-                  {outputCount.text}
-                </span>
-              </div>
-              <p className="col-span-4 text-zinc-400 leading-relaxed">
-                TTFT: time to first token. TPS: output tokens per second. {throughput.detail} {outputCount.detail} {timingSourceDetail(metrics?.timingSource)}
-              </p>
-            </div>
-          </div>
+    <article className="lane-card" data-status={status} data-expanded={expanded ? 'true' : 'false'} style={{ '--lane': laneColor } as React.CSSProperties}>
+      <header className="lane-card-head">
+        {logoUrl ? (
+          <img
+            src={logoUrl}
+            alt={`${displayName} logo`}
+            width={32}
+            height={32}
+            className="lane-card-logo"
+            loading="lazy"
+          />
+        ) : (
+          <span className="lane-card-logo lane-card-logo-fallback" aria-hidden>
+            {displayName.slice(0, 2).toUpperCase()}
+          </span>
+        )}
+        <div className="lane-card-who">
+          <h3 title={displayName}>{displayName}</h3>
+          <ModelIdentifier className="lane-card-model" value={modelName} />
         </div>
+        <StatusBadge status={status} />
+        <div className="lane-card-tools">
+          {responseText && (
+            <button
+              type="button"
+              onClick={() => void copy()}
+              className="lane-card-tool"
+              aria-label={
+                copyFeedback.kind === 'copied'
+                  ? `Copied ${displayName} response`
+                  : copyFeedback.kind === 'failed'
+                    ? `Copy failed. Retry copying ${displayName} response`
+                    : `Copy ${displayName} response`
+              }
+              title={copyFeedback.kind === 'copied' ? 'Copied' : copyFeedback.kind === 'failed' ? 'Copy failed' : 'Copy response'}
+              data-feedback={copyFeedback.kind}
+            >
+              {copyFeedback.kind === 'failed' ? (
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" aria-hidden="true">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v5m0 3h.01M10.3 3.9L2.4 18a2 2 0 0 0 1.7 3h15.8a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z" />
+                </svg>
+              ) : copyFeedback.kind === 'copied' ? (
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" aria-hidden="true">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                </svg>
+              ) : (
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+                  <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+                  <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+                </svg>
+              )}
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={() => { setUserControlled(true); setExpanded((v) => !v); }}
+            className="lane-card-tool"
+            aria-expanded={expanded}
+            aria-label={`${expanded ? 'Collapse' : 'Expand'} ${displayName} response`}
+            title={expanded ? 'Collapse' : 'Expand'}
+          >
+            <svg viewBox="0 0 24 24" className="lane-card-chevron" fill="none" stroke="currentColor" strokeWidth="2.5" aria-hidden="true">
+              <path d="M6 9l6 6 6-6" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </button>
+        </div>
+      </header>
+      <p role="status" aria-live="polite" className={copyFeedback.kind === 'failed' ? 'lane-card-copy-error' : 'sr-only'}>
+        {copyMessage}
+      </p>
 
-        {/* Active racing state: a border marks the live lane, no glow. */}
-        {status === 'green' && !metrics && (
-          <div
-            className="pointer-events-none absolute inset-0 rounded-[18px]"
-            style={{ border: '1px solid var(--signal)' }}
-          />
+      {/* Response streaming area */}
+      <div
+        ref={scrollRef}
+        className={`lane-card-response overflow-y-auto ${expanded ? 'max-h-64' : 'max-h-0'}`}
+        // A collapsed response is out of reach for everyone, not only out of sight.
+        // An open one scrolls, so the keyboard can reach it.
+        inert={!expanded}
+        tabIndex={expanded ? 0 : undefined}
+        role="region"
+        aria-label={`${displayName} response text`}
+      >
+        {isLoading && !responseText && !error && (
+          <div className="lane-card-waiting">
+            <div className="lane-card-waiting-label">
+              <span className="lane-card-spinner animate-spin" aria-hidden="true" />
+              <span>Waiting for first token...</span>
+            </div>
+            <div className="skeleton h-3 w-full" />
+            <div className="skeleton h-3 w-4/5" />
+            <div className="skeleton h-3 w-3/5" />
+          </div>
         )}
+        {error && (
+          <div className="lane-card-error">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+              <circle cx="12" cy="12" r="10" />
+              <path d="M12 8v4M12 16h.01" strokeLinecap="round" />
+            </svg>
+            <span>{error}</span>
+          </div>
+        )}
+        {responseText && <div className="lane-card-text">{responseText}</div>}
+      </div>
 
-        {/* Finished state */}
-        {status === 'finish' && (
-          <div
-            className="pointer-events-none absolute inset-0 rounded-[18px]"
-            style={{ border: '1px solid var(--signal)' }}
-          />
-        )}
-      </GlassCard>
-    </div>
+      {/* Lane measurements */}
+      <div className={`lane-card-metrics ${expanded ? '' : 'hidden'}`}>
+        <div>
+          <span className="lane-card-metric-label">TTFT</span>
+          <span className="lane-card-metric-value">{formatMs(ttft)}</span>
+        </div>
+        <div>
+          <span className="lane-card-metric-label">Total</span>
+          <span className="lane-card-metric-value">{formatMs(total)}</span>
+        </div>
+        <div>
+          <span className="lane-card-metric-label">TPS</span>
+          <span className="lane-card-metric-value">{throughput.value === null ? 'N/A' : throughput.value.toFixed(2)}</span>
+        </div>
+        <div>
+          <span className="lane-card-metric-label">{outputCount.label}</span>
+          <span className="lane-card-metric-value">
+            {outputCount.text}
+          </span>
+        </div>
+        <p>
+          TTFT: time to first token. TPS: output tokens per second. {throughput.detail} {outputCount.detail} {timingSourceDetail(metrics?.timingSource)}
+        </p>
+      </div>
+    </article>
   );
 };
 

@@ -4,17 +4,10 @@ import type { RaceReceipt } from '../../utils/raceReceipts';
 import { serializeSanitizedReceipt } from '../../utils/raceReceipts';
 import { selectRaceLeader } from '../../utils/raceRanking';
 import { createRaceShare, isRaceShareConfigured } from '../../utils/raceShares';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from '@/components/ui/alert-dialog';
+import dynamic from 'next/dynamic';
+
+// Loaded on demand: see ClearHistoryDialog.
+const ClearHistoryDialog = dynamic(() => import('./ClearHistoryDialog'), { ssr: false });
 
 function downloadReceipt(receipt: RaceReceipt) {
   const blob = new Blob([serializeSanitizedReceipt(receipt)], { type: 'application/json' });
@@ -39,6 +32,8 @@ export default function RaceHistory({
   const [shareLinks, setShareLinks] = useState<Record<string, { url: string; expiresAt: string }>>({});
   const [exportedState, setExportedState] = useState<Record<string, boolean>>({});
   const exportTimers = useRef(new Map<string, ReturnType<typeof setTimeout>>());
+  const [confirmingClear, setConfirmingClear] = useState(false);
+  const clearButtonRef = useRef<HTMLButtonElement | null>(null);
 
   useEffect(() => {
     const timers = exportTimers.current;
@@ -92,22 +87,23 @@ export default function RaceHistory({
           <p>Local records expire after 30 days. Sharing uploads only timing metrics and settings.</p>
         </div>
         {/* Clearing wipes every local receipt, so it asks first. */}
-        <AlertDialog>
-          <AlertDialogTrigger className="race-tool-button">Clear history</AlertDialogTrigger>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>Clear every local race record?</AlertDialogTitle>
-              <AlertDialogDescription>
-                This removes all {receipts.length} {receipts.length === 1 ? 'record' : 'records'} stored in this
-                browser. Records are only here, so they cannot be recovered. Export anything you want to keep first.
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel>Keep them</AlertDialogCancel>
-              <AlertDialogAction onClick={onClear}>Clear history</AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
+        <button
+          ref={clearButtonRef}
+          type="button"
+          className="race-tool-button"
+          aria-haspopup="dialog"
+          onClick={() => setConfirmingClear(true)}
+        >
+          Clear history
+        </button>
+        {confirmingClear && (
+          <ClearHistoryDialog
+            count={receipts.length}
+            onConfirm={onClear}
+            onClose={() => setConfirmingClear(false)}
+            returnFocusTo={clearButtonRef}
+          />
+        )}
       </div>
       <div className="race-history-list">
         {receipts.map((receipt) => {

@@ -48,7 +48,7 @@ export function SiteHeader({ onOpenRacers }: { onOpenRacers?: () => void }) {
   return (
     <>
       <a href="#main-content" className="eco-skip">Skip to content</a>
-      <header className="eco-header site-header">
+      <header className={onOpenRacers ? 'eco-header site-header site-header-wide' : 'eco-header site-header'}>
         <div className="eco-container eco-header-inner">
           <a href="/" className="eco-lockup" aria-label="AI Drag Racing home">
             <svg className="eco-mark" viewBox="0 0 24 24" aria-hidden="true">

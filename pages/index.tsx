@@ -10,7 +10,6 @@ import type { ResultState } from '../components/main/ResultsDisplay';
 import { streamCompletion } from '../utils/apiClient';
 import { createRaceDeadline, waitForRaceDelay } from '../utils/raceDeadline';
 import { CompletionMetrics } from '../utils/providerService';
-import GlassCard from '../components/layout/GlassCard';
 import CountdownOverlay from '../components/main/CountdownOverlay';
 import RaceSettings, { RaceConfig } from '../components/sidebar/RaceSettings';
 import { LaneBuffer, createLaneBuffer, pushChunk } from '../utils/raceBuffers';
@@ -21,6 +20,8 @@ import FinishSummary from '../components/main/FinishSummary';
 import PaceLegend from '../components/main/PaceLegend';
 import ModelIdentifier from '../components/ModelIdentifier';
 import RaceHistory from '../components/main/RaceHistory';
+import RaceClock from '../components/main/RaceClock';
+import { playRaceTone, primeRaceAudio } from '../utils/raceAudio';
 import {
   clearRaceHistory,
   createRaceReceipt,
@@ -33,7 +34,9 @@ import {
   type ReceiptLaneInput,
 } from '../utils/raceReceipts';
 
-const ResultsDisplay = dynamic(() => import('../components/main/ResultsDisplay'), { ssr: false });
+// The lineup guide and lane cards are server-rendered (no `ssr: false`), so the first paint
+// already has the page's shape. Only the canvas and rAF-driven views are client-only.
+const ResultsDisplay = dynamic(() => import('../components/main/ResultsDisplay'));
 const ComparisonCharts = dynamic(() => import('../components/ComparisonCharts'), { ssr: false });
 const LivePaceChart = dynamic(() => import('../components/main/LivePaceChart'), { ssr: false });
 const DragStrip = dynamic(() => import('../components/main/DragStrip'), { ssr: false });
@@ -232,6 +235,10 @@ export default function Home() {
   const [raceView, setRaceView] = useState<'strip' | 'telemetry'>('strip');
   const [experience, setExperience] = useState<RaceExperience>('quick');
   const [history, setHistory] = useState<RaceReceipt[]>([]);
+  // Remounts the strip so a new or reset race never inherits the last one's DOM state.
+  const [raceEpoch, setRaceEpoch] = useState(0);
+  const [soundOn, setSoundOn] = useState(false);
+  const [isDemoRace, setIsDemoRace] = useState(false);
   const receiptLanesRef = useRef<Record<string, ReceiptLaneInput>>({});
   const edgeRegionRef = useRef<string | null>(null);
   const suggestedModel = typeof router.query.model === 'string' ? router.query.model.trim() : '';
@@ -239,6 +246,39 @@ export default function Home() {
 
   useEffect(() => {
     setHistory(loadRaceHistory(window.localStorage));
+    try {
+      setSoundOn(window.localStorage.getItem('ai-drag-racing:sound') === 'on');
+    } catch {}
+  }, []);
+
+  // Starting-tree tones. Off until the visitor turns sound on.
+  const previousRaceState = useRef<AppState['raceState']>('idle');
+  useEffect(() => {
+    if (!soundOn) return;
+    if (typeof state.countdownValue === 'number') playRaceTone('amber');
+    else if (state.countdownValue === 'Go!') playRaceTone('green');
+  }, [soundOn, state.countdownValue]);
+  useEffect(() => {
+    const previous = previousRaceState.current;
+    previousRaceState.current = state.raceState;
+    if (!soundOn) return;
+    // With reduced motion there is no countdown, so the green tone marks the launch.
+    if (state.raceState === 'racing' && previous !== 'countingDown') playRaceTone('green');
+    if (state.raceState === 'finished' && previous === 'racing') playRaceTone('finish');
+  }, [soundOn, state.raceState]);
+
+  const toggleSound = useCallback(() => {
+    setSoundOn((on) => {
+      const next = !on;
+      try {
+        window.localStorage.setItem('ai-drag-racing:sound', next ? 'on' : 'off');
+      } catch {}
+      if (next) {
+        primeRaceAudio();
+        playRaceTone('amber');
+      }
+      return next;
+    });
   }, []);
 
   // Cleanup on unmount: clear the flush timer and cancel any in-flight streams.
@@ -269,6 +309,8 @@ export default function Home() {
     receiptLanesRef.current = {};
     edgeRegionRef.current = null;
     setAnnouncement('');
+    setRaceEpoch((epoch) => epoch + 1);
+    setIsDemoRace(false);
     dispatch({ type: 'RESET_RACE' });
   }, []);
 
@@ -287,13 +329,50 @@ export default function Home() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [laneSig]
   );
-  const showStage =
-    state.results.length > 0 && (state.raceState === 'racing' || state.raceState === 'finished');
+  // Before a race, the strip shows whoever is ready to run: selected models whose
+  // provider is enabled and has a key in this tab.
+  const stagedSig = state.selectedPairs
+    .filter((p) => state.enabledProviders[p.providerId] !== false && !!state.apiKeys[p.providerId] && !!p.modelId)
+    .map((p) => `${p.providerId}\u0000${p.modelId}`)
+    .join('\u0001');
+  const stagedLanes = useMemo<PaceLane[]>(
+    () =>
+      stagedSig
+        ? stagedSig.split('\u0001').map((pair) => {
+            const [providerId, modelId] = pair.split('\u0000');
+            return {
+              id: `${providerId}-${modelId}`,
+              label: getProviderById(providerId)?.displayName || providerId,
+              sublabel: modelId,
+              color: getProviderColor(providerId).solid,
+            };
+          })
+        : [],
+    [stagedSig]
+  );
+  const hasRace = state.results.length > 0;
+  const stripLanes = hasRace ? paceLanes : stagedLanes;
+  const showStage = hasRace && (state.raceState === 'racing' || state.raceState === 'finished');
+  const raceBusy = state.raceState === 'countingDown' || state.raceState === 'racing';
+  // A race can start once at least one lane is staged and none is already running.
+  const startDisabled = stagedLanes.length === 0 || raceBusy;
 
-  const startDisabled =
-    !state.selectedPairs.some(
-      (p) => state.enabledProviders[p.providerId] !== false && !!state.apiKeys[p.providerId] && !!p.modelId
-    ) || state.raceState === 'countingDown' || state.raceState === 'racing';
+  const handleSetUpLiveRace = useCallback(() => {
+    // Phones open the Racers drawer. On wider screens the rail is already there,
+    // so move focus to the first provider's key control instead.
+    window.dispatchEvent(new Event('ai-drag-racing:open-racers'));
+    window.requestAnimationFrame(() => {
+      const panel = document.querySelector<HTMLElement>('.provider-panel');
+      const target = panel?.querySelector<HTMLElement>('.provider-key-button');
+      if (!panel || !target) return;
+      target.focus({ preventScroll: false });
+      panel.dataset.nudge = 'true';
+      window.setTimeout(() => {
+        delete panel.dataset.nudge;
+      }, 1400);
+    });
+  }, []);
+
 
   const handleRunComparison = useCallback(async () => {
     // If the user selected specific provider+model pairs, use those.
@@ -322,6 +401,8 @@ export default function Home() {
     pendingTextRef.current = {};
     receiptLanesRef.current = {};
     edgeRegionRef.current = null;
+    setRaceEpoch((epoch) => epoch + 1);
+    setIsDemoRace(false);
     dispatch({ type: 'START_COMPARISON', payload: { providersToTest } });
 
     // Throttled committer: streamed text lands in refs on the hot path and is flushed to
@@ -589,6 +670,8 @@ export default function Home() {
     }
     laneBuffersRef.current = initialBuffers;
     pendingTextRef.current = {};
+    setRaceEpoch((epoch) => epoch + 1);
+    setIsDemoRace(true);
     dispatch({ type: 'START_COMPARISON', payload: { providersToTest: pairs, mode: 'drag' } });
 
     const flushLane = (id: string) => {
@@ -779,7 +862,7 @@ export default function Home() {
       </Head>
       <MainLayout
         sidebar={
-          <div className="flex h-full min-h-0 flex-col gap-3">
+          <div className="rail">
             {/* Small prompt card above models */}
             <PromptInput
               prompt={state.prompt}
@@ -787,11 +870,7 @@ export default function Home() {
               onSubmit={handleRunComparison}
               isLoading={state.isLoading}
               isCountingDown={state.raceState === 'countingDown'}
-              disabled={
-                !state.selectedPairs.some(
-                  (p) => state.enabledProviders[p.providerId] !== false && !!state.apiKeys[p.providerId] && !!p.modelId
-                ) || state.raceState === 'countingDown' || state.raceState === 'racing'
-              }
+              disabled={startDisabled}
             />
             <div className="experience-switch" role="group" aria-label="Race experience">
               <button
@@ -840,7 +919,7 @@ export default function Home() {
                 </button>
               </div>
             )}
-            <GlassCard className="p-3 w-full max-w-full flex-1 min-h-0 overflow-hidden">
+            <div className="panel rail-racers">
               <ProviderList
                 apiKeys={state.apiKeys}
                 dispatch={dispatch}
@@ -848,282 +927,262 @@ export default function Home() {
                 suggestedModel={suggestedModel}
                 suggestedProvider={suggestedProvider}
               />
-            </GlassCard>
+            </div>
           </div>
         }
       >
-        <div className="pit-status" aria-label="Race privacy and timing status">
-          <span><strong>Private by default</strong> keys last only for this tab</span>
-          <span><strong>Two clocks</strong> browser experience and edge timing</span>
-          <span><strong>30-day local history</strong> delete or export anytime</span>
-        </div>
-        <div className="race-hero-wrap">
-          <div className="race-hero">
-            <div className="race-hero-icon">
-              <svg viewBox="0 0 24 24" className="race-hero-svg" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M12 4v4M12 16v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M4 12h4M16 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-            </div>
-            <div className="race-hero-copy">
-              <h1 className="race-hero-title">
-                See how fast a model responds from here.
-              </h1>
-              <p className="race-hero-lead">
-                Run the same prompt through selected AI models and see the speed your browser actually experiences.
-                Results are specific to this route, location, prompt, and moment.
-              </p>
-              <div className="race-hero-actions">
-                <button
-                  type="button"
-                  className="race-hero-action-primary"
-                  onClick={handleRunDemo}
-                  disabled={state.raceState === 'racing' || state.raceState === 'countingDown'}
-                >
-                  Run a demo race
-                </button>
-                <button
-                  type="button"
-                  className="race-hero-action-secondary"
-                  onClick={() => window.dispatchEvent(new Event('ai-drag-racing:open-racers'))}
-                >
-                  Set up a live race
-                </button>
-                <span>Demo timings are simulated and never saved.</span>
-              </div>
-              <dl className="race-hero-facts" aria-label="What a race measures">
-                <div>
-                  <dt>Providers</dt>
-                  <dd>
-                    {RACEABLE_PROVIDERS.length} race-ready providers
-                  </dd>
-                </div>
-                <div>
-                  <dt>Timed per lane</dt>
-                  <dd>Time to first token, total response time, tokens per second</dd>
-                </div>
-                <div>
-                  <dt>Result scope</dt>
-                  <dd>One observation from your browser, not a global ranking</dd>
-                </div>
-                <div>
-                  <dt>Defaults</dt>
-                  <dd>
-                    temperature {initialState.raceConfig.modelSettings.temperature}, max tokens{' '}
-                    {initialState.raceConfig.modelSettings.maxTokens}, top p{' '}
-                    {initialState.raceConfig.modelSettings.topP.toFixed(1)}
-                  </dd>
-                </div>
-                <div>
-                  <dt>Clocks</dt>
-                  <dd>Browser to result plus Cloudflare edge to provider</dd>
-                </div>
-              </dl>
-            </div>
-          </div>
-        </div>
-        <details className="race-details">
-          <summary className="race-details-summary">
-            How to read an AI model race
-          </summary>
-          <div className="race-details-copy">
-            <p>
-              AI Drag Racing compares model behavior under the same prompt, selected settings, and local browser
-              session. Time to first token shows how quickly a provider starts responding. Total response time shows
-              how long the full answer takes. Tokens per second is useful for longer generations because a model can
-              start quickly but still stream slowly after the first token appears. The live pace chart plots
-              characters streamed against a shared client clock, so the curve shows what your browser actually
-              received; chunk boundaries and edge-network timing vary by provider.
-            </p>
-            <p>
-              A race measures one moment and nothing beyond it. Network route, provider load, regional availability,
-              selected model, prompt length, reasoning settings, and output length all move the numbers. A single race
-              can show a spike; a few consistent runs tell you whether the delay comes from the provider, the model,
-              the prompt shape, or your current network path. Read the timing next to the answer the model actually
-              gave you, since a model can look fast because it wrote less.
+        <header className="race-hero">
+          <div className="race-hero-copy">
+            <h1 className="race-hero-title">See how fast a model responds from here.</h1>
+            <p className="race-hero-lead">
+              Run the same prompt through selected AI models and see the speed your browser actually experiences.
+              Results are specific to this route, location, prompt, and moment.
             </p>
           </div>
-        </details>
-        <div className="space-y-4">
-          {/* Tabs + actions toolbar (sticky on md+, static on mobile) */}
-          <div className="race-toolbar-wrap">
-            <div className="race-toolbar">
-              {/* Tabs */}
-              <div className="race-tabs" role="tablist" aria-label="Race output">
-                <button
-                  type="button"
-                  role="tab"
-                  id="race-tab-results"
-                  aria-selected={activeTab === 'results'}
-                  aria-controls="race-panel-results"
-                  onClick={() => setActiveTab('results')}
-                  className={`race-tab ${activeTab === 'results' ? 'is-active' : ''}`}
-                >
-                  Results
-                </button>
-                <button
-                  type="button"
-                  role="tab"
-                  id="race-tab-charts"
-                  aria-selected={activeTab === 'charts'}
-                  aria-controls="race-panel-charts"
-                  onClick={() => setActiveTab('charts')}
-                  className={`race-tab ${activeTab === 'charts' ? 'is-active' : ''}`}
-                  disabled={state.results.length === 0}
-                  aria-label={state.results.length === 0 ? 'Charts, available after a race' : undefined}
-                  title={state.results.length === 0 ? 'Charts become available after a race' : undefined}
-                >
-                  Charts
-                </button>
-              </div>
-              {/* Actions */}
-              <div className="race-actions">
-                {/* Primary controls available even when sidebar is closed on mobile */}
-                <button
-                  onClick={handleRunComparison}
-                  title={(!state.prompt) ? "Enter a prompt to start" : startDisabled ? "No racers selected" : state.raceState === "racing" ? "Race in progress" : "Start Race"}
-                  className="race-start-button group press-scale"
-                  disabled={startDisabled || !state.prompt}
-                >
-                  <span className="flex items-center gap-1.5">
-                    <svg viewBox="0 0 24 24" className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" fill="currentColor">
-                      <path d="M5 3l14 9-14 9V3z" />
-                    </svg>
-                    START RACE
-                  </span>
-                </button>
-                {state.results.length > 0 && (
-                  <>
-                    <button
-                      onClick={handleReset}
-                      title={(state.isLoading || state.raceState === "countingDown") ? "Cannot reset while racing" : "Reset race"}
-                      className="race-reset-button press-scale"
-                      disabled={state.isLoading || state.raceState === 'countingDown'}
-                    >
-                      Reset
-                    </button>
-                    <button
-                      onClick={() => setHideFailed((v) => !v)}
-                      className="race-tool-button"
-                      disabled={activeTab !== 'results'}
-                    >
-                      {hideFailed ? 'Show failed' : 'Hide failed'}
-                    </button>
-                    <button
-                      onClick={() => setForce((f) => ({ version: f.version + 1, collapsed: true }))}
-                      className="race-tool-button"
-                      disabled={activeTab !== 'results'}
-                    >
-                      Collapse all
-                    </button>
-                    <button
-                      onClick={() => setForce((f) => ({ version: f.version + 1, collapsed: false }))}
-                      className="race-tool-button"
-                      disabled={activeTab !== 'results'}
-                    >
-                      Expand all
-                    </button>
-                  </>
-                )}
-              </div>
-            </div>
-          </div>
-          {/* Live race announcements for assistive technology */}
-          <div className="sr-only" role="status" aria-live="polite">{announcement}</div>
-
-          {/* Content */}
-          {activeTab === 'results' && (
-            <div
-              id="race-panel-results"
-              role="tabpanel"
-              aria-labelledby="race-tab-results"
-              className="space-y-4"
+          <div className="race-hero-actions">
+            <button
+              type="button"
+              className={stagedLanes.length > 0 ? 'race-hero-action-secondary' : 'race-hero-action-primary'}
+              onClick={handleRunDemo}
+              disabled={raceBusy}
             >
-              {showStage && (
-                <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_320px]">
-                  <GlassCard className="p-4" spotlight={false}>
-                    <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-                      <div className="flex items-center gap-2">
-                        {/* Strip (arcade) vs Telemetry (pace chart) view toggle */}
-                        <div className="inline-flex overflow-hidden rounded-[12px] ring-1 ring-white/10" role="group" aria-label="Race view">
-                          <button
-                            type="button"
-                            onClick={() => setRaceView('strip')}
-                            aria-pressed={raceView === 'strip'}
-                            className={`px-3 py-1.5 text-xs font-bold  transition ${raceView === 'strip' ? 'bg-white/[0.12] text-white' : 'bg-white/[0.03] text-[var(--text-muted)] hover:bg-white/[0.08]'}`}
-                          >
-                            Track
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => setRaceView('telemetry')}
-                            aria-pressed={raceView === 'telemetry'}
-                            className={`px-3 py-1.5 text-xs font-bold  transition ${raceView === 'telemetry' ? 'bg-white/[0.12] text-white' : 'bg-white/[0.03] text-[var(--text-muted)] hover:bg-white/[0.08]'}`}
-                          >
-                            Telemetry
-                          </button>
-                        </div>
-                        {state.raceState === 'racing' && (
-                          <span className="inline-flex items-center gap-1.5 rounded-full bg-[var(--accent-muted)] px-2 py-0.5 text-xs font-bold text-[var(--accent-light)]">
-                            <span className="h-1.5 w-1.5 rounded-full bg-[var(--accent-light)] animate-pulse" />
-                            Live
-                          </span>
-                        )}
-                      </div>
-                      {raceView === 'telemetry' && (
-                        <div className="flex items-center gap-3">
-                          <span className="hidden text-xs text-[var(--text-muted)] sm:inline">
-                            X: seconds since Go · Y: characters streamed
-                          </span>
-                          <button
-                            type="button"
-                            onClick={() => setNormalize((v) => !v)}
-                            aria-pressed={normalize}
-                            className="btn-ghost text-xs"
-                            title="Toggle the Y scale between absolute characters and percent of the most output so far"
-                          >
-                            {normalize ? 'Scale: % of most output' : 'Scale: absolute'}
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                    {raceView === 'strip' ? (
-                      <DragStrip
-                        lanes={paceLanes}
-                        buffersRef={laneBuffersRef}
-                        goTimeRef={goTimeRef}
-                        running={state.raceState === 'racing'}
-                        reducedMotion={reducedMotion}
-                      />
-                    ) : (
-                      <>
-                        <LivePaceChart
-                          lanes={paceLanes}
-                          buffersRef={laneBuffersRef}
-                          goTimeRef={goTimeRef}
-                          running={state.raceState === 'racing'}
-                          reducedMotion={reducedMotion}
-                          normalize={normalize}
-                        />
-                        <PaceLegend lanes={paceLanes} />
-                      </>
-                    )}
-                  </GlassCard>
-                  <GlassCard className="flex flex-col p-3" spotlight={false}>
-                    <h2 className="mb-2 px-1 text-xs font-semibold text-[var(--text-secondary)]">
-                      Standings
-                    </h2>
-                    <StandingsTicker
-                      lanes={paceLanes}
-                      buffersRef={laneBuffersRef}
-                      running={state.raceState === 'racing'}
-                      mode={state.resultMode}
-                      reducedMotion={reducedMotion}
-                    />
-                  </GlassCard>
-                </div>
+              Run a demo race
+            </button>
+            <button type="button" className="race-hero-action-secondary" onClick={handleSetUpLiveRace}>
+              Set up a live race
+            </button>
+            <span>Demo timings are simulated and never saved.</span>
+          </div>
+        </header>
+
+        {/* The strip: staged before a race, live during it, frozen after. */}
+        <section className="stage" aria-label="Race track" data-race={state.raceState}>
+          <div className="stage-bar">
+            <div className="stage-bar-group">
+              <div className="seg-toggle" role="group" aria-label="Race view">
+                <button type="button" onClick={() => setRaceView('strip')} aria-pressed={raceView === 'strip'}>
+                  Track
+                </button>
+                <button type="button" onClick={() => setRaceView('telemetry')} aria-pressed={raceView === 'telemetry'}>
+                  Telemetry
+                </button>
+              </div>
+              <span className="stage-status" data-state={state.raceState}>
+                <i aria-hidden="true" />
+                {state.raceState === 'racing'
+                  ? 'Live'
+                  : state.raceState === 'countingDown'
+                    ? 'Staging'
+                    : state.raceState === 'finished'
+                      ? 'Finished'
+                      : stagedLanes.length > 0
+                        ? `${stagedLanes.length} staged`
+                        : 'No racers staged'}
+                {hasRace && isDemoRace ? ', simulated demo' : ''}
+              </span>
+            </div>
+            <div className="stage-bar-group">
+              <RaceClock
+                goTimeRef={goTimeRef}
+                buffersRef={laneBuffersRef}
+                raceState={state.raceState}
+                reducedMotion={reducedMotion}
+              />
+              <button
+                type="button"
+                className="stage-icon-button"
+                onClick={toggleSound}
+                aria-pressed={soundOn}
+                aria-label="Starting tree sound"
+                title={soundOn ? 'Sound on' : 'Sound off'}
+              >
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <path d="M4 9v6h4l5 4V5L8 9H4Z" />
+                  {soundOn ? <path d="M16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12" /> : <path d="m17 9.5 5 5m0-5-5 5" />}
+                </svg>
+              </button>
+              {hasRace && (
+                <button
+                  onClick={handleReset}
+                  title={(state.isLoading || state.raceState === "countingDown") ? "Cannot reset while racing" : "Reset race"}
+                  className="race-reset-button"
+                  disabled={state.isLoading || state.raceState === 'countingDown'}
+                >
+                  Reset
+                </button>
               )}
-              {state.raceState === 'finished' && <FinishSummary results={state.results} mode={state.resultMode} />}
-              <ResultsDisplay results={state.results} hideFailed={hideFailed} force={force} compact={showStage} onDemo={handleRunDemo} />
+              {/* Primary control lives on the strip so it is reachable when the rail is closed on mobile */}
+              <button
+                onClick={handleRunComparison}
+                title={(!state.prompt) ? "Enter a prompt to start" : startDisabled ? "No racers selected" : state.raceState === "racing" ? "Race in progress" : "Start Race"}
+                className="race-start-button"
+                disabled={startDisabled || !state.prompt}
+              >
+                <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                  <path d="M5 3l14 9-14 9V3z" />
+                </svg>
+                Start race
+              </button>
+            </div>
+          </div>
+
+          {raceView === 'telemetry' && stripLanes.length > 0 && (
+            <div className="stage-subbar">
+              <span>X: seconds since Go. Y: characters streamed.</span>
+              <button
+                type="button"
+                onClick={() => setNormalize((v) => !v)}
+                aria-pressed={normalize}
+                className="btn-ghost"
+                title="Toggle the Y scale between absolute characters and percent of the most output so far"
+              >
+                {normalize ? 'Scale: % of most output' : 'Scale: absolute'}
+              </button>
+            </div>
+          )}
+
+          <div className={hasRace ? 'stage-body has-standings' : 'stage-body'}>
+            <div className="stage-view">
+              {stripLanes.length === 0 ? (
+                <div className="strip strip-empty">
+                  {[1, 2].map((n) => (
+                    <div key={n} className="strip-lane" data-state="stage">
+                      <div className="strip-head">
+                        <span className="strip-plate" aria-hidden="true">{n}</span>
+                        <span className="strip-who">
+                          <span className="strip-name">Open lane</span>
+                          <span className="strip-model">No model yet</span>
+                        </span>
+                      </div>
+                      <div className="strip-track">
+                        <span className="strip-groove" aria-hidden="true" />
+                        <span className="strip-number" aria-hidden="true">{n}</span>
+                        <span className="strip-startline" aria-hidden="true" />
+                        <span className="strip-finish" aria-hidden="true" />
+                      </div>
+                      <div className="strip-board">
+                        <span className="strip-winlight" aria-hidden="true" />
+                        <span className="strip-digits" data-ghost="8.88">
+                          <span className="strip-digits-lit" aria-hidden="true">-.--</span>
+                        </span>
+                        <span className="strip-sub">Empty</span>
+                      </div>
+                    </div>
+                  ))}
+                  <p className="strip-empty-note">
+                    <strong>These lanes are open.</strong> Add a provider key and pick models in Racers to stage them
+                    here, or run the demo to watch four simulated lanes.
+                  </p>
+                </div>
+              ) : raceView === 'strip' ? (
+                <DragStrip
+                  key={raceEpoch}
+                  lanes={stripLanes}
+                  buffersRef={laneBuffersRef}
+                  goTimeRef={goTimeRef}
+                  running={state.raceState === 'racing'}
+                  reducedMotion={reducedMotion}
+                  mode={state.resultMode}
+                />
+              ) : (
+                <>
+                  <LivePaceChart
+                    key={raceEpoch}
+                    lanes={stripLanes}
+                    buffersRef={laneBuffersRef}
+                    goTimeRef={goTimeRef}
+                    running={state.raceState === 'racing'}
+                    reducedMotion={reducedMotion}
+                    normalize={normalize}
+                  />
+                  <PaceLegend lanes={stripLanes} />
+                </>
+              )}
+            </div>
+            {hasRace && (
+              <aside className="stage-standings" aria-labelledby="standings-heading">
+                <h2 id="standings-heading">Standings</h2>
+                <StandingsTicker
+                  lanes={paceLanes}
+                  buffersRef={laneBuffersRef}
+                  running={state.raceState === 'racing'}
+                  mode={state.resultMode}
+                  reducedMotion={reducedMotion}
+                />
+              </aside>
+            )}
+          </div>
+        </section>
+
+        {/* Live race announcements for assistive technology */}
+        <div className="sr-only" role="status" aria-live="polite">{announcement}</div>
+
+        {state.raceState === 'finished' && (
+          // The slip's torn edge is a mask, which would clip its own shadow, so the wrapper casts it.
+          <div className="slip">
+            <FinishSummary results={state.results} mode={state.resultMode} />
+          </div>
+        )}
+
+        <div className="race-output">
+          <div className="race-toolbar">
+            <div className="race-tabs" role="tablist" aria-label="Race output">
+              <button
+                type="button"
+                role="tab"
+                id="race-tab-results"
+                aria-selected={activeTab === 'results'}
+                aria-controls="race-panel-results"
+                onClick={() => setActiveTab('results')}
+                className={`race-tab ${activeTab === 'results' ? 'is-active' : ''}`}
+              >
+                Responses
+              </button>
+              <button
+                type="button"
+                role="tab"
+                id="race-tab-charts"
+                aria-selected={activeTab === 'charts'}
+                aria-controls="race-panel-charts"
+                onClick={() => setActiveTab('charts')}
+                className={`race-tab ${activeTab === 'charts' ? 'is-active' : ''}`}
+                disabled={!hasRace}
+                aria-label={!hasRace ? 'Charts, available after a race' : undefined}
+                title={!hasRace ? 'Charts become available after a race' : undefined}
+              >
+                Charts
+              </button>
+            </div>
+            {hasRace && (
+              <div className="race-actions">
+                <button
+                  onClick={() => setHideFailed((v) => !v)}
+                  className="race-tool-button"
+                  disabled={activeTab !== 'results'}
+                >
+                  {hideFailed ? 'Show failed' : 'Hide failed'}
+                </button>
+                <button
+                  onClick={() => setForce((f) => ({ version: f.version + 1, collapsed: true }))}
+                  className="race-tool-button"
+                  disabled={activeTab !== 'results'}
+                >
+                  Collapse all
+                </button>
+                <button
+                  onClick={() => setForce((f) => ({ version: f.version + 1, collapsed: false }))}
+                  className="race-tool-button"
+                  disabled={activeTab !== 'results'}
+                >
+                  Expand all
+                </button>
+              </div>
+            )}
+          </div>
+
+          {activeTab === 'results' && (
+            <div id="race-panel-results" role="tabpanel" aria-labelledby="race-tab-results" className="race-panel">
+              <ResultsDisplay results={state.results} hideFailed={hideFailed} force={force} compact={showStage} stagedCount={stagedLanes.length} />
               <RaceHistory
                 receipts={history}
                 onDelete={(id) => setHistory(deleteRaceReceipt(window.localStorage, id))}
@@ -1134,12 +1193,78 @@ export default function Home() {
               />
             </div>
           )}
-          {activeTab === 'charts' && state.results.length > 0 && (
-            <div id="race-panel-charts" role="tabpanel" aria-labelledby="race-tab-charts">
+          {activeTab === 'charts' && hasRace && (
+            <div id="race-panel-charts" role="tabpanel" aria-labelledby="race-tab-charts" className="race-panel">
               <ComparisonCharts results={state.results} />
             </div>
           )}
         </div>
+
+        <section className="race-notes" aria-labelledby="race-notes-heading">
+          <h2 id="race-notes-heading">What a race measures</h2>
+          <dl className="race-hero-facts">
+            <div>
+              <dt>Private by default</dt>
+              <dd>Keys last only for this tab</dd>
+            </div>
+            <div>
+              <dt>Two clocks</dt>
+              <dd>Browser to result, plus Cloudflare edge to provider</dd>
+            </div>
+            <div>
+              <dt>30-day local history</dt>
+              <dd>Delete or export anytime</dd>
+            </div>
+            <div>
+              <dt>Providers</dt>
+              <dd>
+                {RACEABLE_PROVIDERS.length} race-ready providers
+              </dd>
+            </div>
+            <div>
+              <dt>Timed per lane</dt>
+              <dd>Time to first token, total response time, tokens per second</dd>
+            </div>
+            <div>
+              <dt>Result scope</dt>
+              <dd>One observation from your browser, not a global ranking</dd>
+            </div>
+            <div>
+              <dt>Sample size</dt>
+              <dd>One run per model per race, so repeat a race before trusting an order</dd>
+            </div>
+            <div>
+              <dt>Defaults</dt>
+              <dd>
+                temperature {initialState.raceConfig.modelSettings.temperature}, max tokens{' '}
+                {initialState.raceConfig.modelSettings.maxTokens}, top p{' '}
+                {initialState.raceConfig.modelSettings.topP.toFixed(1)}
+              </dd>
+            </div>
+          </dl>
+          <details className="race-details">
+            <summary className="race-details-summary">
+              How to read an AI model race
+            </summary>
+            <div className="race-details-copy">
+              <p>
+                AI Drag Racing compares model behavior under the same prompt, selected settings, and local browser
+                session. Time to first token shows how quickly a provider starts responding. Total response time shows
+                how long the full answer takes. Tokens per second is useful for longer generations because a model can
+                start quickly but still stream slowly after the first token appears. The live pace chart plots
+                characters streamed against a shared client clock, so the curve shows what your browser actually
+                received; chunk boundaries and edge-network timing vary by provider.
+              </p>
+              <p>
+                A race measures one moment and nothing beyond it. Network route, provider load, regional availability,
+                selected model, prompt length, reasoning settings, and output length all move the numbers. A single race
+                can show a spike; a few consistent runs tell you whether the delay comes from the provider, the model,
+                the prompt shape, or your current network path. Read the timing next to the answer the model actually
+                gave you, since a model can look fast because it wrote less.
+              </p>
+            </div>
+          </details>
+        </section>
       </MainLayout>
       {/* Countdown overlay */}
       <CountdownOverlay visible={state.raceState === 'countingDown'} value={state.countdownValue ?? 3} />

@@ -16,8 +16,6 @@ const PAGE_URL = `${SITE}/methodology`;
 const DESCRIPTION =
   'How AI Drag Racing measures LLM speed: where the timer runs, what request is sent, how time to first token, total time, and tokens per second are calculated, the n=1 sample size, and what the code does not record.';
 
-const LINK_CLASS = 'text-red-400 underline decoration-red-400/40 underline-offset-4 hover:text-red-300';
-
 /** Renders the content module's inline syntax: **bold**, `code`, [label](href). */
 function Inline({ text }: { text: string }) {
   const parts: ReactNode[] = [];
@@ -27,10 +25,10 @@ function Inline({ text }: { text: string }) {
     const index = match.index ?? 0;
     if (index > last) parts.push(text.slice(last, index));
     if (token.startsWith('**')) {
-      parts.push(<span key={index} className="font-semibold text-white">{token.slice(2, -2)}</span>);
+      parts.push(<strong key={index}>{token.slice(2, -2)}</strong>);
     } else if (token.startsWith('`')) {
       parts.push(
-        <code key={index} className="rounded-sm bg-white/10 px-1.5 py-0.5 text-sm text-zinc-200">
+        <code key={index}>
           {token.slice(1, -1)}
         </code>,
       );
@@ -39,7 +37,7 @@ function Inline({ text }: { text: string }) {
       if (link) {
         const external = link[2].startsWith('http');
         parts.push(
-          <a key={index} href={link[2]} className={LINK_CLASS} rel={external ? 'noopener noreferrer' : undefined}>
+          <a key={index} href={link[2]} rel={external ? 'noopener noreferrer' : undefined}>
             {link[1]}
           </a>,
         );
@@ -145,67 +143,64 @@ export default function Methodology() {
         <link rel="icon" href="/Favicon/favicon.ico" sizes="any" />
       </Head>
       <SiteHeader />
-      <main id="main-content" className="eco-container py-12 text-[var(--text)]">
-        <article className="mx-auto max-w-3xl border border-white/10 bg-zinc-950 p-6 md:p-8">
-          <a href="/" className="text-xs font-medium text-red-400 hover:text-red-300">
-            AI Drag Racing
-          </a>
-          <h1 className="mt-5 text-4xl font-semibold tracking-tight text-white md:text-5xl">
+      <main id="main-content" className="eco-container doc">
+        <article className="doc-article">
+          <h1>
             How AI Drag Racing measures model speed
           </h1>
 
-          <p className="mt-5 text-base leading-8 text-zinc-300">
+          <p className="doc-lead">
             Every number on this site comes out of one code path, so it is worth saying exactly what that path does
             before anyone quotes a result. The short version: each Quick Race is a single live request per model with
             one clock in your browser and another at the Cloudflare edge. Token counts are usually estimated rather
             than provider-reported. That is useful evidence about your route today, not a global model ranking.
           </p>
 
-          <nav aria-label="On this page" className="mt-6 flex flex-wrap gap-x-4 gap-y-2 text-sm">
-            <a href="#definitions" className={LINK_CLASS}>Definitions</a>
-            <a href="#compare" className={LINK_CLASS}>Fair comparison checklist</a>
+          <nav aria-label="On this page" className="doc-toc">
+            <a href="#definitions">Definitions</a>
+            <a href="#compare">Fair comparison checklist</a>
             {SECTIONS.map((section) => (
-              <a key={section.id} href={`#${section.id}`} className={LINK_CLASS}>
+              <a key={section.id} href={`#${section.id}`}>
                 {section.heading}
               </a>
             ))}
           </nav>
 
-          <section id="definitions" aria-labelledby="definitions-heading" className="mt-10 scroll-mt-20">
-            <h2 id="definitions-heading" className="text-2xl font-semibold tracking-tight text-white">
+          <section id="definitions" aria-labelledby="definitions-heading" className="doc-section">
+            <h2 id="definitions-heading">
               Definitions
             </h2>
-            <p className="mt-3 text-sm leading-7 text-zinc-400">
+            <p className="doc-note">
               The terms every receipt uses. Each one is defined by the code, not by convention.
             </p>
-            <dl className="mt-4 grid gap-0 border border-white/10 md:grid-cols-2">
+            <dl className="doc-defs">
               {DEFINITIONS.map((entry) => (
-                <div key={entry.term} className="border-b border-white/10 p-4 md:odd:border-r">
-                  <dt className="font-semibold text-white">
+                <div key={entry.term}>
+                  <dt>
                     {entry.term}
-                    {entry.short ? <span className="ml-2 font-mono text-xs font-normal text-zinc-400">{entry.short}</span> : null}
+                    {entry.short ? <span className="doc-short">{entry.short}</span> : null}
                   </dt>
-                  <dd className="mt-1 text-sm leading-7 text-zinc-300">{entry.definition}</dd>
+                  <dd>{entry.definition}</dd>
                 </div>
               ))}
             </dl>
           </section>
 
-          <section id="compare" aria-labelledby="compare-heading" className="mt-10 scroll-mt-20">
-            <h2 id="compare-heading" className="text-2xl font-semibold tracking-tight text-white">
+          <section id="compare" aria-labelledby="compare-heading" className="doc-section">
+            <h2 id="compare-heading">
               How to run a comparison worth quoting
             </h2>
-            <p className="mt-3 text-sm leading-7 text-zinc-400">
+            <p className="doc-note">
               A race is one observation. This is how to turn a few of them into something you can stand behind.
             </p>
-            <ol className="mt-4 space-y-3">
+            <ol className="doc-steps">
               {HOW_TO_COMPARE.map((step, index) => (
-                <li key={step.name} id={`compare-step-${index + 1}`} className="grid grid-cols-[2rem_minmax(0,1fr)] gap-3 scroll-mt-20">
-                  <span className="font-mono text-sm text-zinc-500" aria-hidden="true">
-                    {String(index + 1).padStart(2, '0')}
+                <li key={step.name} id={`compare-step-${index + 1}`}>
+                  <span aria-hidden="true">
+                    {index + 1}
                   </span>
-                  <p className="text-base leading-8 text-zinc-300">
-                    <span className="font-semibold text-white">{step.name}.</span> {step.text}
+                  <p>
+                    <strong>{step.name}.</strong> {step.text}
                   </p>
                 </li>
               ))}
@@ -213,17 +208,17 @@ export default function Methodology() {
           </section>
 
           {SECTIONS.map((section) => (
-            <section key={section.id} id={section.id} aria-labelledby={`${section.id}-heading`} className="scroll-mt-20">
-              <h2 id={`${section.id}-heading`} className="mt-10 text-2xl font-semibold tracking-tight text-white">
+            <section key={section.id} id={section.id} aria-labelledby={`${section.id}-heading`} className="doc-section">
+              <h2 id={`${section.id}-heading`}>
                 {section.heading}
               </h2>
               {section.blocks.map((block, index) =>
                 block.type === 'p' ? (
-                  <p key={index} className="mt-4 text-base leading-8 text-zinc-300">
+                  <p key={index}>
                     <Inline text={block.text} />
                   </p>
                 ) : (
-                  <ul key={index} className="mt-4 space-y-3 text-base leading-8 text-zinc-300">
+                  <ul key={index}>
                     {block.items.map((item) => (
                       <li key={plainText(item).slice(0, 40)}>
                         <Inline text={item} />
@@ -235,13 +230,13 @@ export default function Methodology() {
             </section>
           ))}
 
-          <p className="mt-8 text-sm text-zinc-500">
+          <p className="doc-meta">
             This page describes the code as it stands on <time dateTime={METHODOLOGY_UPDATED}>{updatedLabel}</time>. If
             the measurement path changes, this page changes with it. The same text is available as{' '}
-            <a href="/llms-full.txt" className={LINK_CLASS}>plain text</a>.
+            <a href="/llms-full.txt">plain text</a>.
           </p>
-          <p className="mt-4 text-sm text-zinc-500">
-            <a href="/" className="text-red-400 hover:text-red-300">
+          <p className="doc-meta">
+            <a href="/">
               Back to the race
             </a>
           </p>

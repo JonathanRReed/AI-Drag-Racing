@@ -13,28 +13,42 @@ colors:
   warning-amber: "#e2b957"
   failure-red: "#e87368"
   rule-white: "rgba(255, 255, 255, 0.09)"
+  tarmac: "#1b1e1d"
+  track-paint: "#f4f2e9"
+  tree-amber: "#ffb224"
+  slip-paper: "#efeee6"
+  slip-ink: "#15171a"
 typography:
   display:
-    fontFamily: "Nebula Sans Book, system-ui, sans-serif"
-    fontSize: "clamp(1.8rem, 4.5vw, 3.6rem)"
+    fontFamily: "Archivo Expanded, Nebula Sans, system-ui, sans-serif"
+    fontSize: "clamp(1.7rem, 1.05rem + 2.3vw, 3rem)"
+    fontStyle: italic
+    fontWeight: 800
+    fontStretch: "118%"
+    lineHeight: 1.02
+    letterSpacing: "-0.02em"
+  scoreboard:
+    fontFamily: "DSEG7 Classic, JetBrains Mono, monospace"
+    fontStyle: italic
     fontWeight: 700
-    lineHeight: 1
-    letterSpacing: "-0.03em"
   body:
     fontFamily: "Nebula Sans Book, system-ui, sans-serif"
     fontSize: "1rem"
     fontWeight: 400
     lineHeight: 1.55
   label:
-    fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace"
-    fontSize: "0.68rem"
-    fontWeight: 700
-    lineHeight: 1.35
-    letterSpacing: "0.08em"
+    fontFamily: "Nebula Sans, system-ui, sans-serif"
+    fontSize: "0.75rem"
+    fontWeight: 500
+    lineHeight: 1.3
+  measurement:
+    fontFamily: "JetBrains Mono, ui-monospace, monospace"
+    fontSize: "0.875rem"
+    fontWeight: 600
 rounded:
-  sm: "6px"
-  md: "8px"
-  lg: "12px"
+  sm: "2px"
+  md: "4px"
+  lg: "8px"
 spacing:
   xs: "0.25rem"
   sm: "0.5rem"
@@ -47,9 +61,10 @@ components:
   primary-button:
     backgroundColor: "{colors.timing-lime}"
     textColor: "#11150f"
-    typography: "{typography.label}"
-    rounded: "{rounded.sm}"
+    typography: "{typography.display}"
+    rounded: "{rounded.md}"
     height: "44px"
+    edge: "3px lower edge that the button travels onto when pressed"
   instrument-panel:
     backgroundColor: "{colors.pit-wall}"
     textColor: "{colors.primary-text}"
@@ -71,7 +86,13 @@ components:
 
 AI Drag Racing should feel like a credible timing station used during a live endurance test. The interface combines a dark asphalt field, solid instrument panels, timing lime, quiet telemetry colors, condensed model labels, and exact readouts. Racing expression belongs in the live track, standings, countdown, and finish. Setup, privacy, methodology, and history remain calm product UI.
 
-This visual world preserves the product's racing identity while replacing generic glass and decorative glow with a more legible pit-wall hierarchy.
+Three physical objects carry the identity. Everything else is quiet around them.
+
+1. **The strip.** The drag strip is the first thing on the page, before any race. Selected models roll into its lanes as they become ready, so setup has a visible result. During a race each car's position is its share of the leader's output, and each lane ends in a scoreboard.
+2. **The tree.** The countdown is a starting tree: staged bulbs, three ambers, then green. A 404 is a red light.
+3. **The timeslip.** A finished race prints a paper slip with torn edges. The same slip is what an unlisted share link opens.
+
+These objects keep their own materials in both themes. Asphalt stays dark and paper stays light, because that is what they are.
 
 ## Operating Modes
 
@@ -89,18 +110,21 @@ This visual world preserves the product's racing identity while replacing generi
 
 ## Typography
 
-- Nebula Sans carries headings, instructions, and normal interface copy.
+- Nebula Sans carries section headings, instructions, and normal interface copy.
+- Archivo Expanded italic is the site's display identity: page titles, the launch control, lane numbers painted on the strip, standings positions, and the timeslip masthead. It is a subset variable font (weight 600 to 900, width 100 to 125), self-hosted, about 25 KB. It never sets body copy or labels.
+- DSEG7 sets scoreboard digits only: the lane scoreboards and the elapsed clock. It receives digits, a decimal point, and dashes, never letters. Each lit readout sits over its unlit segments.
 - Mono text carries timings, token counts, route IDs, dates, statuses, and experiment settings.
 - Model and provider names wrap or use middle truncation that preserves both vendor prefix and model suffix.
 - Display scale stays compact enough that race setup and controls appear in the first desktop viewport.
-- Uppercase is limited to short timing labels and primary race commands.
+- Uppercase is limited to the primary race command. Labels are sentence case.
 
 ## Layout
 
 - Desktop uses a fixed provider and prompt rail beside a flexible timing stage.
 - Mobile replaces the rail with one Racers control and a full-height setup panel. The timing stage remains the primary page.
-- Privacy, clocks, and retention form one compact status strip above the race statement.
-- Race controls use a full-width tab row and a separate three-action grid on mobile, then collapse to one horizontal bar on wider screens.
+- The page reads top to bottom as: the question, the strip, the timeslip, each model's response, charts, local history, then what a race measures. The strip is inside the first viewport on every size.
+- The launch control, the elapsed clock, the Track and Telemetry switch, and the sound toggle live on the strip's own bar. On a phone the launch control stays on that bar so it is reachable with the rail closed.
+- Privacy, clocks, retention, and defaults are reference facts. They sit below the action in "What a race measures", not above the strip.
 - Results move from one-line outcome, to standings, to lane evidence, to charts, to history. Users never need a chart to learn the result.
 
 ## Components
@@ -113,13 +137,17 @@ This visual world preserves the product's racing identity while replacing generi
 
 ### Track and Telemetry
 
+- Before a race the strip shows staged lanes, or two open lanes with a plain instruction when nothing is staged.
 - Track view makes streaming progress visible through position, lane state, and finished time.
+- Each lane's scoreboard shows live characters per second while streaming and elapsed seconds once finished, with a plain-words line under the digits. The first clean finish gets the win light and the words "first finish". A Time Trial ranks by output, so it lights no win light.
+- Every channel on the strip maps to a measured quantity. Do not add distance markers, speed traps, or any reading that is not measured.
 - Telemetry view shows exact browser and edge measurements with the same lane order.
 - Live, finished, failed, cancelled, and demo states each have words, iconography, and stable layout.
 - Demo data is labeled before and during the race. It never enters history or sharing.
 
 ### Finish Summary
 
+- The finish summary is the timeslip: paper, mono figures, dashed rules, torn top and bottom edges. It prints once when the race ends.
 - Lead with "Fastest here, this run" or an equally scoped outcome.
 - Name the winning clock and show the other clock nearby.
 - Show sample count, browser scope, edge region when available, route, prompt size, settings, and methodology version.
@@ -136,12 +164,16 @@ This visual world preserves the product's racing identity while replacing generi
 
 - Local history is a 30-day rolling list with export, individual deletion, and clear-all actions.
 - Shared receipts contain only sanitized metrics and settings. They never contain prompt text, output, keys, IP, precise location, or fingerprints.
+- A shared receipt renders as the same paper timeslip, so the thing a visitor shares looks like the thing they saw.
 - Share creation is explicit and reports a 30-day expiry before completion.
 
 ## Interaction and Motion
 
 - Countdown and lane progress may animate because the movement communicates test state.
-- Results settle directly. Avoid confetti, bounce, and autoplay decoration.
+- A car lifts its nose and leaves tire smoke once, when its first token arrives. Wheels turn and the header flame burns only while the lane is streaming.
+- Buttons have a lower edge and travel onto it when pressed. The launch control travels furthest.
+- The timeslip printing is the one orchestrated moment after a race. Results otherwise settle directly. Avoid confetti, bounce, and autoplay decoration.
+- Sound is off until the visitor turns it on. It is three synthesized tones: a blip for each amber, a longer tone for green, two rising notes at the finish. No audio files.
 - Motion stops under reduced-motion settings while timings and completion remain understandable.
 - All race controls, lane disclosures, tabs, history actions, and settings are keyboard reachable with visible focus.
 

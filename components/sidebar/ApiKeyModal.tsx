@@ -89,7 +89,7 @@ const ApiKeyModal: React.FC<ApiKeyModalProps> = ({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/80"
+      className="modal-scrim"
       onKeyDown={handleKeyDown}
       onMouseDown={(event) => {
         if (event.target === event.currentTarget) onClose();
@@ -101,22 +101,22 @@ const ApiKeyModal: React.FC<ApiKeyModalProps> = ({
         aria-modal="true"
         aria-labelledby="api-key-modal-heading"
         aria-describedby="api-key-modal-description"
-        className="glass-card p-6 w-[min(92vw,28rem)] m-4 relative"
+        className="modal-panel"
       >
         <button
           type="button"
           onClick={onClose}
-          className="absolute top-4 right-4 text-gray-400 hover:text-white transition-colors p-1 rounded-md focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-cyan-400"
+          className="modal-close focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-focus"
           aria-label="Close dialog"
         >
           <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" aria-hidden="true">
             <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
           </svg>
         </button>
-        <h2 id="api-key-modal-heading" className="text-2xl font-bold text-white mb-4 leading-tight pr-8">
+        <h2 id="api-key-modal-heading" className="modal-title">
           Enter API Key for {providerName}
         </h2>
-        <p id="api-key-modal-description" className="text-gray-400 mb-4 text-sm">
+        <p id="api-key-modal-description" className="modal-copy">
           Your API key is kept only for this browser tab. Closing the tab clears it. For each race, the key is sent to the server-side provider proxy and is never stored in a race record.
         </p>
         <label htmlFor="apiKey" className="eco-label mb-1">
@@ -130,13 +130,13 @@ const ApiKeyModal: React.FC<ApiKeyModalProps> = ({
             value={apiKey}
             onChange={(e) => setApiKey(e.target.value)}
             onKeyDown={(e) => { if (e.key === 'Enter') handleSave(); }}
-            className="w-full px-3 py-2 pr-10 font-mono text-sm rounded-md bg-zinc-800 border border-white/20 text-white placeholder-gray-400 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-cyan-400"
+            className="input-glass pr-11 font-mono"
             placeholder="sk-..."
           />
           <button
             type="button"
             onClick={() => setShowKey(value => !value)}
-            className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white p-1 rounded-md focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-cyan-400"
+            className="modal-reveal focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-focus"
             aria-label={showKey ? 'Hide API key' : 'Show API key'}
             title={showKey ? 'Hide API key' : 'Show API key'}
             aria-pressed={showKey}
@@ -154,11 +154,11 @@ const ApiKeyModal: React.FC<ApiKeyModalProps> = ({
             )}
           </button>
         </div>
-        <div className="flex justify-end space-x-4 mt-6">
+        <div className="modal-actions">
           <button
             type="button"
             onClick={onClose}
-            className="px-4 py-2 rounded-md text-gray-300 hover:bg-white/10 transition-colors focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-cyan-400"
+            className="btn-ghost text-sm focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-focus"
           >
             Cancel
           </button>
@@ -166,7 +166,7 @@ const ApiKeyModal: React.FC<ApiKeyModalProps> = ({
             type="button"
             onClick={handleSave}
             disabled={!apiKey.trim()}
-            className="px-4 py-2 rounded-md bg-cyan-500 text-white font-semibold hover:bg-cyan-600 disabled:opacity-40 disabled:cursor-not-allowed transition-colors focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-cyan-400"
+            className="modal-save focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-focus"
           >
             Save Key
           </button>

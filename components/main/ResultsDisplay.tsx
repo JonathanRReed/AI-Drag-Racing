@@ -26,84 +26,78 @@ interface ResultsDisplayProps {
   compact?: boolean;
   // Optional: run the simulated test race (shown in the empty state for keyless visitors).
   onDemo?: () => void;
+  // Lanes already staged on the strip. Setup steps are done, so the empty state gets out of the way.
+  stagedCount?: number;
 }
 
 const STEPS = [
-  { n: 1, text: 'Open the Racers panel: the sidebar on the left, or tap Racers on mobile.' },
-  { n: 2, text: 'Paste an API key for any provider (stored only in your browser).' },
-  { n: 3, text: 'Pick one or more models to enter the race.' },
-  { n: 4, text: 'Hit Start Race and watch them stream head-to-head.' },
+  { n: 1, text: 'Open Racers: the rail on the left, or the Racers button on a phone.' },
+  { n: 2, text: 'Add an API key for a provider. It lasts only for this tab.' },
+  { n: 3, text: 'Pick one or more models. Each one takes a lane on the strip.' },
+  { n: 4, text: 'Press Start race and watch them stream side by side.' },
 ];
 
-const ResultsDisplay: React.FC<ResultsDisplayProps> = ({ results, hideFailed = false, force, compact = false, onDemo }) => {
+const ResultsDisplay: React.FC<ResultsDisplayProps> = ({ results, hideFailed = false, force, compact = false, onDemo, stagedCount = 0 }) => {
   // Memoize displayed results to avoid creating new array allocations on parent re-renders.
   const displayed = useMemo(
     () => (hideFailed ? results.filter((r) => !r.error) : results),
     [hideFailed, results]
   );
 
+  if (results.length === 0 && stagedCount > 0) {
+    return (
+      <p className="lineup-ready">
+        <strong>{stagedCount} {stagedCount === 1 ? 'lane is' : 'lanes are'} staged.</strong> Press Start race, or
+        press Enter in the prompt. Each model's response appears here as it streams.
+      </p>
+    );
+  }
+
   if (results.length === 0) {
     return (
-      <GlassCard className="px-6 py-12" spotlight={false}>
-        <div className="mx-auto flex max-w-lg flex-col items-center text-center">
-          <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl border border-white/10 bg-zinc-950 ring-1 ring-white/10">
-            <svg viewBox="0 0 24 24" className="h-7 w-7 text-[var(--accent-light)]" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M5 3v18h2v-7h12V3H5zm2 2h8v3H7V5zm0 5h10v2H7v-2z" strokeLinejoin="round" />
-            </svg>
-          </div>
-          <h2 className="text-lg font-semibold tracking-tight text-white heading-tight">Line up your racers</h2>
-          <p className="mt-1.5 text-sm leading-relaxed text-[var(--text-muted)]">
-            Add a provider in the <span className="font-medium text-[var(--text)]">Racers</span> panel, choose your models,
-            and start a live head-to-head speed test.
+      <GlassCard className="lineup" hover={false} spotlight={false}>
+        <div className="lineup-copy">
+          <h2>Line up your racers</h2>
+          <p>
+            Add a provider in the Racers panel, choose your models, and start a live race. Keys stay in this tab
+            and go only to the provider you pick.
           </p>
-
-          <ol className="mt-6 w-full space-y-2.5 text-left">
-            {STEPS.map((s) => (
-              <li key={s.n} className="flex items-start gap-3">
-                <span className="font-speed mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[var(--accent-muted)] text-xs text-[var(--accent-light)]">
-                  {s.n}
-                </span>
-                <span className="text-sm text-[var(--text-secondary)]">{s.text}</span>
-              </li>
-            ))}
-          </ol>
-
           {onDemo && (
-            <div className="mt-7 flex flex-col items-center gap-1.5 border-t border-white/5 pt-5">
-              <button onClick={onDemo} className="btn-secondary text-xs">
-                <svg viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M9 3h6M10 3v6l-5.5 9.2A2 2 0 0 0 6.2 21h11.6a2 2 0 0 0 1.7-2.8L14 9V3" strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
+            <p className="lineup-demo">
+              <button type="button" onClick={onDemo} className="btn-secondary">
                 Watch a demo race
               </button>
-              <span className="text-xs text-[var(--text-subtle)]">Simulated, no API key. Just to see how it looks.</span>
-            </div>
+              <span>Simulated, no API key.</span>
+            </p>
           )}
         </div>
+        <ol className="lineup-steps">
+          {STEPS.map((s) => (
+            <li key={s.n}>
+              <span aria-hidden="true">{s.n}</span>
+              <p>{s.text}</p>
+            </li>
+          ))}
+        </ol>
       </GlassCard>
     );
   }
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-      {displayed.map((result, index) => (
-        <div 
-          key={result.id} 
-          className="animate-fade-up opacity-0"
-          style={{ animationDelay: `${index * 0.05}s`, animationFillMode: 'forwards' }}
-        >
-          <RaceLane
-            providerName={result.providerName}
-            modelName={result.modelName}
-            responseText={result.responseText}
-            metrics={result.metrics}
-            isLoading={result.isLoading}
-            error={result.error}
-            laneColor={getProviderColor(result.providerName).solid}
-            force={force}
-            initialExpanded={!compact}
-          />
-        </div>
+    <div className="lane-grid">
+      {displayed.map((result) => (
+        <RaceLane
+          key={result.id}
+          providerName={result.providerName}
+          modelName={result.modelName}
+          responseText={result.responseText}
+          metrics={result.metrics}
+          isLoading={result.isLoading}
+          error={result.error}
+          laneColor={getProviderColor(result.providerName).solid}
+          force={force}
+          initialExpanded={!compact}
+        />
       ))}
     </div>
   );

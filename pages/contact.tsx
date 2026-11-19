@@ -44,40 +44,37 @@ export default function Contact() {
         />
       </Head>
       <SiteHeader />
-      <main id="main-content" className="eco-container py-12 text-[var(--text)]">
-        <article className="mx-auto max-w-3xl border border-white/10 bg-zinc-950 p-6 md:p-8">
-          <a href="/" className="text-xs font-medium text-red-400 hover:text-red-300">
-            AI Drag Racing
-          </a>
-          <h1 className="mt-5 text-4xl font-semibold tracking-tight text-white md:text-5xl">
+      <main id="main-content" className="eco-container doc">
+        <article className="doc-article">
+          <h1>
             Contact Jonathan about AI Drag Racing.
           </h1>
-          <p className="mt-5 text-base leading-8 text-zinc-300">
+          <p className="doc-lead">
             For bug reports, accessibility issues, provider suggestions, or race workflow feedback, use Jonathan R.
             Reed's main contact page.
           </p>
-          <p className="mt-4 text-base leading-8 text-zinc-300">
+          <p>
             Useful reports include the browser, provider, selected model, prompt length, and race settings, plus where
             it broke: before the request started, during streaming, after the final token, or while drawing the result
             chart. That is what separates a provider-routing bug from a UI-state one. If a provider changed its API
             behavior, include the error message without sharing secrets.
           </p>
-          <p className="mt-4 text-base leading-8 text-zinc-300">
+          <p>
             For feature feedback, describe the model comparison you were trying to make and what evidence was missing.
             This site is focused on live latency and output comparison, so a concrete workflow lands better than a
             request for another dashboard.
           </p>
-          <p className="mt-4 text-base leading-8 text-zinc-300">
+          <p>
             Do not send provider API keys, private prompts, client data, or screenshots that expose secrets. A short
             sanitized prompt, the selected providers, and the visible error text are enough for most debugging.
           </p>
           <a
             href="https://jonathanrreed.com/contact/"
-            className="mt-6 inline-flex rounded-xl border border-white/10 bg-white/10 px-4 py-3 text-sm font-semibold text-white hover:bg-white/15"
+            className="btn-secondary doc-action"
           >
             Open Jonathan's contact page
           </a>
-          <p className="mt-6 text-sm text-zinc-500">
+          <p className="doc-meta">
             Last updated <time dateTime="2026-06-19">June 19, 2026</time>.
           </p>
         </article>

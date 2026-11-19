@@ -37,9 +37,11 @@ Choose a mode in Race Settings:
 
 Chunk Sprint keeps the legacy internal `token_limit` mode ID and whole-chunk stopping behavior. Chunk sizes vary by provider. A client-limited lane shows chunk counts and browser-synthetic timing; it does not claim edge timing or token throughput. Natural early completions retain their edge metrics.
 
-Set temperature, max tokens, and top-p as needed. The app passes these settings to providers that support them. Enter a prompt and click Start Race. A short countdown precedes the streaming requests; reduced-motion mode is supported.
+Set temperature, max tokens, and top-p as needed. The app passes these settings to providers that support them. Each ready model takes a lane on the strip at the top of the page. Enter a prompt and click Start race. A starting-tree countdown precedes the streaming requests; reduced-motion mode skips it. Starting-tree sound is off until you turn it on from the strip's bar.
 
-Results shows responses, errors, token counts, timing, and a leaderboard. Hide failed lanes or collapse responses to compare runs. Charts compares completed runs. Reset clears the race state.
+During a race the strip shows each lane's progress, a scoreboard, and live standings; Telemetry switches the strip to a pace chart. A finished race prints a timeslip with each lane's timing and output count. Responses shows what each model wrote, with errors and per-lane measurements. Hide failed lanes or collapse responses to compare runs. Charts compares completed runs. Reset clears the race state.
+
+To try the interface without a key, click Run a demo race. Demo timings are simulated and are never saved.
 
 ## Providers
 
@@ -65,6 +67,6 @@ Implement a `ProviderService`, register the provider and its `PROVIDERS` configu
 
 ## Credits and license
 
-Built by Jonathan Reed for hello.world consulting. Icons from Lobe Icons and simple-icons.
+Built by Jonathan Reed for hello.world consulting. Icons from Lobe Icons and simple-icons. Type: Nebula Sans, JetBrains Mono, Archivo (display, subset), and DSEG7 (scoreboard digits, subset); Archivo and DSEG7 are under the SIL Open Font License, with license files beside the fonts in `public/fonts`.
 
 Licensed under the Functional Source License, Version 1.1, MIT Future License. The source converts to MIT two years after each version is made available. See [LICENSE](LICENSE).

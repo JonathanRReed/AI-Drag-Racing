@@ -99,7 +99,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({ sidebar, children }) => {
           aria-label={mobileOpen ? 'Providers menu' : undefined}
         >
           <div className="app-sidebar-close-row">
-            <span className="app-sidebar-title">Racers</span>
+            <span className="app-sidebar-title">Race setup</span>
             <button
               ref={closeButtonRef}
               onClick={() => setMobileOpen(false)}

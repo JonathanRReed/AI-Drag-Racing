@@ -1,10 +1,22 @@
-/* Ecosystem type: Nebula Sans (text) and JetBrains Mono (measurements). Self-hosted, no third-party font requests. */
+/* Ecosystem type: Nebula Sans (text) and JetBrains Mono (measurements). Self-hosted, no third-party font requests.
+   Each Nebula Sans face is declared twice: the full file, then a Latin subset with a unicode-range. A later
+   declaration wins for the characters in its range, so Latin text downloads only the 26 KB subset, and the
+   70 KB full file is fetched only if a page actually shows Greek, Cyrillic or another script it covers. */
 @font-face { font-family: "Nebula Sans"; src: url("/fonts/nebula-sans/NebulaSans-Book.woff2") format("woff2"); font-weight: 400; font-style: normal; font-display: swap; }
+@font-face { font-family: "Nebula Sans"; src: url("/fonts/nebula-sans/NebulaSans-Book-latin.woff2") format("woff2"); font-weight: 400; font-style: normal; font-display: swap; unicode-range: U+0000-017F, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+20AC, U+2122, U+2190-2193, U+2212, U+2215, U+FEFF, U+FFFD; }
 @font-face { font-family: "Nebula Sans"; src: url("/fonts/nebula-sans/NebulaSans-BookItalic.woff2") format("woff2"); font-weight: 400; font-style: italic; font-display: swap; }
+@font-face { font-family: "Nebula Sans"; src: url("/fonts/nebula-sans/NebulaSans-BookItalic-latin.woff2") format("woff2"); font-weight: 400; font-style: italic; font-display: swap; unicode-range: U+0000-017F, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+20AC, U+2122, U+2190-2193, U+2212, U+2215, U+FEFF, U+FFFD; }
 @font-face { font-family: "Nebula Sans"; src: url("/fonts/nebula-sans/NebulaSans-Medium.woff2") format("woff2"); font-weight: 500; font-style: normal; font-display: swap; }
+@font-face { font-family: "Nebula Sans"; src: url("/fonts/nebula-sans/NebulaSans-Medium-latin.woff2") format("woff2"); font-weight: 500; font-style: normal; font-display: swap; unicode-range: U+0000-017F, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+20AC, U+2122, U+2190-2193, U+2212, U+2215, U+FEFF, U+FFFD; }
 @font-face { font-family: "Nebula Sans"; src: url("/fonts/nebula-sans/NebulaSans-Semibold.woff2") format("woff2"); font-weight: 600; font-style: normal; font-display: swap; }
+@font-face { font-family: "Nebula Sans"; src: url("/fonts/nebula-sans/NebulaSans-Semibold-latin.woff2") format("woff2"); font-weight: 600; font-style: normal; font-display: swap; unicode-range: U+0000-017F, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+20AC, U+2122, U+2190-2193, U+2212, U+2215, U+FEFF, U+FFFD; }
 @font-face { font-family: "Nebula Sans"; src: url("/fonts/nebula-sans/NebulaSans-Bold.woff2") format("woff2"); font-weight: 700; font-style: normal; font-display: swap; }
+@font-face { font-family: "Nebula Sans"; src: url("/fonts/nebula-sans/NebulaSans-Bold-latin.woff2") format("woff2"); font-weight: 700; font-style: normal; font-display: swap; unicode-range: U+0000-017F, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+20AC, U+2122, U+2190-2193, U+2212, U+2215, U+FEFF, U+FFFD; }
 @font-face { font-family: "Nebula Sans"; src: url("/fonts/nebula-sans/NebulaSans-BoldItalic.woff2") format("woff2"); font-weight: 700; font-style: italic; font-display: swap; }
+@font-face { font-family: "Nebula Sans"; src: url("/fonts/nebula-sans/NebulaSans-BoldItalic-latin.woff2") format("woff2"); font-weight: 700; font-style: italic; font-display: swap; unicode-range: U+0000-017F, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+20AC, U+2122, U+2190-2193, U+2212, U+2215, U+FEFF, U+FFFD; }
 @font-face { font-family: "Nebula Sans Fallback"; src: local("Arial"); size-adjust: 98%; ascent-override: 92%; descent-override: 22%; }
 @font-face { font-family: "JetBrains Mono"; src: url("/fonts/jetbrains-mono/JetBrainsMono-Variable.woff2") format("woff2"); font-weight: 100 800; font-style: normal; font-display: swap; }
 @font-face { font-family: "JetBrains Mono"; src: url("/fonts/jetbrains-mono/JetBrainsMono-Variable-Italic.woff2") format("woff2"); font-weight: 100 800; font-style: italic; font-display: swap; }
+/* Site display identity: Archivo Expanded italic for strip lettering and headings (subset, variable wght 600 to 900, wdth 100 to 125), and DSEG7 for scoreboard digits. Both SIL OFL 1.1, self-hosted. */
+@font-face { font-family: "Archivo Expanded"; src: url("/fonts/archivo/ArchivoExpanded-Italic-Variable.woff2") format("woff2"); font-weight: 600 900; font-stretch: 100% 125%; font-style: italic; font-display: swap; }
+@font-face { font-family: "DSEG7 Classic"; src: url("/fonts/dseg/DSEG7Classic-BoldItalic.woff2") format("woff2"); font-weight: 700; font-style: italic; font-display: block; }

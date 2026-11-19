@@ -44,47 +44,44 @@ export default function Subprocessors() {
         />
       </Head>
       <SiteHeader />
-      <main id="main-content" className="eco-container py-12 text-[var(--text)]">
-        <article className="mx-auto max-w-3xl border border-white/10 bg-zinc-950 p-6 md:p-8">
-          <a href="/" className="text-xs font-medium text-red-400 hover:text-red-300">
-            AI Drag Racing
-          </a>
-          <h1 className="mt-5 text-4xl font-semibold tracking-tight text-white md:text-5xl">
+      <main id="main-content" className="eco-container doc">
+        <article className="doc-article">
+          <h1>
             Subprocessor disclosure for AI Drag Racing.
           </h1>
-          <p className="mt-5 text-base leading-8 text-zinc-300">
+          <p className="doc-lead">
             AI Drag Racing is hosted on Cloudflare Pages. For live races, Cloudflare receives the provider API key,
             prompt, selected model, and settings as request content at the app&apos;s edge route before forwarding them to
             the chosen provider. Cloudflare may also process IP address, user agent, request time, and security signals.
             The app does not intentionally store prompt text or provider keys in race receipts, but Cloudflare&apos;s own
             platform logging and retention controls may apply to traffic crossing its infrastructure.
           </p>
-          <p className="mt-4 text-base leading-8 text-zinc-300">
+          <p>
             The app uses a bring-your-own-key workflow. Provider API keys are stored in session storage for the current
             browser tab. Race prompts are forwarded only to the providers you choose for that run.
           </p>
-          <p className="mt-4 text-base leading-8 text-zinc-300">
+          <p>
             Provider and model logos are served from this site as static SVG files. Opening the app contacts no
             third party for them, so no outside service learns that you visited from the interface alone.
           </p>
-          <p className="mt-4 text-base leading-8 text-zinc-300">
+          <p>
             When you select an external provider, that provider may process the prompt, model settings, streamed output,
             usage metadata, and account-level billing information according to your own provider account terms.
           </p>
-          <p className="mt-4 text-base leading-8 text-zinc-300">
+          <p>
             Optional 30-day result links use Supabase. When you choose Share 30 days, Supabase stores a sanitized receipt
             containing provider and model IDs, timing, token counts, settings, prompt length, coarse environment details,
             and lane status. It does not receive prompt text, response text, API keys, IP addresses, or precise location
             from the share payload. Anyone with the unlisted link can read it until it expires, and the current site cannot
             revoke the hosted copy early. Supabase is not used for accounts, shared workspaces, or automatic hosted race history.
           </p>
-          <p className="mt-4 text-base leading-8 text-zinc-300">
+          <p>
             For subprocessor or data-handling questions, use the{' '}
-            <a href="/contact" className="text-red-300 underline underline-offset-4">
+            <a href="/contact">
               AI Drag Racing contact page
             </a>.
           </p>
-          <p className="mt-6 text-sm text-zinc-500">
+          <p className="doc-meta">
             Last updated <time dateTime="2026-09-07">September 7, 2026</time>.
           </p>
         </article>

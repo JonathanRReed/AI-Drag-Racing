@@ -1,5 +1,5 @@
 // components/ComparisonCharts.tsx
-import React, { useId, useMemo, useState } from 'react';
+import React, { useEffect, useId, useMemo, useState } from 'react';
 import ModelIdentifier from './ModelIdentifier';
 import { formatModelIdentifier, modelIdentifierCanvasText } from '../utils/modelIdentifier';
 import { Bar } from 'react-chartjs-2';
@@ -24,25 +24,53 @@ interface ComparisonChartsProps {
   results: ResultState[];
 }
 
-// Resolve CSS variable colors on client for OLED-friendly charts
-function useThemeColors() {
-  return useMemo(() => {
-    if (typeof window === 'undefined') {
-      return {
-        text: '#E6E7EB',
-        muted: 'rgba(230,231,235,0.64)',
-        divider: 'rgba(255,255,255,0.08)'
-      };
-    }
-    const css = getComputedStyle(document.documentElement);
-    const text = css.getPropertyValue('--text').trim() || '#E6E7EB';
-    const muted = css.getPropertyValue('--text-muted').trim() || 'rgba(230,231,235,0.64)';
-    const divider = css.getPropertyValue('--divider').trim() || 'rgba(255,255,255,0.08)';
-    return { text, muted, divider };
-  }, []);
+interface ChartTheme {
+  text: string;
+  muted: string;
+  divider: string;
+  surface: string;
+  border: string;
+  font: string;
 }
 
-const baseElements = { bar: { borderRadius: 6 } } as const;
+const FALLBACK_THEME: ChartTheme = {
+  text: '#f1f4ef',
+  muted: '#8a928a',
+  divider: 'rgba(241,244,239,0.1)',
+  surface: '#151a16',
+  border: 'rgba(241,244,239,0.2)',
+  font: 'sans-serif',
+};
+
+function readChartTheme(): ChartTheme {
+  if (typeof window === 'undefined') return FALLBACK_THEME;
+  const css = getComputedStyle(document.documentElement);
+  const read = (name: string, fallback: string) => css.getPropertyValue(name).trim() || fallback;
+  return {
+    text: read('--ink-0', FALLBACK_THEME.text),
+    muted: read('--ink-2', FALLBACK_THEME.muted),
+    divider: read('--line-0', FALLBACK_THEME.divider),
+    surface: read('--surface-2', FALLBACK_THEME.surface),
+    border: read('--line-1', FALLBACK_THEME.border),
+    font: read('--font-sans', FALLBACK_THEME.font),
+  };
+}
+
+// Canvas text cannot read CSS variables, so resolve the contract tokens here and
+// resolve them again whenever the header toggle switches theme.
+function useThemeColors(): ChartTheme {
+  const [theme, setTheme] = useState<ChartTheme>(readChartTheme);
+  useEffect(() => {
+    setTheme(readChartTheme());
+    if (typeof MutationObserver === 'undefined') return;
+    const observer = new MutationObserver(() => setTheme(readChartTheme()));
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme', 'class'] });
+    return () => observer.disconnect();
+  }, []);
+  return theme;
+}
+
+const baseElements = { bar: { borderRadius: 2 } } as const;
 
 // Small helpers for numeric tick formatting
 const formatNumber = (v: number) => {
@@ -53,7 +81,7 @@ const formatNumber = (v: number) => {
 
 // Keep chart configuration stable until its theme or sorted tooltip labels change.
 function createChartOptions(
-  theme: { text: string; muted: string; divider: string },
+  theme: ChartTheme,
   titleText: string,
   fullLabels: string[],
   valueDetails?: string[]
@@ -65,7 +93,7 @@ function createChartOptions(
     scales: {
       y: {
         beginAtZero: true,
-        ticks: { color: theme.muted, font: { size: 11 } },
+        ticks: { color: theme.muted, font: { size: 11, family: theme.font } },
         grid: { color: theme.divider },
         border: { display: false },
       },
@@ -73,7 +101,7 @@ function createChartOptions(
         beginAtZero: true,
         ticks: {
           color: theme.muted,
-          font: { size: 11 },
+          font: { size: 11, family: theme.font },
           callback: (val: unknown) => formatNumber(Number(val)),
         },
         grid: { color: theme.divider },
@@ -83,19 +111,22 @@ function createChartOptions(
     elements: baseElements,
     plugins: {
       legend: { display: false },
-      title: { display: true, color: theme.text, text: titleText, font: { size: 15, weight: 600 }, padding: { top: 8, bottom: 8 }, align: 'center' as const },
+      title: { display: true, color: theme.text, text: titleText, font: { size: 14, weight: 600, family: theme.font }, padding: { top: 4, bottom: 10 }, align: 'start' as const },
       tooltip: {
-        backgroundColor: 'rgba(7,9,13,0.92)',
+        backgroundColor: theme.surface,
         titleColor: theme.text,
         bodyColor: theme.text,
-        borderColor: 'rgba(255,255,255,0.08)',
+        titleFont: { family: theme.font },
+        bodyFont: { family: theme.font },
+        borderColor: theme.border,
+        cornerRadius: 4,
         borderWidth: 1,
         displayColors: false,
         callbacks: {
           title: (items: any[]) => items.map(i => fullLabels[i.dataIndex]),
           label: (ctx: any) => {
             const value = ctx.raw === null ? 'N/A' : formatNumber(Number(ctx.raw));
-            return valueDetails ? `${value} — ${valueDetails[ctx.dataIndex]}` : value;
+            return valueDetails ? `${value}. ${valueDetails[ctx.dataIndex]}` : value;
           }
         }
       },

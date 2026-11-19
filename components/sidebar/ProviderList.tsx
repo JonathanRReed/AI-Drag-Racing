@@ -88,15 +88,15 @@ const ProviderListItem = React.memo(function ProviderListItem({ provider, hasApi
             onClick={() => onClearKey(provider.id)}
             aria-label={`Clear API key for ${provider.displayName}`}
             title={`Clear API key for ${provider.displayName}`}
-            className="provider-clear focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-cyan-400"
+            className="provider-clear focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-focus"
           >
-            Clear Key
+            Clear key
           </button>
         )}
         <button
           type="button"
           onClick={() => onAddKey(provider)}
-          className="provider-key-button focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-cyan-400"
+          className="provider-key-button focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-focus"
           aria-label={`${hasApiKey ? 'Edit' : 'Add'} API key for ${provider.displayName}`}
           title={`${hasApiKey ? 'Edit' : 'Add'} API key for ${provider.displayName}`}
         >
@@ -359,21 +359,13 @@ const ProviderList: React.FC<ProviderListProps> = ({
 
   return (
     <div className="provider-panel">
-      {/* Racing-themed header */}
       <div className="provider-panel-header">
-        <div className="provider-panel-icon">
-          <svg viewBox="0 0 24 24" className="provider-panel-icon-svg" fill="none" stroke="currentColor" strokeWidth="1.5">
-            <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
-        </div>
-        <div>
-          <h2 className="provider-panel-title">Racers</h2>
-          <p className="provider-panel-subtitle">Select your lineup</p>
-        </div>
+        <h2 className="provider-panel-title">Racers</h2>
+        <p className="provider-panel-subtitle">Add a key, then pick models</p>
       </div>
       <ul className="provider-list">
         {RACEABLE_PROVIDERS.map((provider) => (
-          <li key={provider.id} className="space-y-1">
+          <li key={provider.id}>
             <ProviderListItem
               provider={provider}
               hasApiKey={!!apiKeys[provider.id]}
@@ -383,26 +375,26 @@ const ProviderList: React.FC<ProviderListProps> = ({
             {/* Model selector appears when key is present and provider is supported.
                 A key that cannot list models says so instead of showing nothing. */}
             {apiKeys[provider.id] && SUPPORTED_FOR_STREAM.has(provider.id) && (modelsByProvider[provider.id]?.length ? (
-              <div className="px-2">
+              <div className="provider-models">
                 <p className="eco-label mb-1">Models</p>
-                <div className="mb-1">
+                <div>
                   <input
                     type="text"
                     value={modelQuery[provider.id] || ''}
                     onChange={(e) => setModelQuery(prev => ({ ...prev, [provider.id]: e.target.value }))}
                     placeholder="Search models"
                     aria-label={`Search models for ${provider.displayName}`}
-                    className="w-full px-2 py-1 text-xs rounded-md bg-zinc-900/60 border border-white/10 focus:border-white/20 outline-hidden text-gray-200 placeholder:text-gray-500 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-cyan-400"
+                    className="provider-model-search"
                   />
                 </div>
-                <div className="max-h-60 overflow-auto rounded-md border border-white/10 divide-y divide-white/5 bg-zinc-900/40">
+                <div className="provider-model-list">
                   {(() => {
                     const list = modelsByProvider[provider.id] || [];
                     const q = (modelQuery[provider.id] || '').toLowerCase().trim();
                     const filtered = q ? list.filter(m => matchesModelIdentifier(m, q)) : list;
                     if (!filtered.length) {
                       return (
-                        <div className="px-2 py-1 text-xs text-gray-400">No models match</div>
+                        <div className="provider-model-empty">No models match</div>
                       );
                     }
                     return filtered.map((m) => {
@@ -410,15 +402,15 @@ const ProviderList: React.FC<ProviderListProps> = ({
                       const brandSlugs = brandSlugsForModel(provider.id, m);
                       const slugs = brandSlugs?.length ? brandSlugs : providerSlugs(provider.id);
                       return (
-                        <label key={m} className="flex items-center gap-2 px-2 py-1 text-sm text-gray-200 hover:bg-white/5 cursor-pointer">
+                        <label key={m}>
                           <input
                             type="checkbox"
-                            className="accent-cyan-400 rounded-xs focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-cyan-400"
+                            className="accent-signal"
                             checked={checked}
                             aria-label={modelIdentifierText(m)}
                             onChange={(e) => handleToggleModel(provider.id, m, e.target.checked)}
                           />
-                          <IconImg slugs={slugs} alt="" aria-hidden="true" width={14} height={14} className="w-3.5 h-3.5 rounded-xs opacity-80" />
+                          <IconImg slugs={slugs} alt="" aria-hidden="true" width={14} height={14} className="mark-ink h-3.5 w-3.5 shrink-0" />
                           <ModelIdentifier className="min-w-0 break-all leading-5" value={m} />
                         </label>
                       );
@@ -426,11 +418,11 @@ const ProviderList: React.FC<ProviderListProps> = ({
                   })()}
                 </div>
                 {/* Enable toggle and saved chip */}
-                <div className="mt-2 flex items-center justify-between">
-                  <label className="flex items-center gap-2 text-xs text-gray-300 cursor-pointer">
+                <div className="provider-model-foot">
+                  <label>
                     <input
                       type="checkbox"
-                      className="accent-cyan-400 rounded-xs focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-cyan-400"
+                      className="accent-signal"
                       checked={enabledByProvider[provider.id] ?? true}
                       onChange={(e) => handleToggleEnabled(provider.id, e.target.checked)}
                       aria-label={`Enable ${provider.displayName} for race`}
@@ -438,7 +430,7 @@ const ProviderList: React.FC<ProviderListProps> = ({
                     Enable for race
                   </label>
                   {savedFlash[provider.id] && (
-                    <span className="text-green-400 text-xs">Saved for this tab</span>
+                    <span className="text-green-400">Saved for this tab</span>
                   )}
                 </div>
               </div>
@@ -461,7 +453,7 @@ const ProviderList: React.FC<ProviderListProps> = ({
                   onClick={() => retryModelsForProvider(provider.id)}
                   aria-label={`Retry model list for ${provider.displayName}`}
                   title={`Retry model list for ${provider.displayName}`}
-                  className="mt-1 inline-flex min-h-[var(--control-h)] items-center rounded-md border border-white/10 px-3 text-xs text-gray-200 hover:border-white/20 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-cyan-400"
+                  className="mt-1 inline-flex min-h-[var(--control-h)] items-center rounded-md border border-white/10 px-3 text-xs text-gray-200 hover:border-white/20 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-focus"
                 >
                   Retry model list
                 </button>

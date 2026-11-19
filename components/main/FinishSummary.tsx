@@ -38,6 +38,10 @@ export default function FinishSummary({ results, mode }: { results: ResultState[
 
   return (
     <section className="finish-board" aria-labelledby="finish-heading">
+      <div className="slip-mast" aria-hidden="true">
+        <span>AI Drag Racing</span>
+        <span>Timeslip</span>
+      </div>
       <div className="finish-board-lead">
         <div>
           <h2 id="finish-heading">
@@ -62,7 +66,7 @@ export default function FinishSummary({ results, mode }: { results: ResultState[
         )}
       </div>
 
-      <div className="finish-board-table-wrap" role="region" aria-labelledby="finish-heading" tabIndex={0}>
+      <div className="finish-board-table-wrap" role="region" aria-label="Lane timing table, scrolls sideways on narrow screens" tabIndex={0}>
         <table className="finish-board-table">
           <thead>
             <tr>
