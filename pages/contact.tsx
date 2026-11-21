@@ -9,21 +9,21 @@ export default function Contact() {
         <title>Contact | AI Drag Racing</title>
         <meta
           name="description"
-          content="Contact Jonathan R. Reed about AI Drag Racing, a single-run browser comparison for LLM latency, throughput, and model behavior."
+          content="Get in touch with Jonathan R. Reed about AI Drag Racing bugs, provider issues, or feedback."
         />
         <link rel="canonical" href="https://ai-dragrace.jonathanrreed.com/contact" />
         <meta property="og:type" content="website" />
         <meta property="og:title" content="Contact | AI Drag Racing" />
         <meta
           property="og:description"
-          content="Contact Jonathan R. Reed about AI Drag Racing, a single-run browser comparison for LLM latency, throughput, and model behavior."
+          content="Get in touch with Jonathan R. Reed about AI Drag Racing bugs, provider issues, or feedback."
         />
         <meta property="og:image" content="https://ai-dragrace.jonathanrreed.com/social-card.png" />
         <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:title" content="Contact | AI Drag Racing" />
         <meta
           name="twitter:description"
-          content="Contact Jonathan R. Reed about AI Drag Racing, a single-run browser comparison for LLM latency, throughput, and model behavior."
+          content="Get in touch with Jonathan R. Reed about AI Drag Racing bugs, provider issues, or feedback."
         />
         <meta name="twitter:image" content="https://ai-dragrace.jonathanrreed.com/social-card.png" />
         <script
@@ -34,7 +34,7 @@ export default function Contact() {
               '@type': 'ContactPage',
               name: 'Contact AI Drag Racing',
               description:
-                'Contact Jonathan R. Reed about AI Drag Racing, a single-run browser comparison for LLM latency, throughput, and model behavior.',
+                'Get in touch with Jonathan R. Reed about AI Drag Racing bugs, provider issues, or feedback.',
               url: 'https://ai-dragrace.jonathanrreed.com/contact',
               datePublished: '2026-04-21',
               dateModified: '2026-08-04',
@@ -47,32 +47,33 @@ export default function Contact() {
       <main id="main-content" className="eco-container doc">
         <article className="doc-article">
           <h1>
-            Contact Jonathan about AI Drag Racing.
+            Get in touch about AI Drag Racing
           </h1>
           <p className="doc-lead">
-            For bug reports, accessibility issues, provider suggestions, or race workflow feedback, use Jonathan R.
-            Reed's main contact page.
+            If you find a bug, run into an accessibility issue, want to request a provider, or have feedback on the
+            site, send me a note through my main contact page.
           </p>
           <p>
-            Useful reports include the browser, provider, selected model, prompt length, and race settings, plus where
-            it broke: before the request started, during streaming, after the final token, or while drawing the result
-            chart. That is what separates a provider-routing bug from a UI-state one. If a provider changed its API
-            behavior, include the error message without sharing secrets.
+            For bug reports, it helps a lot if you include your browser, the provider and model you picked, roughly how
+            long your prompt was, and your race settings. Let me know when it broke too, like if it failed right away,
+            froze mid-stream, errored at the end, or broke when drawing the charts. That usually tells me right away
+            whether the bug is in provider routing or in the UI. If a provider changed its API and threw an error,
+            paste the error message without any keys in it.
           </p>
           <p>
-            For feature feedback, describe the model comparison you were trying to make and what evidence was missing.
-            This site is focused on live latency and output comparison, so a concrete workflow lands better than a
-            request for another dashboard.
+            If you have a feature idea, tell me what comparison you were trying to run and what information you needed
+            that wasn&apos;t there. I want to keep this site focused on live speed and output checks, so hearing about
+            a real case you hit helps a lot more than a general wishlist.
           </p>
           <p>
-            Do not send provider API keys, private prompts, client data, or screenshots that expose secrets. A short
-            sanitized prompt, the selected providers, and the visible error text are enough for most debugging.
+            Please don&apos;t send API keys, private prompts, client data, or screenshots that show secrets. A short
+            dummy prompt, the providers you picked, and the error message you saw are plenty for debugging.
           </p>
           <a
             href="https://jonathanrreed.com/contact/"
             className="btn-secondary doc-action"
           >
-            Open Jonathan's contact page
+            Go to my contact page
           </a>
           <p className="doc-meta">
             Last updated <time dateTime="2026-06-19">June 19, 2026</time>.

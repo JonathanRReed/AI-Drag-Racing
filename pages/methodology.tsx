@@ -14,7 +14,7 @@ import {
 const SITE = 'https://ai-dragrace.jonathanrreed.com';
 const PAGE_URL = `${SITE}/methodology`;
 const DESCRIPTION =
-  'How AI Drag Racing measures LLM speed: where the timer runs, what request is sent, how time to first token, total time, and tokens per second are calculated, the n=1 sample size, and what the code does not record.';
+  'How AI Drag Racing measures LLM speed: where the timer runs, what request gets sent, how time to first token, total time, and tokens per second work, the n=1 sample size, and what the code leaves out.';
 
 /** Renders the content module's inline syntax: **bold**, `code`, [label](href). */
 function Inline({ text }: { text: string }) {
@@ -92,9 +92,9 @@ const structuredData = {
     {
       '@type': 'HowTo',
       '@id': `${PAGE_URL}#howto`,
-      name: 'How to run a model speed comparison worth quoting',
+      name: 'How to run a comparison worth quoting',
       description:
-        'Steps for getting a repeatable, honestly labeled speed comparison out of a browser race. Each race is still one observation from one route.',
+        'How to get a repeatable, clearly labeled speed check out of a browser race. Every race is still one run from one route.',
       totalTime: 'PT10M',
       tool: [{ '@type': 'HowToTool', name: 'A provider API key that stays in the browser' }],
       step: HOW_TO_COMPARE.map((step, index) => ({
@@ -150,10 +150,11 @@ export default function Methodology() {
           </h1>
 
           <p className="doc-lead">
-            Every number on this site comes out of one code path, so it is worth saying exactly what that path does
-            before anyone quotes a result. The short version: each Quick Race is a single live request per model with
-            one clock in your browser and another at the Cloudflare edge. Token counts are usually estimated rather
-            than provider-reported. That is useful evidence about your route today, not a global model ranking.
+            Every timing number on this site comes out of the same code path, so I want to spell out what that path
+            actually does before anyone quotes a result. In short: each Quick Race sends one live request per model,
+            with one clock in your browser and another at the Cloudflare edge. Most token counts are estimated rather
+            than reported by the provider. That gives you real data about your route right now, though it&apos;s never
+            a global ranking.
           </p>
 
           <nav aria-label="On this page" className="doc-toc">
@@ -171,7 +172,7 @@ export default function Methodology() {
               Definitions
             </h2>
             <p className="doc-note">
-              The terms every receipt uses. Each one is defined by the code, not by convention.
+              The terms you&apos;ll see on every timeslip, defined by what the code actually does.
             </p>
             <dl className="doc-defs">
               {DEFINITIONS.map((entry) => (
@@ -191,7 +192,8 @@ export default function Methodology() {
               How to run a comparison worth quoting
             </h2>
             <p className="doc-note">
-              A race is one observation. This is how to turn a few of them into something you can stand behind.
+              One race only tells you so much. Here&apos;s how I&apos;d run a few of them if you actually plan to share
+              the numbers.
             </p>
             <ol className="doc-steps">
               {HOW_TO_COMPARE.map((step, index) => (
@@ -231,8 +233,8 @@ export default function Methodology() {
           ))}
 
           <p className="doc-meta">
-            This page describes the code as it stands on <time dateTime={METHODOLOGY_UPDATED}>{updatedLabel}</time>. If
-            the measurement path changes, this page changes with it. The same text is available as{' '}
+            This matches how the code works as of <time dateTime={METHODOLOGY_UPDATED}>{updatedLabel}</time>. When the
+            timing code changes, I update this page too. You can also grab the whole thing as{' '}
             <a href="/llms-full.txt">plain text</a>.
           </p>
           <p className="doc-meta">

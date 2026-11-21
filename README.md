@@ -1,6 +1,6 @@
 # AI Drag Racing
 
-Send the same prompt to several language models and compare time to first token, completion time, and token throughput. Each model gets a lane with its streamed response. Use it for quick comparisons, not a controlled benchmark.
+Send the same prompt to several language models and compare time to first token, completion time, and token throughput. Each model gets its own lane with its streamed response. It's meant for quick comparisons rather than controlled benchmarks.
 
 [Live site](https://ai-dragrace.jonathanrreed.com/)
 

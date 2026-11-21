@@ -210,7 +210,7 @@ const DEMO_LANES: { providerId: string; modelId: string; ttft: number; cps: numb
   { providerId: 'anthropic', modelId: 'claude-haiku · demo', ttft: 640, cps: 320, total: 1600 },
 ];
 const DEMO_SAMPLE =
-  "Here's the quick read on inference speed. What matters is how fast the first token arrives, how steadily the model streams after that, and how much it produces before it stops. A model can launch quickly and then crawl, or start late and sprint to the line. Racing them side by side shows that trade-off. One averaged number hides it. ";
+  "Model speed is really two things: how long you wait for the first token, and how fast the rest of the reply streams after that. Total length matters too. Some models start almost right away and then slow down, while others pause for a second and still finish first. Racing them side by side shows that difference way better than a single average ever could. ";
 const DEMO_LONG = DEMO_SAMPLE.repeat(10);
 
 // --- Main Component ---
@@ -794,7 +794,7 @@ export default function Home() {
     <>
       <Head>
         <title>AI Drag Racing | Compare AI Speed From Your Browser</title>
-        <meta name="description" content="Run the same prompt through selected AI models and compare the speed your browser experiences. Each result is one route-specific observation, not a global ranking." />
+        <meta name="description" content="Send the same prompt to AI models from your browser and compare real response times. Every run reflects your current route and moment rather than a global ranking." />
 
         {/* Canonical URL */}
         <link rel="canonical" href="https://ai-dragrace.jonathanrreed.com/" />
@@ -805,12 +805,12 @@ export default function Home() {
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <meta property="og:type" content="website" />
         <meta property="og:title" content="AI Drag Racing | Compare AI Speed From Your Browser" />
-        <meta property="og:description" content="Run the same prompt through selected AI models and compare the speed your browser experiences. Each result is one route-specific observation, not a global ranking." />
+        <meta property="og:description" content="Send the same prompt to AI models from your browser and compare real response times. Every run reflects your current route and moment rather than a global ranking." />
         <meta property="og:url" content="https://ai-dragrace.jonathanrreed.com/" />
         <meta property="og:image" content="https://ai-dragrace.jonathanrreed.com/social-card.png" />
         <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:title" content="AI Drag Racing | Compare AI Speed From Your Browser" />
-        <meta name="twitter:description" content="Run the same prompt through selected AI models and compare the speed your browser experiences. Each result is one route-specific observation, not a global ranking." />
+        <meta name="twitter:description" content="Send the same prompt to AI models from your browser and compare real response times. Every run reflects your current route and moment rather than a global ranking." />
         <meta name="twitter:image" content="https://ai-dragrace.jonathanrreed.com/social-card.png" />
 
         {/* JSON-LD Structured Data */}
@@ -824,7 +824,7 @@ export default function Home() {
                   "@type": "WebSite",
                   "@id": "https://ai-dragrace.jonathanrreed.com/#website",
                   "name": "AI Drag Racing",
-                  "description": "Run the same prompt through selected AI models and compare the speed your browser experiences. Each result is one route-specific observation, not a global ranking.",
+                  "description": "Send the same prompt to AI models from your browser and compare real response times. Every run reflects your current route and moment rather than a global ranking.",
                   "url": "https://ai-dragrace.jonathanrreed.com/",
                   "inLanguage": "en-US",
                   "datePublished": "2026-04-21",
@@ -845,9 +845,9 @@ export default function Home() {
                   "featureList": [
                     "Time to first token, total time, and tokens per second for one live request per model",
                     "Browser clock and Cloudflare edge clock reported separately",
-                    "Up to several models racing from one shared start",
-                    "Sanitized receipts kept in the browser for 30 days, exportable, never uploaded",
-                    "Methodology page describing every clock and what is not recorded"
+                    "Multiple models racing from one shared start",
+                    "Sanitized local receipts kept in your browser for 30 days, exportable anytime",
+                    "Methodology page explaining every clock and what is left out"
                   ],
                   "author": AUTHOR_REF,
                   "isPartOf": { "@id": "https://ai-dragrace.jonathanrreed.com/#website" }
@@ -909,7 +909,7 @@ export default function Home() {
                 <span>From AI Stats</span>
                 <strong><ModelIdentifier value={suggestedModel} /></strong>
                 <p>
-                  Add the matching provider key. The model search is prefilled when the provider route is known.
+                  Add the key for this provider to test it. If the provider is known, the model search is already filled in.
                 </p>
                 <button
                   type="button"
@@ -935,8 +935,8 @@ export default function Home() {
           <div className="race-hero-copy">
             <h1 className="race-hero-title">See how fast a model responds from here.</h1>
             <p className="race-hero-lead">
-              Run the same prompt through selected AI models and see the speed your browser actually experiences.
-              Results are specific to this route, location, prompt, and moment.
+              Send the same prompt to a few AI models and see how fast they respond from your own browser. Every run
+              depends on your connection, your prompt, and how busy each provider is right now.
             </p>
           </div>
           <div className="race-hero-actions">
@@ -1070,8 +1070,8 @@ export default function Home() {
                     </div>
                   ))}
                   <p className="strip-empty-note">
-                    <strong>These lanes are open.</strong> Add a provider key and pick models in Racers to stage them
-                    here, or run the demo to watch four simulated lanes.
+                    <strong>No models picked yet.</strong> Add a provider key and pick a few models in Racers to put
+                    them on the track, or run the demo to try it with four simulated lanes.
                   </p>
                 </div>
               ) : raceView === 'strip' ? (
@@ -1226,12 +1226,12 @@ export default function Home() {
               <dd>Time to first token, total response time, tokens per second</dd>
             </div>
             <div>
-              <dt>Result scope</dt>
-              <dd>One observation from your browser, not a global ranking</dd>
+              <dt>What a run means</dt>
+              <dd>One live run from your browser, never a global ranking</dd>
             </div>
             <div>
               <dt>Sample size</dt>
-              <dd>One run per model per race, so repeat a race before trusting an order</dd>
+              <dd>One run per model, so run it a few times before trusting the order</dd>
             </div>
             <div>
               <dt>Defaults</dt>
@@ -1248,19 +1248,18 @@ export default function Home() {
             </summary>
             <div className="race-details-copy">
               <p>
-                AI Drag Racing compares model behavior under the same prompt, selected settings, and local browser
-                session. Time to first token shows how quickly a provider starts responding. Total response time shows
-                how long the full answer takes. Tokens per second is useful for longer generations because a model can
-                start quickly but still stream slowly after the first token appears. The live pace chart plots
-                characters streamed against a shared client clock, so the curve shows what your browser actually
-                received; chunk boundaries and edge-network timing vary by provider.
+                Every model in a race gets the same prompt and settings from your browser session. Time to first token
+                tells you how long you wait before anything shows up on screen, and total response time tells you how
+                long the full answer took. Tokens per second matters more on longer replies, because a model can answer
+                quickly at first and still stream slowly after that. The live pace chart tracks characters received
+                against one shared browser clock, so it shows what your browser actually saw as text came in.
               </p>
               <p>
-                A race measures one moment and nothing beyond it. Network route, provider load, regional availability,
-                selected model, prompt length, reasoning settings, and output length all move the numbers. A single race
-                can show a spike; a few consistent runs tell you whether the delay comes from the provider, the model,
-                the prompt shape, or your current network path. Read the timing next to the answer the model actually
-                gave you, since a model can look fast because it wrote less.
+                A single race only shows what happened right then. Your network path, provider load, region, prompt
+                length, reasoning settings, and how much the model decides to write all affect the numbers. One run can
+                easily hit a random spike, so running the same prompt a few times gives you a much better feel for
+                what&apos;s actually slow. Always look at the response next to the clock too, because a model often
+                looks faster just because it wrote half as much.
               </p>
             </div>
           </details>

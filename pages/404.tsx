@@ -32,11 +32,10 @@ export default function NotFound() {
         <div className="redlight-copy">
           <h1>Red light.</h1>
           <p>
-            Nothing is staged at this address. The page may have moved, or the link left the line before it
-            was ready. Error 404.
+            There&apos;s nothing at this URL. The page might have moved, or the link might be broken. Error 404.
           </p>
           <p className="redlight-actions">
-            <a href="/" className="race-hero-action-primary">Back to the strip</a>
+            <a href="/" className="race-hero-action-primary">Back to the race</a>
             <a href="/methodology" className="race-hero-action-secondary">Read the methodology</a>
           </p>
         </div>

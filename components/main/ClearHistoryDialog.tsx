@@ -36,10 +36,10 @@ export default function ClearHistoryDialog({
         }}
       >
         <AlertDialogHeader>
-          <AlertDialogTitle>Clear every local race record?</AlertDialogTitle>
+          <AlertDialogTitle>Clear all local race records?</AlertDialogTitle>
           <AlertDialogDescription>
-            This removes all {count} {count === 1 ? 'record' : 'records'} stored in this
-            browser. Records are only here, so they cannot be recovered. Export anything you want to keep first.
+            This deletes all {count} {count === 1 ? 'record' : 'records'} saved in this browser. They&apos;re only
+            stored locally, so you can&apos;t get them back. Export anything you want to keep first.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>

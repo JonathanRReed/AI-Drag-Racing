@@ -31,10 +31,10 @@ interface ResultsDisplayProps {
 }
 
 const STEPS = [
-  { n: 1, text: 'Open Racers: the rail on the left, or the Racers button on a phone.' },
-  { n: 2, text: 'Add an API key for a provider. It lasts only for this tab.' },
-  { n: 3, text: 'Pick one or more models. Each one takes a lane on the strip.' },
-  { n: 4, text: 'Press Start race and watch them stream side by side.' },
+  { n: 1, text: 'Open Racers in the left sidebar, or tap the Racers button on mobile.' },
+  { n: 2, text: 'Paste an API key for a provider. It stays in this tab only.' },
+  { n: 3, text: 'Pick one or more models to put them on the track.' },
+  { n: 4, text: 'Hit Start race to watch them stream side by side.' },
 ];
 
 const ResultsDisplay: React.FC<ResultsDisplayProps> = ({ results, hideFailed = false, force, compact = false, onDemo, stagedCount = 0 }) => {
@@ -47,8 +47,8 @@ const ResultsDisplay: React.FC<ResultsDisplayProps> = ({ results, hideFailed = f
   if (results.length === 0 && stagedCount > 0) {
     return (
       <p className="lineup-ready">
-        <strong>{stagedCount} {stagedCount === 1 ? 'lane is' : 'lanes are'} staged.</strong> Press Start race, or
-        press Enter in the prompt. Each model's response appears here as it streams.
+        <strong>{stagedCount} {stagedCount === 1 ? 'lane is' : 'lanes are'} staged.</strong> Hit Start race, or press
+        Enter in the prompt box. Each model&apos;s reply will stream in right here.
       </p>
     );
   }
@@ -59,8 +59,8 @@ const ResultsDisplay: React.FC<ResultsDisplayProps> = ({ results, hideFailed = f
         <div className="lineup-copy">
           <h2>Line up your racers</h2>
           <p>
-            Add a provider in the Racers panel, choose your models, and start a live race. Keys stay in this tab
-            and go only to the provider you pick.
+            Add a provider in the Racers panel, pick your models, and start a race. Your keys stay in this tab and
+            only go to the providers you choose.
           </p>
           {onDemo && (
             <p className="lineup-demo">

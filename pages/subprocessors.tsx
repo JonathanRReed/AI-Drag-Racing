@@ -9,21 +9,21 @@ export default function Subprocessors() {
         <title>Subprocessor Disclosure | AI Drag Racing</title>
         <meta
           name="description"
-          content="Subprocessor disclosure for AI Drag Racing, including hosting, provider API routing, and browser-local credential handling."
+          content="Hosting, API routing, local key storage, and 30-day share links for AI Drag Racing."
         />
         <link rel="canonical" href="https://ai-dragrace.jonathanrreed.com/subprocessors" />
         <meta property="og:type" content="website" />
         <meta property="og:title" content="Subprocessor Disclosure | AI Drag Racing" />
         <meta
           property="og:description"
-          content="Subprocessor disclosure for AI Drag Racing, including hosting, provider API routing, and browser-local credential handling."
+          content="Hosting, API routing, local key storage, and 30-day share links for AI Drag Racing."
         />
         <meta property="og:image" content="https://ai-dragrace.jonathanrreed.com/social-card.png" />
         <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:title" content="Subprocessor Disclosure | AI Drag Racing" />
         <meta
           name="twitter:description"
-          content="Subprocessor disclosure for AI Drag Racing, including hosting, provider API routing, and browser-local credential handling."
+          content="Hosting, API routing, local key storage, and 30-day share links for AI Drag Racing."
         />
         <meta name="twitter:image" content="https://ai-dragrace.jonathanrreed.com/social-card.png" />
         <script
@@ -34,7 +34,7 @@ export default function Subprocessors() {
               '@type': 'WebPage',
               name: 'Subprocessor Disclosure | AI Drag Racing',
               description:
-                'Subprocessor disclosure for AI Drag Racing, including hosting, provider API routing, and browser-local credential handling.',
+                'Hosting, API routing, local key storage, and 30-day share links for AI Drag Racing.',
               url: 'https://ai-dragrace.jonathanrreed.com/subprocessors',
               datePublished: '2026-06-19',
               dateModified: '2026-08-04',
@@ -47,38 +47,39 @@ export default function Subprocessors() {
       <main id="main-content" className="eco-container doc">
         <article className="doc-article">
           <h1>
-            Subprocessor disclosure for AI Drag Racing.
+            Subprocessors and hosting
           </h1>
           <p className="doc-lead">
-            AI Drag Racing is hosted on Cloudflare Pages. For live races, Cloudflare receives the provider API key,
-            prompt, selected model, and settings as request content at the app&apos;s edge route before forwarding them to
-            the chosen provider. Cloudflare may also process IP address, user agent, request time, and security signals.
-            The app does not intentionally store prompt text or provider keys in race receipts, but Cloudflare&apos;s own
-            platform logging and retention controls may apply to traffic crossing its infrastructure.
+            AI Drag Racing runs on Cloudflare Pages. During a live race, Cloudflare receives your provider API key,
+            prompt, selected model, and settings at the site&apos;s edge route before forwarding them to the provider
+            you picked. Cloudflare may also see your IP address, user agent, request time, and security signals. The
+            app doesn&apos;t save prompt text or API keys in race receipts, though Cloudflare&apos;s own platform
+            logging and retention rules can still apply to traffic passing through its network.
           </p>
           <p>
-            The app uses a bring-your-own-key workflow. Provider API keys are stored in session storage for the current
-            browser tab. Race prompts are forwarded only to the providers you choose for that run.
+            You bring your own API keys here. Keys stay in session storage for the current browser tab, and your
+            prompts only go to the providers you pick for that run.
           </p>
           <p>
-            Provider and model logos are served from this site as static SVG files. Opening the app contacts no
-            third party for them, so no outside service learns that you visited from the interface alone.
+            All provider and model logos are served directly from this site as static SVG files. Opening the site
+            doesn&apos;t make any third-party requests to load them.
           </p>
           <p>
-            When you select an external provider, that provider may process the prompt, model settings, streamed output,
-            usage metadata, and account-level billing information according to your own provider account terms.
+            When you run a race against an external provider, that provider handles the prompt, model settings,
+            streamed response, usage data, and billing under your own account terms with them.
           </p>
           <p>
-            Optional 30-day result links use Supabase. When you choose Share 30 days, Supabase stores a sanitized receipt
-            containing provider and model IDs, timing, token counts, settings, prompt length, coarse environment details,
-            and lane status. It does not receive prompt text, response text, API keys, IP addresses, or precise location
-            from the share payload. Anyone with the unlisted link can read it until it expires, and the current site cannot
-            revoke the hosted copy early. Supabase is not used for accounts, shared workspaces, or automatic hosted race history.
+            Optional 30-day share links run on Supabase. When you click Share for 30 days, Supabase stores a sanitized
+            receipt with provider and model IDs, timing, token counts, settings, prompt length, coarse environment
+            details, and lane status. The share payload leaves out prompt text, response text, API keys, IP addresses,
+            and precise location. Anyone with that unlisted link can read it until it expires, and right now there&apos;s
+            no way to revoke a hosted copy early. Supabase isn&apos;t used for accounts, shared workspaces, or
+            automatic hosted race history.
           </p>
           <p>
-            For subprocessor or data-handling questions, use the{' '}
+            If you have questions about hosting or how data moves through this site, reach out on the{' '}
             <a href="/contact">
-              AI Drag Racing contact page
+              contact page
             </a>.
           </p>
           <p className="doc-meta">

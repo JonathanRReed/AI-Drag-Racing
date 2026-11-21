@@ -54,7 +54,7 @@ export default function FinishSummary({ results, mode }: { results: ResultState[
                 <span> via {leader.providerName}</span>
               </>
             ) : (
-              <span>Every lane in this race ended before it returned a timing.</span>
+              <span>None of the lanes finished with a timing.</span>
             )}
           </p>
         </div>
@@ -126,8 +126,8 @@ export default function FinishSummary({ results, mode }: { results: ResultState[
         {isTimeTrial && 'Time Trial ranks received output by JavaScript text.length (UTF-16 code units), not tokens or visible characters. Ties keep lane order. '}
         {finished.length} of {results.length} {results.length === 1 ? 'lane' : 'lanes'} finished.{' '}
         {isDemo
-          ? 'These timings are simulated. No provider was contacted and nothing was saved.'
-          : `One observation from this browser${edgeRegion ? ` through Cloudflare ${edgeRegion}` : ''}. Results vary with route, provider load, prompt, settings, and output length. They are not a global model ranking.`}
+          ? 'These timings are simulated. Nothing went to a provider and nothing was saved.'
+          : `One live run from this browser${edgeRegion ? ` via Cloudflare ${edgeRegion}` : ''}. Numbers shift with your route, provider load, prompt, settings, and how much each model writes.`}
       </p>
     </section>
   );

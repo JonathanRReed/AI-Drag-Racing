@@ -117,7 +117,7 @@ const ApiKeyModal: React.FC<ApiKeyModalProps> = ({
           Enter API Key for {providerName}
         </h2>
         <p id="api-key-modal-description" className="modal-copy">
-          Your API key is kept only for this browser tab. Closing the tab clears it. For each race, the key is sent to the server-side provider proxy and is never stored in a race record.
+          Your API key is kept only for this browser tab, and closing the tab clears it. When you run a race, the key goes through the site&apos;s server-side proxy to the provider and is never saved in a race record.
         </p>
         <label htmlFor="apiKey" className="eco-label mb-1">
           API key
